@@ -35,7 +35,7 @@ class GetStartedPage extends StatelessWidget {
   child: Center(
     child: Image.asset(
       "assets/icc_logo.png",
-      width: MediaQuery.of(context).size.width * 0.9,
+      width: MediaQuery.of(context).size.width * 1.2,
       fit: BoxFit.contain,
     ),
   ),
