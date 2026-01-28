@@ -40,14 +40,8 @@ class ProcurementSchedulePage extends StatelessWidget {
     ];
 
     final deliveries = [
-      const _DeliveryItem(
-        title: "Steel Beams",
-        subtitle: "Supplier Y",
-      ),
-      const _DeliveryItem(
-        title: "Concrete Mix",
-        subtitle: "Supplier Z",
-      ),
+      const _DeliveryItem(title: "Steel Beams", subtitle: "Supplier Y"),
+      const _DeliveryItem(title: "Concrete Mix", subtitle: "Supplier Z"),
     ];
 
     return Scaffold(
@@ -196,18 +190,9 @@ class _TimelineList extends StatelessWidget {
                     color: iconBg,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    item.icon,
-                    color: iconColor,
-                    size: 26,
-                  ),
+                  child: Icon(item.icon, color: iconColor, size: 26),
                 ),
-                if (!isLast)
-                  Container(
-                    width: 2,
-                    height: 65,
-                    color: lineColor,
-                  ),
+                if (!isLast) Container(width: 2, height: 65, color: lineColor),
               ],
             ),
 
@@ -329,8 +314,5 @@ class _DeliveryItem {
   final String title;
   final String subtitle;
 
-  const _DeliveryItem({
-    required this.title,
-    required this.subtitle,
-  });
+  const _DeliveryItem({required this.title, required this.subtitle});
 }

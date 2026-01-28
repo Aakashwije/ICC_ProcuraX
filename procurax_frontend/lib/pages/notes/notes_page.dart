@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 
-class BuildAssistPage extends StatelessWidget {
-  const BuildAssistPage({super.key});
+class NotesPage extends StatelessWidget {
+  const NotesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1F4CCF);
 
     return Scaffold(
-      drawer: AppDrawer(currentRoute: AppRoutes.buildAssist),
+      drawer: AppDrawer(currentRoute: AppRoutes.notes),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
@@ -32,7 +32,7 @@ class BuildAssistPage extends StatelessWidget {
                   ),
                   const Spacer(),
                   const Text(
-                    "BuildAssist",
+                    "Notes",
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -48,10 +48,7 @@ class BuildAssistPage extends StatelessWidget {
 
               const Expanded(
                 child: Center(
-                  child: Text(
-                    "BuildAssist",
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: Text("Notes", style: TextStyle(fontSize: 20)),
                 ),
               ),
             ],
