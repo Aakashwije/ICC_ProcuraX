@@ -1,6 +1,6 @@
 {
-    "name": "procument_page",
-    "short_name": "procument_page",
+    "name": "ProcuraX",
+    "short_name": "ProcuraX",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
