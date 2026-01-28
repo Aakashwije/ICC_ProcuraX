@@ -10,38 +10,40 @@ class ProcurementSchedulePage extends StatelessWidget {
     const Color primaryBlue = Color(0xFF1F4CCF);
     const Color lightBlue = Color(0xFF8DB3E2);
     const Color cardBg = Color(0xFFEAF2FB);
+    const Color iconBg = Color(0xFFF3F7FF);
 
-    final updates = [
-      const _TimelineItem(
-        title: "Material Request Submitted",
-        subtitle: "Submitted by J.P.Peris",
-        icon: Icons.send_rounded,
+    // Sample procurement items (goodsAtLocation is now a date string)
+    final items = [
+      const _ProcurementItem(
+        materialDescription: "High-strength Steel Beam S355",
+        tdsQty: "12 Nos",
+        cmsRequiredDate: "2026-02-10",
+        goodsAtLocationDate: "2026-02-14",
       ),
-      const _TimelineItem(
-        title: "Purchase Order Approved",
-        subtitle: "Submitted by J.P.Peris",
-        icon: Icons.description_rounded,
+      const _ProcurementItem(
+        materialDescription: "Ready-mix Concrete 30MPa",
+        tdsQty: "8 m³",
+        cmsRequiredDate: "2026-02-12",
+        goodsAtLocationDate: "2026-02-13",
       ),
-      const _TimelineItem(
-        title: "Material Request Submitted",
-        subtitle: "Submitted by J.P.Peris",
-        icon: Icons.message_rounded,
-      ),
-      const _TimelineItem(
-        title: "Delivery in Transit",
-        subtitle: "Submitted by J.P.Peris",
-        icon: Icons.local_shipping_rounded,
-      ),
-      const _TimelineItem(
-        title: "Material Received & Inspected",
-        subtitle: "Submitted by J.P.Peris",
-        icon: Icons.credit_card_rounded,
+      const _ProcurementItem(
+        materialDescription: "Galvanized Bolts M20",
+        tdsQty: "200 Pcs",
+        cmsRequiredDate: "2026-02-08",
+        goodsAtLocationDate: "2026-02-09",
       ),
     ];
 
-    final deliveries = [
-      const _DeliveryItem(title: "Steel Beams", subtitle: "Supplier Y"),
-      const _DeliveryItem(title: "Concrete Mix", subtitle: "Supplier Z"),
+    // Upcoming deliveries: only materialDescription + goodsAtLocationDate
+    final upcomingDeliveries = [
+      const _DeliverySimple(
+        materialDescription: "High-strength Steel Beam S355",
+        goodsAtLocationDate: "2026-02-14",
+      ),
+      const _DeliverySimple(
+        materialDescription: "Galvanized Bolts M20",
+        goodsAtLocationDate: "2026-02-09",
+      ),
     ];
 
     return Scaffold(
@@ -56,7 +58,6 @@ class ProcurementSchedulePage extends StatelessWidget {
               // Top bar (menu icon + center title)
               Row(
                 children: [
-                  // ✅ Drawer Open Button (Builder added)
                   Builder(
                     builder: (context) => IconButton(
                       onPressed: () {
@@ -69,9 +70,7 @@ class ProcurementSchedulePage extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   const Spacer(),
-
                   Column(
                     children: const [
                       Text(
@@ -93,7 +92,6 @@ class ProcurementSchedulePage extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const Spacer(),
                   const SizedBox(width: 48), // balance spacing
                 ],
@@ -102,7 +100,7 @@ class ProcurementSchedulePage extends StatelessWidget {
               const SizedBox(height: 30),
 
               const Text(
-                "Upcoming Updates",
+                "Procurement Items",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -110,17 +108,27 @@ class ProcurementSchedulePage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Timeline Section
-              _TimelineList(
-                items: updates,
-                lineColor: lightBlue,
-                iconBg: const Color(0xFFEAEAEA),
-                iconColor: lightBlue,
+              // Full procurement cards (showing the 4 fields; goodsAtLocation is a date)
+              Column(
+                children: items
+                    .map(
+                      (i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _ProcurementCard(
+                          item: i,
+                          cardColor: cardBg,
+                          primaryBlue: primaryBlue,
+                          lightBlue: lightBlue,
+                          iconBg: iconBg,
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
 
-              const SizedBox(height: 35),
+              const SizedBox(height: 30),
 
               const Text(
                 "Upcoming Deliveries",
@@ -131,19 +139,21 @@ class ProcurementSchedulePage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
 
-              // Delivery Cards
+              // Compact list for upcoming deliveries (materialDescription + goodsAtLocationDate only)
               Column(
-                children: deliveries
+                children: upcomingDeliveries
                     .map(
                       (d) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _DeliveryCard(
-                          title: d.title,
-                          subtitle: d.subtitle,
-                          cardColor: cardBg,
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _DeliverySimpleCard(
+                          delivery: d,
+                          cardColor: Colors.white,
+                          borderColor: cardBg,
+                          iconBg: iconBg,
                           iconColor: lightBlue,
+                          primaryBlue: primaryBlue,
                         ),
                       ),
                     )
@@ -157,137 +167,151 @@ class ProcurementSchedulePage extends StatelessWidget {
   }
 }
 
-class _TimelineList extends StatelessWidget {
-  final List<_TimelineItem> items;
-  final Color lineColor;
-  final Color iconBg;
-  final Color iconColor;
+/// Procurement item where goodsAtLocation is a date
+class _ProcurementItem {
+  final String materialDescription;
+  final String tdsQty;
+  final String cmsRequiredDate;
+  final String goodsAtLocationDate;
 
-  const _TimelineList({
-    required this.items,
-    required this.lineColor,
-    required this.iconBg,
-    required this.iconColor,
+  const _ProcurementItem({
+    required this.materialDescription,
+    required this.tdsQty,
+    required this.cmsRequiredDate,
+    required this.goodsAtLocationDate,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(items.length, (index) {
-        final item = items[index];
-        final bool isLast = index == items.length - 1;
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left side (icon + line)
-            Column(
-              children: [
-                Container(
-                  height: 52,
-                  width: 52,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(item.icon, color: iconColor, size: 26),
-                ),
-                if (!isLast) Container(width: 2, height: 65, color: lineColor),
-              ],
-            ),
-
-            const SizedBox(width: 16),
-
-            // Right side (text)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.subtitle,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF7FA5D1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      }),
-    );
-  }
 }
 
-class _DeliveryCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Color cardColor;
-  final Color iconColor;
+/// Compact delivery model (only the two fields you asked for)
+class _DeliverySimple {
+  final String materialDescription;
+  final String goodsAtLocationDate;
 
-  const _DeliveryCard({
-    required this.title,
-    required this.subtitle,
-    required this.cardColor,
-    required this.iconColor,
+  const _DeliverySimple({
+    required this.materialDescription,
+    required this.goodsAtLocationDate,
   });
+}
+
+/// Full procurement card (shows all four fields; goodsAtLocation is shown as a date)
+class _ProcurementCard extends StatelessWidget {
+  final _ProcurementItem item;
+  final Color cardColor;
+  final Color primaryBlue;
+  final Color lightBlue;
+  final Color iconBg;
+
+  const _ProcurementCard({
+    required this.item,
+    required this.cardColor,
+    required this.primaryBlue,
+    required this.lightBlue,
+    required this.iconBg,
+  });
+
+  Widget _fieldRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // circular icon
+        Container(
+          height: 36,
+          width: 36,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: lightBlue),
+        ),
+        const SizedBox(width: 10),
+        // label + value
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: primaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? const Color(0xFF1A1A1A),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            height: 44,
-            width: 44,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.local_shipping_rounded,
-              color: iconColor,
-              size: 24,
-            ),
+          _fieldRow(
+            Icons.inventory_2_outlined,
+            "Material Description",
+            item.materialDescription,
           ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 10),
+          Row(
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
+              Expanded(
+                child: _fieldRow(
+                  Icons.production_quantity_limits_outlined,
+                  "TDS Qty",
+                  item.tdsQty,
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF7FA5D1),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _fieldRow(
+                  Icons.calendar_today_outlined,
+                  "CMS Required Date",
+                  item.cmsRequiredDate,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // goodsAtLocationDate shown as a date
+          _fieldRow(
+            Icons.event_available_outlined,
+            "Goods at Location Date",
+            item.goodsAtLocationDate,
+            valueColor: Colors.red,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                label: const Text("Details"),
+                style: TextButton.styleFrom(
+                  foregroundColor: primaryBlue,
+                  textStyle: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -298,21 +322,85 @@ class _DeliveryCard extends StatelessWidget {
   }
 }
 
-class _TimelineItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
+/// Compact card for upcoming deliveries (only description + date)
+class _DeliverySimpleCard extends StatelessWidget {
+  final _DeliverySimple delivery;
+  final Color cardColor;
+  final Color borderColor;
+  final Color iconBg;
+  final Color iconColor;
+  final Color primaryBlue;
 
-  const _TimelineItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
+  const _DeliverySimpleCard({
+    required this.delivery,
+    required this.cardColor,
+    required this.borderColor,
+    required this.iconBg,
+    required this.iconColor,
+    required this.primaryBlue,
   });
-}
 
-class _DeliveryItem {
-  final String title;
-  final String subtitle;
-
-  const _DeliveryItem({required this.title, required this.subtitle});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: cardColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // icon
+          Container(
+            height: 44,
+            width: 44,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.local_shipping_rounded,
+              color: iconColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // material + date
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  delivery.materialDescription,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_month_outlined, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      delivery.goodsAtLocationDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // optional chevron
+          const Icon(Icons.chevron_right_rounded),
+        ],
+      ),
+    );
+  }
 }
