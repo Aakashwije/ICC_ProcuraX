@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'routes/app_routes.dart';
 
-import 'pages/get_started_page.dart';
-import 'pages/procurement_page.dart';
-import 'pages/dashboard_page.dart';
-import 'pages/tasks_page.dart';
-import 'pages/notes_page.dart';
-import 'pages/documents_page.dart';
-import 'pages/build_assist_page.dart';
-import 'pages/communication_page.dart';
-import 'pages/meetings_page.dart';
+import 'pages/get_started/get_started_page.dart';
+import 'pages/procurement/procurement_page.dart';
+import 'pages/dashboard/dashboard_page.dart';
+import 'pages/tasks/tasks_page.dart';
+import 'pages/notes/notes_page.dart';
+import 'pages/documents/documents_page.dart';
+import 'pages/build_assist/build_assist_page.dart';
+import 'pages/communication/communication_page.dart';
+import 'pages/meetings/meetings_page.dart';
 
 void main() {
   runApp(const MyApp());
