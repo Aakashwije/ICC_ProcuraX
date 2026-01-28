@@ -1,5 +1,1 @@
-package com.example.procument_page
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()
+// Deprecated: moved to com.example.procurax.MainActivity
