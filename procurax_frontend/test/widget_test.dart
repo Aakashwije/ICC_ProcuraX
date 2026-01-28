@@ -10,12 +10,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:procurax_frontend/main.dart';
 
 void main() {
-  testWidgets('ProcurementPage smoke test - AppBar title visible', (WidgetTester tester) async {
+  testWidgets('Get Started screen shows title and button', (
+    WidgetTester tester,
+  ) async {
     // Build the app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
     // No need to wait for network Future; title is built synchronously.
-    expect(find.text('Procurement'), findsOneWidget);
-    expect(find.text('Schedule'), findsOneWidget);
+    expect(find.text('ICC ProcuraX'), findsOneWidget);
+    expect(find.text('Get Started'), findsOneWidget);
   });
 }

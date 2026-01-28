@@ -8,6 +8,8 @@ import 'pages/tasks_page.dart';
 import 'pages/notes_page.dart';
 import 'pages/documents_page.dart';
 import 'pages/build_assist_page.dart';
+import 'pages/communication_page.dart';
+import 'pages/meetings_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +33,8 @@ class MyApp extends StatelessWidget {
         AppRoutes.tasks: (context) => const TasksPage(),
         AppRoutes.buildAssist: (context) => const BuildAssistPage(),
         AppRoutes.notes: (context) => const NotesPage(),
+        AppRoutes.communication: (context) => const CommunicationPage(),
+        AppRoutes.meetings: (context) => const MeetingsPage(),
         AppRoutes.documents: (context) => const DocumentsPage(),
       },
     );

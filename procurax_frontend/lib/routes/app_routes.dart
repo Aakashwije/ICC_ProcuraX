@@ -7,5 +7,7 @@ class AppRoutes {
   static const buildAssist = "/build-assist";
   static const tasks = "/tasks";
   static const notes = "/notes";
+  static const communication = "/communication";
+  static const meetings = "/meetings";
   static const documents = "/documents";
 }
