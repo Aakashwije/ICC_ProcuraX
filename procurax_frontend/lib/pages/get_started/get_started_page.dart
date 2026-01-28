@@ -32,15 +32,14 @@ class GetStartedPage extends StatelessWidget {
 
               // ICC Logo Image from assets
               Expanded(
-  child: Center(
-    child: Image.asset(
-      "assets/icc_logo.png",
-      width: MediaQuery.of(context).size.width * 0.9,
-      fit: BoxFit.contain,
-    ),
-  ),
-),
-
+                child: Center(
+                  child: Image.asset(
+                    "assets/icc_logo.png",
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 60),
 

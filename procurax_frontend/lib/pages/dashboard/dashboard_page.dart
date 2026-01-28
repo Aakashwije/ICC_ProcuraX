@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 
-class TasksPage extends StatelessWidget {
-  const TasksPage({super.key});
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1F4CCF);
 
     return Scaffold(
-      drawer: AppDrawer(currentRoute: AppRoutes.tasks),
+      drawer: AppDrawer(currentRoute: AppRoutes.dashboard),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
@@ -32,7 +32,7 @@ class TasksPage extends StatelessWidget {
                   ),
                   const Spacer(),
                   const Text(
-                    "Tasks",
+                    "Dashboard",
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -48,10 +48,7 @@ class TasksPage extends StatelessWidget {
 
               const Expanded(
                 child: Center(
-                  child: Text(
-                    "Tasks",
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: Text("Dashboard", style: TextStyle(fontSize: 20)),
                 ),
               ),
             ],
