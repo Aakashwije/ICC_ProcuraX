@@ -25,48 +25,54 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                 Container(
-  height: 44,
-  width: 44,
-  decoration: BoxDecoration(
-    color: Colors.blue.shade50,
-    borderRadius: BorderRadius.circular(10),
-    border: Border.all(color: const Color(0xFF1F4DF0), width: 1),
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(10),
-    child: Padding(
-      padding: const EdgeInsets.all(6),
-      child: Image.asset(
-        "assets/procurax.png",
-        fit: BoxFit.contain,
-      ),
-    ),
-  ),
-),
-
-
+                  Container(
+                    height: 44,
+                    width: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFF1F4DF0),
+                        width: 1,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Image.asset(
+                          "assets/procurax.png",
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("ProcuuraX",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Color(0xFF1F4DF0))),
-                                
-                        Text("Project Management Hub",
-                            style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(
+                          "ProcuuraX",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1F4DF0),
+                          ),
+                        ),
+
+                        Text(
+                          "Project Management Hub",
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
                       ],
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -80,7 +86,6 @@ class AppDrawer extends StatelessWidget {
               onTap: () => _go(context, AppRoutes.dashboard),
             ),
 
-          
             _DrawerTile(
               title: "Procurement Schedule",
               icon: Icons.shopping_cart_outlined,
@@ -93,6 +98,20 @@ class AppDrawer extends StatelessWidget {
               icon: Icons.note_outlined,
               selected: currentRoute == AppRoutes.notes,
               onTap: () => _go(context, AppRoutes.notes),
+            ),
+
+            _DrawerTile(
+              title: "Communication",
+              icon: Icons.chat_bubble_outline,
+              selected: currentRoute == AppRoutes.communication,
+              onTap: () => _go(context, AppRoutes.communication),
+            ),
+
+            _DrawerTile(
+              title: "Meetings",
+              icon: Icons.event_outlined,
+              selected: currentRoute == AppRoutes.meetings,
+              onTap: () => _go(context, AppRoutes.meetings),
             ),
 
             _DrawerTile(
@@ -109,13 +128,13 @@ class AppDrawer extends StatelessWidget {
               selected: currentRoute == AppRoutes.documents,
               onTap: () => _go(context, AppRoutes.documents),
             ),
-              _DrawerTile(
-                title: "BuildAssist",
-                icon: Icons.support_agent_outlined,
-                badge: "5",
-                selected: currentRoute == AppRoutes.buildAssist,
-                onTap: () => _go(context, AppRoutes.buildAssist),
-              ),
+            _DrawerTile(
+              title: "BuildAssist",
+              icon: Icons.support_agent_outlined,
+              badge: "5",
+              selected: currentRoute == AppRoutes.buildAssist,
+              onTap: () => _go(context, AppRoutes.buildAssist),
+            ),
 
             const Spacer(),
             const Divider(),
@@ -128,20 +147,19 @@ class AppDrawer extends StatelessWidget {
             ),
 
             _DrawerTile(
-  title: "Logout",
-  icon: Icons.logout,
-  color: Colors.red,
-  selected: false,
-  onTap: () {
-    Navigator.pop(context); // close drawer
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.getStarted,
-      (route) => false,
-    );
-  },
-),
-
+              title: "Logout",
+              icon: Icons.logout,
+              color: Colors.red,
+              selected: false,
+              onTap: () {
+                Navigator.pop(context); // close drawer
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.getStarted,
+                  (route) => false,
+                );
+              },
+            ),
           ],
         ),
       ),
