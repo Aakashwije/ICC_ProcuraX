@@ -12,6 +12,8 @@ import 'pages/communication/communication_page.dart';
 import 'pages/meetings/meetings_page.dart';
 import 'pages/sign_in/create_account_page.dart';
 import 'pages/log_in/login_page.dart';
+import 'pages/settings/settings_page.dart';
+import 'pages/notifications/notifications_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,6 +36,8 @@ class MyApp extends StatelessWidget {
         AppRoutes.createAccount: (context) => const CreateAccountPage(),
         AppRoutes.procurement: (context) => const ProcurementSchedulePage(),
         AppRoutes.dashboard: (context) => const DashboardPage(),
+        AppRoutes.settings: (context) => const SettingsPage(),
+        AppRoutes.notifications: (context) => const NotificationsPage(),
         AppRoutes.tasks: (context) => const TasksPage(),
         AppRoutes.buildAssist: (context) => const BuildAssistPage(),
         AppRoutes.notes: (context) => const NotesPage(),

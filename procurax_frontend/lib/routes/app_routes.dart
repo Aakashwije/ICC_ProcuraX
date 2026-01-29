@@ -5,6 +5,8 @@ class AppRoutes {
   static const login = "/login";
   static const createAccount = "/create-account";
   static const dashboard = "/dashboard";
+  static const settings = "/settings";
+  static const notifications = "/notifications";
   static const procurement = "/procurement";
   static const buildAssist = "/build-assist";
   static const tasks = "/tasks";
