@@ -10,6 +10,8 @@ import 'pages/documents/documents_page.dart';
 import 'pages/build_assist/build_assist_page.dart';
 import 'pages/communication/communication_page.dart';
 import 'pages/meetings/meetings_page.dart';
+import 'pages/sign_in/create_account_page.dart';
+import 'pages/log_in/login_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,6 +30,8 @@ class MyApp extends StatelessWidget {
 
       routes: {
         AppRoutes.getStarted: (context) => const GetStartedPage(),
+        AppRoutes.login: (context) => const LoginPage(),
+        AppRoutes.createAccount: (context) => const CreateAccountPage(),
         AppRoutes.procurement: (context) => const ProcurementSchedulePage(),
         AppRoutes.dashboard: (context) => const DashboardPage(),
         AppRoutes.tasks: (context) => const TasksPage(),
