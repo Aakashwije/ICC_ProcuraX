@@ -365,6 +365,26 @@ class _ProcurementCard extends StatelessWidget {
     return Colors.grey;
   }
 
+  Widget _statusBadge(String status) {
+    final color = _statusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -375,10 +395,21 @@ class _ProcurementCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _fieldRow(
-            Icons.inventory_2_outlined,
-            "Material Description",
-            item.materialDescription,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _fieldRow(
+                  Icons.inventory_2_outlined,
+                  "Material Description",
+                  item.materialDescription,
+                ),
+              ),
+              if ((item.status ?? '').isNotEmpty) ...[
+                const SizedBox(width: 10),
+                _statusBadge(item.status!),
+              ],
+            ],
           ),
           const SizedBox(height: 10),
           Row(
@@ -408,24 +439,6 @@ class _ProcurementCard extends StatelessWidget {
             item.goodsAtLocationDate.isEmpty ? "—" : item.goodsAtLocationDate,
             valueColor: Colors.red,
           ),
-          if ((item.status ?? '').isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.info_outline, size: 14, color: Colors.black54),
-                const SizedBox(width: 6),
-                Text(
-                  item.status!,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: _statusColor(item.status),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 8),
         ],
       ),
     );
