@@ -1,0 +1,25 @@
+# =====================
+# Secrets
+# =====================
+**/credentials.json
+.env
+
+# =====================
+# Node
+# =====================
+node_modules/
+**/node_modules/
+
+# =====================
+# Flutter
+# =====================
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# =====================
+# macOS
+# =====================
+.DS_Store
+
