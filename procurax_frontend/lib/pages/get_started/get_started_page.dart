@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 class GetStartedPage extends StatelessWidget {
   const GetStartedPage({super.key});
@@ -87,7 +88,7 @@ class GetStartedPage extends StatelessWidget {
                 height: 62,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, "/procurement");
+                    Navigator.pushReplacementNamed(context, AppRoutes.login);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE8EEFF),
