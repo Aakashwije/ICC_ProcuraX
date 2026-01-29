@@ -352,6 +352,19 @@ class _ProcurementCard extends StatelessWidget {
     );
   }
 
+  Color _statusColor(String? status) {
+    final normalized = (status ?? '').toLowerCase();
+    if (normalized == 'delayed') {
+      return Colors.red;
+    }
+    if (normalized == 'early' ||
+        normalized == 'on time' ||
+        normalized == 'ontime') {
+      return Colors.green;
+    }
+    return Colors.grey;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -395,21 +408,24 @@ class _ProcurementCard extends StatelessWidget {
             item.goodsAtLocationDate.isEmpty ? "—" : item.goodsAtLocationDate,
             valueColor: Colors.red,
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                label: const Text("Details"),
-                style: TextButton.styleFrom(
-                  foregroundColor: primaryBlue,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          if ((item.status ?? '').isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.info_outline, size: 14, color: Colors.black54),
+                const SizedBox(width: 6),
+                Text(
+                  item.status!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _statusColor(item.status),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -436,6 +452,16 @@ class _DeliverySimpleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = delivery.status ?? '';
+    final normalized = status.toLowerCase();
+    final statusColor = normalized == 'delayed'
+        ? Colors.red
+        : (normalized == 'early' ||
+              normalized == 'on time' ||
+              normalized == 'ontime')
+        ? Colors.green
+        : Colors.grey;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
@@ -490,11 +516,20 @@ class _DeliverySimpleCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (status.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          // optional chevron
-          const Icon(Icons.chevron_right_rounded),
         ],
       ),
     );
