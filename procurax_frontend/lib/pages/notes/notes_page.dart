@@ -217,7 +217,7 @@ class _NotesPageState extends State<NotesPage> {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
-                color: neutralText,
+                color: Colors.black,
               ),
             ),
           ],
