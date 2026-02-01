@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'models/note_model.dart';
+import 'package:procurax_frontend/models/note_model.dart';
 
 class NoteAddedPage extends StatelessWidget {
   final Note note;
