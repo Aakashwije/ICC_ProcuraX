@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
-import 'models/note_model.dart';
+import 'package:procurax_frontend/services/notes_service.dart';
+import 'package:procurax_frontend/models/note_model.dart';
 import 'add_note_page.dart';
+import 'edit_note_page.dart';
 import 'note_added_page.dart';
 
 class NotesPage extends StatefulWidget {
@@ -17,7 +19,25 @@ class _NotesPageState extends State<NotesPage> {
   static const Color lightBlue = Color(0xFFEAF1FF);
   static const Color neutralText = Color(0xFF6B7280);
 
-  final List<Note> notes = [];
+  late Future<List<Note>> _notesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesFuture = NotesService.fetchNotes();
+  }
+
+  Future<void> _refreshNotes() async {
+    setState(() {
+      _notesFuture = NotesService.fetchNotes();
+    });
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   Future<void> _addNote() async {
     final note = await Navigator.push<Note>(
@@ -28,13 +48,68 @@ class _NotesPageState extends State<NotesPage> {
     if (!mounted) return;
 
     if (note != null) {
-      setState(() => notes.add(note));
+      try {
+        final created = await NotesService.createNote(note);
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => NoteAddedPage(note: created)),
+        );
+        if (!mounted) return;
+        await _refreshNotes();
+      } catch (err) {
+        if (!mounted) return;
+        _showError(err.toString());
+      }
+    }
+  }
 
+  Future<void> _editNote(Note note) async {
+    final updated = await Navigator.push<Note>(
+      context,
+      MaterialPageRoute(builder: (_) => EditNotePage(note: note)),
+    );
+
+    if (!mounted || updated == null) return;
+
+    try {
+      await NotesService.updateNote(updated);
       if (!mounted) return;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => NoteAddedPage(note: note)),
-      );
+      await _refreshNotes();
+    } catch (err) {
+      if (!mounted) return;
+      _showError(err.toString());
+    }
+  }
+
+  Future<void> _deleteNote(Note note) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete note"),
+        content: const Text("Are you sure you want to delete this note?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirm != true) return;
+
+    try {
+      await NotesService.deleteNote(note.id);
+      if (!mounted) return;
+      await _refreshNotes();
+    } catch (err) {
+      if (!mounted) return;
+      _showError(err.toString());
     }
   }
 
@@ -93,12 +168,31 @@ class _NotesPageState extends State<NotesPage> {
               _searchBar(),
               const SizedBox(height: 18),
               Expanded(
-                child: notes.isEmpty
-                    ? _emptyState()
-                    : ListView.builder(
+                child: FutureBuilder<List<Note>>(
+                  future: _notesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          "Failed to load notes",
+                          style: const TextStyle(fontFamily: 'Poppins'),
+                        ),
+                      );
+                    }
+                    final notes = snapshot.data ?? [];
+                    if (notes.isEmpty) return _emptyState();
+                    return RefreshIndicator(
+                      onRefresh: _refreshNotes,
+                      child: ListView.builder(
                         itemCount: notes.length,
                         itemBuilder: (_, i) => _noteCard(notes[i]),
                       ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -132,13 +226,29 @@ class _NotesPageState extends State<NotesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            note.title,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  note.title,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => _editNote(note),
+                icon: const Icon(Icons.edit_outlined, color: primaryBlue),
+                tooltip: "Edit",
+              ),
+              IconButton(
+                onPressed: () => _deleteNote(note),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: "Delete",
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
