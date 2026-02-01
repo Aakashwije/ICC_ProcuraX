@@ -124,13 +124,13 @@ class _DashboardPageState extends State<DashboardPage> {
                             children: [
                               _infoRow(
                                 icon: Icons.calendar_today_outlined,
-                                title: "Project Alpha Team Meeting",
+                                title: "Meeting with IIT Rathmalana Team",
                                 subtitle: "10:00 A.M – 11:00 A.M",
                               ),
                               const SizedBox(height: 12),
                               _infoRow(
                                 icon: Icons.calendar_today_outlined,
-                                title: "Vendor Sync – Phase 2",
+                                title: "Weekly GM's Meeting",
                                 subtitle: "02:00 P.M – 02:30 P.M",
                               ),
                             ],
@@ -152,13 +152,15 @@ class _DashboardPageState extends State<DashboardPage> {
                             children: [
                               _infoRow(
                                 icon: Icons.warning_amber_outlined,
-                                title: "Review & Approve Alpha Budget",
+                                title:
+                                    "Review & Approve IIT Rathmalana Weekly Budget",
                                 subtitle: "Due: July 05, 2025",
                               ),
                               const SizedBox(height: 12),
                               _infoRow(
                                 icon: Icons.warning_amber_outlined,
-                                title: "Finalize Site Safety Checklist",
+                                title:
+                                    "Finalize Site Safety Checklist for IIT Rathmalana",
                                 subtitle: "Due: July 06, 2025",
                               ),
                             ],
