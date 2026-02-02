@@ -13,6 +13,14 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+<<<<<<< Updated upstream
     "googleapis": "^169.0.0"
+=======
+    "firebase-admin": "^13.6.0",
+    "googleapis": "^169.0.0",
+    "mongoose": "^8.12.1",
+    "multer": "^2.0.2",
+    "uuid": "^13.0.0"
+>>>>>>> Stashed changes
   }
 }
