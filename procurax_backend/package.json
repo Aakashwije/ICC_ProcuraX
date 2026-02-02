@@ -16,6 +16,18 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "googleapis": "^169.0.0",
+<<<<<<< Updated upstream
     "mongoose": "^8.12.1"
+=======
+    "mongoose": "^8.12.1",
+    "multer": "^2.0.2",
+    "uuid": "^13.0.0"
+  },
+  "overrides": {
+    "mongodb-connection-string-url": {
+      "whatwg-url": "^14.1.0"
+    },
+    "whatwg-url": "^14.1.0"
+>>>>>>> Stashed changes
   }
 }

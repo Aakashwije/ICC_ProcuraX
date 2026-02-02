@@ -1,12 +1,25 @@
 // procurax_backend/app.js
+import "./config/env.js";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
 
+<<<<<<< Updated upstream
 dotenv.config();
+=======
+// ===== COMMUNICATION MODULES =====
+import userRoutes from "./communication/routes/userRoutes.js";
+import callRoutes from "./communication/routes/callRoutes.js";
+import chatRoutes from "./communication/routes/chatRoutes.js";
+import fileRoutes from "./communication/routes/fileRoutes.js";
+import messageRoutes from "./communication/routes/messageRoutes.js";
+import alertsRoutes from "./communication/routes/alertsRoutes.js";
+import presenceRoutes from "./communication/routes/presenceRoutes.js";
+import typingRoutes from "./communication/routes/typingRoutes.js";
+// =================================
+>>>>>>> Stashed changes
 
 const app = express();
 app.use(cors());
