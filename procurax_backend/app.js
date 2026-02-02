@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
 
-// ===== COMMUNICATION MODULES (ES6) =====
+// ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
 import callRoutes from "./communication/routes/callRoutes.js";
 import chatRoutes from "./communication/routes/chatRoutes.js";
@@ -17,8 +17,7 @@ import messageRoutes from "./communication/routes/messageRoutes.js";
 import alertsRoutes from "./communication/routes/alertsRoutes.js";
 import presenceRoutes from "./communication/routes/presenceRoutes.js";
 import typingRoutes from "./communication/routes/typingRoutes.js";
-
-// =============================================
+// =================================
 
 dotenv.config();
 
@@ -28,6 +27,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// MongoDB Connection
 const mongoUri =
 	process.env.MONGODB_URI ||
 	process.env.MONGO_URI ||
@@ -40,6 +40,7 @@ mongoose
 		console.error("MongoDB connection error:", err);
 	});
 
+// Global process handlers
 process.on("unhandledRejection", (err) => {
 	console.error("Unhandled rejection:", err);
 });
@@ -49,11 +50,11 @@ process.on("uncaughtException", (err) => {
 	process.exit(1);
 });
 
-// ===== EXISTING ROUTES =====
+// ===== EXISTING CORE ROUTES =====
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
 
-// ===== COMMUNICATION ROUTES =====
+// ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);
 app.use("/api/calls", callRoutes);
 app.use("/api/chats", chatRoutes);
@@ -62,12 +63,12 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/alerts", alertsRoutes);
 app.use("/api/presence", presenceRoutes);
 app.use("/api/typing", typingRoutes);
-// ================================================
+// =======================================
 
 // Basic health route
 app.get("/", (req, res) => res.send("ProcuraX backend running"));
 
-// Handle 404
+// Handle unknown routes
 app.use((req, res) => {
 	res.status(404).json({ error: "Route not found" });
 });
@@ -78,6 +79,7 @@ app.use((err, req, res, next) => {
 	res.status(500).json({ error: "Internal Server Error" });
 });
 
+// Start server
 const port = process.env.PORT || 3000;
 console.log("Starting ProcuraX backend...");
 
