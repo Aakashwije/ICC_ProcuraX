@@ -101,6 +101,13 @@ class AppDrawer extends StatelessWidget {
             ),
 
             _DrawerTile(
+              title: "Notifications",
+              icon: Icons.notifications_none,
+              selected: currentRoute == AppRoutes.notifications,
+              onTap: () => _go(context, AppRoutes.notifications),
+            ),
+
+            _DrawerTile(
               title: "Communication",
               icon: Icons.chat_bubble_outline,
               selected: currentRoute == AppRoutes.communication,
