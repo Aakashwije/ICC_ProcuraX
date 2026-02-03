@@ -68,11 +68,7 @@ class _EditNotePageState extends State<EditNotePage> {
             Expanded(
               child: ListView(
                 children: [
-                  _field(
-                    "Note Title",
-                    _title,
-                    icon: Icons.title_rounded,
-                  ),
+                  _field("Note Title", _title, icon: Icons.title_rounded),
                   const SizedBox(height: 12),
                   _field(
                     "Edit your note...",
@@ -132,10 +128,7 @@ class _EditNotePageState extends State<EditNotePage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.sticky_note_2_outlined,
-              color: primaryBlue,
-            ),
+            child: const Icon(Icons.sticky_note_2_outlined, color: primaryBlue),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -202,10 +195,7 @@ class _EditNotePageState extends State<EditNotePage> {
               .map(
                 (e) => DropdownMenuItem(
                   value: e,
-                  child: Text(
-                    e,
-                    style: const TextStyle(fontFamily: 'Poppins'),
-                  ),
+                  child: Text(e, style: const TextStyle(fontFamily: 'Poppins')),
                 ),
               )
               .toList(),

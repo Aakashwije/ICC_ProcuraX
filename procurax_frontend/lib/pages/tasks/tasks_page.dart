@@ -18,6 +18,7 @@ class TasksPage extends StatefulWidget {
 class _TasksPageState extends State<TasksPage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
+  static const Color neutralText = Color(0xFF6B7280);
 
   final TasksService _tasksService = TasksService();
   final List<Task> tasks = [];
@@ -148,8 +149,7 @@ class _TasksPageState extends State<TasksPage> {
     final q = _query.toLowerCase();
     return filtered.where((t) {
       return t.title.toLowerCase().contains(q) ||
-          t.description.toLowerCase().contains(q) ||
-          t.assignee.toLowerCase().contains(q);
+          t.description.toLowerCase().contains(q);
     }).toList();
   }
 
@@ -160,8 +160,7 @@ class _TasksPageState extends State<TasksPage> {
     final q = _query.toLowerCase();
     return filtered.where((t) {
       return t.title.toLowerCase().contains(q) ||
-          t.description.toLowerCase().contains(q) ||
-          t.assignee.toLowerCase().contains(q);
+          t.description.toLowerCase().contains(q);
     }).toList();
   }
 
@@ -180,35 +179,70 @@ class _TasksPageState extends State<TasksPage> {
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             child: Column(
               children: [
-                // ================= TOP ROW (Menu + Center Title) =================
-                Row(
-                  children: [
-                    Builder(
-                      builder: (context) => IconButton(
-                        onPressed: () => Scaffold.of(context).openDrawer(),
-                        icon: const Icon(
-                          Icons.menu_rounded,
-                          size: 30,
-                          color: primaryBlue,
+                SizedBox(
+                  height: 44,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Builder(
+                          builder: (context) => IconButton(
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              size: 30,
+                              color: primaryBlue,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    const Text(
-                      "Tasks",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: primaryBlue,
-                        fontFamily: 'Poppins',
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.task_alt_rounded, color: primaryBlue),
+                          SizedBox(width: 8),
+                          Text(
+                            "Tasks",
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: primaryBlue,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    const SizedBox(width: 48), // balance spacing
-                  ],
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.notifications_active_outlined,
+                              color: primaryBlue,
+                            ),
+                            SizedBox(width: 12),
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: lightBlue,
+                              child: Text(
+                                "AK",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: primaryBlue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
 
                 TabBar(
                   labelColor: primaryBlue,
@@ -249,10 +283,18 @@ class _TasksPageState extends State<TasksPage> {
           ),
         ),
 
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: FloatingActionButton.extended(
           onPressed: _addTask,
           backgroundColor: primaryBlue,
-          child: const Icon(Icons.add),
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_task_rounded),
+          label: const Text(
+            "New Task",
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
@@ -294,18 +336,26 @@ class _TasksPageState extends State<TasksPage> {
 
   Widget _searchBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: lightBlue,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: TextField(
         onChanged: (v) => setState(() => _query = v),
         decoration: const InputDecoration(
           hintText: "Search",
           border: InputBorder.none,
-          prefixIcon: Icon(Icons.search),
-          suffixIcon: Icon(Icons.mic),
+          prefixIcon: Icon(Icons.search_rounded),
+          suffixIcon: Icon(Icons.keyboard_voice_outlined),
         ),
       ),
     );
@@ -335,7 +385,7 @@ class _TasksPageState extends State<TasksPage> {
           ),
           const SizedBox(height: 6),
           const Text(
-            "Tap + to create your first task",
+            "Tap New Task to create your first task",
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 12,
@@ -371,10 +421,18 @@ class _TasksPageState extends State<TasksPage> {
   Widget _taskCard(Task task, {bool showRestore = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: lightBlue,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,8 +447,20 @@ class _TasksPageState extends State<TasksPage> {
               ),
               const SizedBox(width: 4),
 
-              const Icon(Icons.assignment_outlined),
-              const SizedBox(width: 8),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: lightBlue,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.assignment_outlined,
+                  color: primaryBlue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   task.title,
@@ -475,24 +545,14 @@ class _TasksPageState extends State<TasksPage> {
           ),
 
           const SizedBox(height: 6),
-          Text(task.description, style: const TextStyle(fontSize: 13)),
-
-          const SizedBox(height: 10),
-
-          Row(
-            children: [
-              const Icon(Icons.person_outline, size: 16),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  task.assignee.isEmpty ? "Unassigned" : task.assignee,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
+          Text(
+            task.description,
+            style: const TextStyle(
+              fontSize: 13,
+              fontFamily: 'Poppins',
+              color: neutralText,
+            ),
           ),
-
-          const SizedBox(height: 6),
 
           Row(
             children: [
@@ -502,7 +562,7 @@ class _TasksPageState extends State<TasksPage> {
                 task.dueDate == null
                     ? "No due date"
                     : "${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}",
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 12, color: neutralText),
               ),
             ],
           ),
@@ -517,19 +577,6 @@ class _TasksPageState extends State<TasksPage> {
             ],
           ),
 
-          if (task.tags.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: -6,
-              children: task.tags
-                  .map(
-                    (tag) =>
-                        Chip(label: Text(tag), backgroundColor: Colors.white),
-                  )
-                  .toList(),
-            ),
-          ],
         ],
       ),
     );
