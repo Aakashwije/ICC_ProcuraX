@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/task_model.dart';
+import 'package:procurax_frontend/services/tasks_service.dart';
 
 class EditTaskPage extends StatefulWidget {
   final Task task;
@@ -16,34 +17,59 @@ class _EditTaskPageState extends State<EditTaskPage> {
 
   late TextEditingController _titleController;
   late TextEditingController _descController;
+  late TextEditingController _assigneeController;
+  late TextEditingController _tagsController;
   late TaskPriority _priority;
-  late DateTime _deadline;
+  late TaskStatus _status;
+  DateTime? _deadline;
+  bool _saving = false;
+
+  final TasksService _tasksService = TasksService();
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.task.title);
     _descController = TextEditingController(text: widget.task.description);
+    _assigneeController = TextEditingController(text: widget.task.assignee);
+    _tagsController = TextEditingController(text: widget.task.tags.join(", "));
     _priority = widget.task.priority;
-    _deadline = widget.task.deadline;
+    _status = widget.task.status;
+    _deadline = widget.task.dueDate;
   }
 
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
     if (_titleController.text.trim().isEmpty) return;
 
-    final updatedTask = Task(
-      id: widget.task.id,
+    setState(() => _saving = true);
+
+    final updatedTask = widget.task.copyWith(
       title: _titleController.text.trim(),
       description: _descController.text.trim(),
-      location: widget.task.location,
-      city: widget.task.city,
-      deadline: _deadline,
+      status: _status,
       priority: _priority,
-      assignedTo: widget.task.assignedTo,
-      completed: widget.task.completed,
+      dueDate: _deadline,
+      assignee: _assigneeController.text.trim(),
+      tags: _tagsController.text
+          .split(",")
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList(),
     );
 
-    Navigator.pop(context, updatedTask);
+    try {
+      final saved = await _tasksService.updateTask(updatedTask);
+      if (!mounted) return;
+      Navigator.pop(context, saved);
+    } catch (err) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update task: $err')),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() => _saving = false);
+    }
   }
 
   @override
@@ -66,6 +92,14 @@ class _EditTaskPageState extends State<EditTaskPage> {
 
             _inputField("Description", _descController, maxLines: 4),
 
+            const SizedBox(height: 12),
+
+            _inputField("Assignee", _assigneeController),
+
+            const SizedBox(height: 12),
+
+            _inputField("Tags (comma separated)", _tagsController),
+
             const SizedBox(height: 16),
 
             // Deadline
@@ -77,7 +111,7 @@ class _EditTaskPageState extends State<EditTaskPage> {
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: _deadline,
+                      initialDate: _deadline ?? DateTime.now(),
                       firstDate: DateTime.now(),
                       lastDate: DateTime(2100),
                     );
@@ -86,7 +120,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
                     }
                   },
                   child: Text(
-                    "${_deadline.day}/${_deadline.month}/${_deadline.year}",
+                    _deadline == null
+                        ? "Select date"
+                        : "${_deadline!.day}/${_deadline!.month}/${_deadline!.year}",
                     style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
                   ),
                 ),
@@ -114,18 +150,57 @@ class _EditTaskPageState extends State<EditTaskPage> {
               }).toList(),
             ),
 
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                const Icon(Icons.flag_outlined, color: primaryBlue),
+                const SizedBox(width: 8),
+                DropdownButton<TaskStatus>(
+                  value: _status,
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _status = value);
+                  },
+                  items: const [
+                    DropdownMenuItem(
+                      value: TaskStatus.todo,
+                      child: Text("To do"),
+                    ),
+                    DropdownMenuItem(
+                      value: TaskStatus.inProgress,
+                      child: Text("In progress"),
+                    ),
+                    DropdownMenuItem(
+                      value: TaskStatus.blocked,
+                      child: Text("Blocked"),
+                    ),
+                    DropdownMenuItem(
+                      value: TaskStatus.done,
+                      child: Text("Done"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
             const Spacer(),
 
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: _saveChanges,
+                onPressed: _saving ? null : _saveChanges,
                 icon: const Icon(Icons.save),
-                label: const Text(
-                  "Save Changes",
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 16),
-                ),
+                label: _saving
+                    ? const Text(
+                        "Saving...",
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16),
+                      )
+                    : const Text(
+                        "Save Changes",
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16),
+                      ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   shape: RoundedRectangleBorder(

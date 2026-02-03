@@ -76,14 +76,21 @@ export const createTask = async (req, res) => {
 };
 
 export const getTasks = async (req, res) => {
+  const archivedOnly = req.query.archived === "true";
   try {
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
-      return res.json(list.map(normalizeTask));
+      const filtered = list.filter((item) =>
+        archivedOnly ? item.isArchived : !item.isArchived
+      );
+      return res.json(filtered.map(normalizeTask));
     }
 
-    const tasks = await Task.find({ owner: req.userId, isArchived: false }).sort({ createdAt: -1 });
+    const tasks = await Task.find({
+      owner: req.userId,
+      isArchived: archivedOnly ? true : false,
+    }).sort({ createdAt: -1 });
     res.json(tasks.map(normalizeTask));
   } catch (err) {
     console.error("Fetch tasks failed:", err);
@@ -196,6 +203,47 @@ export const archiveTask = async (req, res) => {
   } catch (err) {
     console.error("Archive task failed:", err);
     res.status(500).json({ message: "Failed to archive task" });
+  }
+};
+
+export const restoreTask = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ message: "Invalid task id" });
+  }
+
+  try {
+    if (useInMemory()) {
+      const ownerKey = getOwnerKey(req);
+      const list = inMemoryStore.get(ownerKey) ?? [];
+      const index = list.findIndex((item) => item._id.toString() === req.params.id);
+      if (index < 0) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      const existing = list[index];
+      const updated = {
+        ...existing,
+        isArchived: false,
+        updatedAt: new Date(),
+      };
+      list[index] = updated;
+      inMemoryStore.set(ownerKey, list);
+      return res.json(normalizeTask(updated));
+    }
+
+    const task = await Task.findOneAndUpdate(
+      { _id: req.params.id, owner: req.userId },
+      { isArchived: false },
+      { new: true }
+    );
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json(normalizeTask(task));
+  } catch (err) {
+    console.error("Restore task failed:", err);
+    res.status(500).json({ message: "Failed to restore task" });
   }
 };
 
