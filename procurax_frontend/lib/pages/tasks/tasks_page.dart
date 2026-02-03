@@ -147,9 +147,9 @@ class _TasksPageState extends State<TasksPage> {
 
     final q = _query.toLowerCase();
     return filtered.where((t) {
-    return t.title.toLowerCase().contains(q) ||
-      t.description.toLowerCase().contains(q) ||
-      t.assignee.toLowerCase().contains(q);
+      return t.title.toLowerCase().contains(q) ||
+          t.description.toLowerCase().contains(q) ||
+          t.assignee.toLowerCase().contains(q);
     }).toList();
   }
 
@@ -173,87 +173,87 @@ class _TasksPageState extends State<TasksPage> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-      drawer: AppDrawer(currentRoute: AppRoutes.tasks),
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-          child: Column(
-            children: [
-              // ================= TOP ROW (Menu + Center Title) =================
-              Row(
-                children: [
-                  Builder(
-                    builder: (context) => IconButton(
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      icon: const Icon(
-                        Icons.menu_rounded,
-                        size: 30,
-                        color: primaryBlue,
+        drawer: AppDrawer(currentRoute: AppRoutes.tasks),
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            child: Column(
+              children: [
+                // ================= TOP ROW (Menu + Center Title) =================
+                Row(
+                  children: [
+                    Builder(
+                      builder: (context) => IconButton(
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        icon: const Icon(
+                          Icons.menu_rounded,
+                          size: 30,
+                          color: primaryBlue,
+                        ),
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  const Text(
-                    "Tasks",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: primaryBlue,
-                      fontFamily: 'Poppins',
+                    const Spacer(),
+                    const Text(
+                      "Tasks",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: primaryBlue,
+                        fontFamily: 'Poppins',
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 48), // balance spacing
-                ],
-              ),
+                    const Spacer(),
+                    const SizedBox(width: 48), // balance spacing
+                  ],
+                ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              TabBar(
-                labelColor: primaryBlue,
-                unselectedLabelColor: Colors.black54,
-                indicatorColor: primaryBlue,
-                tabs: const [
-                  Tab(text: "Tasks"),
-                  Tab(text: "Archived"),
-                ],
-              ),
+                TabBar(
+                  labelColor: primaryBlue,
+                  unselectedLabelColor: Colors.black54,
+                  indicatorColor: primaryBlue,
+                  tabs: const [
+                    Tab(text: "Tasks"),
+                    Tab(text: "Archived"),
+                  ],
+                ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // ================= BODY =================
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : (_errorMessage != null
-                        ? Center(child: Text(_errorMessage!))
-                        : TabBarView(
-                            children: [
-                              _taskListView(
-                                visibleTasks,
-                                showFilters: true,
-                                emptyLabel: "No tasks available",
-                              ),
-                              _taskListView(
-                                visibleArchivedTasks,
-                                showFilters: false,
-                                emptyLabel: "No archived tasks",
-                                showRestore: true,
-                              ),
-                            ],
-                          )),
-              ),
-            ],
+                // ================= BODY =================
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : (_errorMessage != null
+                            ? Center(child: Text(_errorMessage!))
+                            : TabBarView(
+                                children: [
+                                  _taskListView(
+                                    visibleTasks,
+                                    showFilters: true,
+                                    emptyLabel: "No tasks available",
+                                  ),
+                                  _taskListView(
+                                    visibleArchivedTasks,
+                                    showFilters: false,
+                                    emptyLabel: "No archived tasks",
+                                    showRestore: true,
+                                  ),
+                                ],
+                              )),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTask,
-        backgroundColor: primaryBlue,
-        child: const Icon(Icons.add),
-      ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _addTask,
+          backgroundColor: primaryBlue,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -284,10 +284,8 @@ class _TasksPageState extends State<TasksPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: visibleTasks.length,
-            itemBuilder: (_, i) => _taskCard(
-              visibleTasks[i],
-              showRestore: showRestore,
-            ),
+            itemBuilder: (_, i) =>
+                _taskCard(visibleTasks[i], showRestore: showRestore),
           ),
         ],
       ),
@@ -370,7 +368,6 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
-
   Widget _taskCard(Task task, {bool showRestore = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -434,7 +431,9 @@ class _TasksPageState extends State<TasksPage> {
                     final index = tasks.indexWhere((t) => t.id == task.id);
                     if (index == -1) return;
                     final backup = tasks[index];
-                    setState(() => tasks[index] = task.copyWith(isArchived: true));
+                    setState(
+                      () => tasks[index] = task.copyWith(isArchived: true),
+                    );
                     try {
                       await _tasksService.archiveTask(task.id);
                       await _loadTasks();
@@ -457,9 +456,15 @@ class _TasksPageState extends State<TasksPage> {
                   if (!showRestore)
                     const PopupMenuItem(value: "edit", child: Text("Edit")),
                   if (!showRestore)
-                    const PopupMenuItem(value: "archive", child: Text("Archive")),
+                    const PopupMenuItem(
+                      value: "archive",
+                      child: Text("Archive"),
+                    ),
                   if (showRestore)
-                    const PopupMenuItem(value: "restore", child: Text("Restore")),
+                    const PopupMenuItem(
+                      value: "restore",
+                      child: Text("Restore"),
+                    ),
                   const PopupMenuItem(
                     value: "delete",
                     child: Text("Delete", style: TextStyle(color: Colors.red)),
@@ -519,10 +524,8 @@ class _TasksPageState extends State<TasksPage> {
               runSpacing: -6,
               children: task.tags
                   .map(
-                    (tag) => Chip(
-                      label: Text(tag),
-                      backgroundColor: Colors.white,
-                    ),
+                    (tag) =>
+                        Chip(label: Text(tag), backgroundColor: Colors.white),
                   )
                   .toList(),
             ),
@@ -531,7 +534,6 @@ class _TasksPageState extends State<TasksPage> {
       ),
     );
   }
-
 }
 
 class _StatusChip extends StatelessWidget {

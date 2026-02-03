@@ -141,23 +141,44 @@ class _NotesPageState extends State<NotesPage> {
                         ),
                       ),
                     ),
-                    const Text(
-                      "Notes",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: primaryBlue,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.sticky_note_2_outlined, color: primaryBlue),
+                        SizedBox(width: 8),
+                        Text(
+                          "Notes",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: primaryBlue,
+                          ),
+                        ),
+                      ],
                     ),
                     Align(
                       alignment: Alignment.centerRight,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.notifications_none, color: primaryBlue),
+                          Icon(
+                            Icons.notifications_active_outlined,
+                            color: primaryBlue,
+                          ),
                           SizedBox(width: 12),
-                          CircleAvatar(radius: 14, child: Text("AK")),
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: lightBlue,
+                            child: Text(
+                              "AK",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: primaryBlue,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -199,10 +220,15 @@ class _NotesPageState extends State<NotesPage> {
         ),
       ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _addNote,
         backgroundColor: primaryBlue,
-        child: const Icon(Icons.add),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.edit_note_rounded),
+        label: const Text(
+          "New Note",
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -210,16 +236,16 @@ class _NotesPageState extends State<NotesPage> {
   Widget _noteCard(Note note) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: lightBlue,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -227,44 +253,77 @@ class _NotesPageState extends State<NotesPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  note.title,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: lightBlue,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.sticky_note_2_outlined,
+                  color: primaryBlue,
                 ),
               ),
-              IconButton(
-                onPressed: () => _editNote(note),
-                icon: const Icon(Icons.edit_outlined, color: primaryBlue),
-                tooltip: "Edit",
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      note.title,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      note.content,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        color: neutralText,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              IconButton(
-                onPressed: () => _deleteNote(note),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                tooltip: "Delete",
+              Column(
+                children: [
+                  IconButton(
+                    onPressed: () => _editNote(note),
+                    icon: const Icon(
+                      Icons.edit_note_outlined,
+                      color: primaryBlue,
+                    ),
+                    tooltip: "Edit",
+                  ),
+                  IconButton(
+                    onPressed: () => _deleteNote(note),
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: "Delete",
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            note.content,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontFamily: 'Poppins'),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               _tagBadge(note.tag),
+              const SizedBox(width: 8),
+              if (note.hasAttachment)
+                _metaBadge(icon: Icons.attach_file, label: "Attachment"),
               const Spacer(),
-              Text(
-                "${note.createdAt.hour.toString().padLeft(2, '0')}:${note.createdAt.minute.toString().padLeft(2, '0')}",
-                style: const TextStyle(fontSize: 12, color: neutralText),
+              _metaBadge(
+                icon: Icons.access_time_rounded,
+                label:
+                    "${note.createdAt.hour.toString().padLeft(2, '0')}:${note.createdAt.minute.toString().padLeft(2, '0')}",
               ),
             ],
           ),
@@ -275,14 +334,22 @@ class _NotesPageState extends State<NotesPage> {
 
   Widget _searchBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: lightBlue,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: const [
-          Icon(Icons.search_outlined, color: neutralText),
+          Icon(Icons.search_rounded, color: neutralText),
           SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -292,7 +359,7 @@ class _NotesPageState extends State<NotesPage> {
               ),
             ),
           ),
-          Icon(Icons.mic_none_outlined, color: neutralText),
+          Icon(Icons.keyboard_voice_outlined, color: neutralText),
         ],
       ),
     );
@@ -323,7 +390,7 @@ class _NotesPageState extends State<NotesPage> {
             ),
             SizedBox(height: 6),
             Text(
-              "Tap + to create your first note",
+              "Tap New Note to create your first note",
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
@@ -352,6 +419,31 @@ class _NotesPageState extends State<NotesPage> {
       child: Text(
         tag,
         style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: color),
+      ),
+    );
+  }
+
+  Widget _metaBadge({required IconData icon, required String label}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: lightBlue.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: neutralText),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 11,
+              color: neutralText,
+            ),
+          ),
+        ],
       ),
     );
   }

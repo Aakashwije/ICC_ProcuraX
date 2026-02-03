@@ -63,9 +63,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
       Navigator.pop(context, saved);
     } catch (err) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update task: $err')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update task: $err')));
     } finally {
       if (!mounted) return;
       setState(() => _saving = false);
