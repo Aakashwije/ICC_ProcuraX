@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 class ApiService {
   // Update this base URL if the backend host changes.
   static String get baseUrl {
+    const override = String.fromEnvironment("API_BASE_URL");
+    if (override.isNotEmpty) {
+      return override;
+    }
     if (kIsWeb) {
       return "http://localhost:3000";
     }
