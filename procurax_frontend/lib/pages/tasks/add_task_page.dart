@@ -51,9 +51,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
       Navigator.pop(context, created);
     } catch (err) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save task: $err')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save task: $err')));
     } finally {
       if (!mounted) return;
       setState(() => _saving = false);
