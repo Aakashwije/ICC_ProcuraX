@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 // Existing modules
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
+import tasksRoutes from "./tasks/tasks.routes.js";
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
@@ -50,6 +51,7 @@ process.on("uncaughtException", (err) => {
 // ===== EXISTING CORE ROUTES =====
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
+app.use("/api/tasks", tasksRoutes);
 
 // ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);
