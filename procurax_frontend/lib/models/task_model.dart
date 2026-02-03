@@ -126,23 +126,23 @@ class Task {
   }
 
   Map<String, dynamic> toCreateJson() => {
-        "title": title,
-        "description": description,
-        "status": _statusToJson(status),
-        "priority": _priorityToJson(priority),
-        "dueDate": dueDate?.toIso8601String(),
-        "assignee": assignee,
-        "tags": tags,
-      };
+    "title": title,
+    "description": description,
+    "status": _statusToJson(status),
+    "priority": _priorityToJson(priority),
+    "dueDate": dueDate?.toIso8601String(),
+    "assignee": assignee,
+    "tags": tags,
+  };
 
   Map<String, dynamic> toUpdateJson() => {
-        "title": title,
-        "description": description,
-        "status": _statusToJson(status),
-        "priority": _priorityToJson(priority),
-        "dueDate": dueDate?.toIso8601String(),
-        "assignee": assignee,
-        "tags": tags,
-        "isArchived": isArchived,
-      };
+    "title": title,
+    "description": description,
+    "status": _statusToJson(status),
+    "priority": _priorityToJson(priority),
+    "dueDate": dueDate?.toIso8601String(),
+    "assignee": assignee,
+    "tags": tags,
+    "isArchived": isArchived,
+  };
 }
