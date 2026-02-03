@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/chat_service.dart';
 
@@ -80,70 +79,66 @@ class _AlertsScreenState extends State<AlertsScreen> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : alerts.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No alerts at the moment',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
+          ? const Center(
+              child: Text(
+                'No alerts at the moment',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: alerts.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final alert = alerts[index];
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 221, 217, 217),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: alert['isRead'] == true
+                          ? Colors.grey.shade300
+                          : Colors.red.shade100,
+                      child: Icon(
+                        Icons.notifications,
+                        color: alert['isRead'] == true
+                            ? Colors.grey
+                            : Colors.red,
+                      ),
+                    ),
+                    title: Text(
+                      alert['title'] ?? 'New message',
+                      style: TextStyle(
+                        fontWeight: alert['isRead'] == true
+                            ? FontWeight.normal
+                            : FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _formatAlertTime(alert['createdAt']),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: alerts.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final alert = alerts[index];
-
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 221, 217, 217),
-                        borderRadius: BorderRadius.circular(30), // pill shape
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        leading: CircleAvatar(
-                          backgroundColor: alert['isRead'] == true
-                              ? Colors.grey.shade300
-                              : Colors.red.shade100,
-                          child: Icon(
-                            Icons.notifications,
-                            color: alert['isRead'] == true
-                                ? Colors.grey
-                                : Colors.red,
-                          ),
-                        ),
-                        title: Text(
-                          alert['title'] ?? 'New message',
-                          style: TextStyle(
-                            fontWeight: alert['isRead'] == true
-                                ? FontWeight.normal
-                                : FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _formatAlertTime(alert['createdAt']),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                );
+              },
+            ),
     );
   }
 }
-

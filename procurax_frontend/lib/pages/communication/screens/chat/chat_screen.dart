@@ -14,7 +14,6 @@ class ChatScreen extends StatefulWidget {
   final String currentUserId;
   final String otherUserId;
   final VoidCallback? onChatRead;
-
   final String userName;
   final String userRole;
   final String avatarUrl;
@@ -41,8 +40,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ChatService _chatService = ChatService();
 
-  bool isUserTyping = false; //for send button
-  bool isOtherTyping = false; //for typing other 
+  bool isUserTyping = false;
+  bool isOtherTyping = false;
   bool isOtherOnline = false;
   bool _lastSentTyping = false;
   Timer? _typingDebounce;
@@ -53,7 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<Message> messages = [];
   bool loading = true;
   String? loadError;
-  
+
   @override
   void initState() {
     super.initState();
@@ -249,7 +248,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Message Input
   Widget _buildMessageInput() {
     return SafeArea(
       top: false,
@@ -257,7 +255,6 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Row(
           children: [
-            // Input field
             Expanded(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -278,7 +275,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         controller: _textController,
                         keyboardType: TextInputType.text,
                         decoration: const InputDecoration(
-                          hintText: "Type a message",
+                          hintText: 'Type a message',
                           border: InputBorder.none,
                         ),
                         textCapitalization: TextCapitalization.sentences,
@@ -295,19 +292,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
             ),
-
             const SizedBox(width: 10),
-
-            // Send button
             Container(
               height: 46,
               width: 46,
               decoration: BoxDecoration(
-                color: isUserTyping
-                    ? AppColours.primary
-                    : Colors.grey.shade400,
+                color: isUserTyping ? AppColours.primary : Colors.grey.shade400,
                 shape: BoxShape.circle,
-                
               ),
               child: IconButton(
                 icon: const Icon(Icons.send, color: Colors.white, size: 20),
@@ -327,9 +318,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final time = TimeOfDay.now().format(context);
 
     setState(() {
-      messages.add(
-        Message(text: text, isMe: true, time: time),
-      );
+      messages.add(Message(text: text, isMe: true, time: time));
       _textController.clear();
       isUserTyping = false;
     });
@@ -347,9 +336,9 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Failed to send message: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send message')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to send message')));
       }
     }
   }
@@ -375,7 +364,8 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       final fileName = file.name;
-      final mimeType = lookupMimeType(fileName, headerBytes: bytes) ??
+      final mimeType =
+          lookupMimeType(fileName, headerBytes: bytes) ??
           'application/octet-stream';
 
       final upload = await _chatService.uploadFile(
@@ -417,9 +407,9 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Failed to send file: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send file')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to send file')));
     }
   }
 
@@ -429,13 +419,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (uri == null) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to open file')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to open file')));
     }
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -450,7 +439,17 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundImage: NetworkImage(widget.avatarUrl),
+                  backgroundImage: widget.avatarUrl.isNotEmpty
+                      ? NetworkImage(widget.avatarUrl)
+                      : null,
+                  child: widget.avatarUrl.isEmpty
+                      ? Text(
+                          widget.userName.isNotEmpty
+                              ? widget.userName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(color: AppColours.primary),
+                        )
+                      : null,
                 ),
                 if (isOtherOnline)
                   Positioned(
@@ -482,10 +481,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 Text(
                   widget.userRole,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
               ],
             ),
@@ -516,49 +512,44 @@ class _ChatScreenState extends State<ChatScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColours.neutral),
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'details', child: Text("View details")),
-              PopupMenuItem(value: 'block', child: Text("Block user")),
+              PopupMenuItem(value: 'details', child: Text('View details')),
+              PopupMenuItem(value: 'block', child: Text('Block user')),
             ],
           ),
         ],
       ),
-
-      // ================= BODY =================
       body: Column(
         children: [
-          // CHAT AREA
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
                 : loadError != null
-                    ? Center(child: Text(loadError!))
-                    : messages.isEmpty
-                        ? const Center(child: Text('No messages yet'))
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: messages.length,
-                            itemBuilder: (context, index) {
-                              final message = messages[index];
-                              return MessageBubble(
-                                message: message.text,
-                                type: message.type,
-                                fileName: message.fileName,
-                                fileUrl: message.fileUrl,
-                                isMe: message.isMe,
-                                time: message.time,
-                                onOpenFile: _openAttachment,
-                              );
-                            },
-                          )
+                ? Center(child: Text(loadError!))
+                : messages.isEmpty
+                ? const Center(child: Text('No messages yet'))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      return MessageBubble(
+                        message: message.text,
+                        type: message.type,
+                        fileName: message.fileName,
+                        fileUrl: message.fileUrl,
+                        isMe: message.isMe,
+                        time: message.time,
+                        onOpenFile: _openAttachment,
+                      );
+                    },
+                  ),
           ),
           if (isOtherTyping) const TypingIndicator(),
-
-          // INPUT BACKGROUND (WhatsApp-style)
           Container(
-            padding:  const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
-              color: Color.fromARGB(255, 209, 221, 234),
+              color: const Color.fromARGB(255, 209, 221, 234),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
@@ -569,9 +560,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildMessageInput(),
-              ],
+              children: [_buildMessageInput()],
             ),
           ),
         ],
@@ -580,7 +569,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-// ================= MODEL =================
 class Message {
   final String text;
   final bool isMe;
