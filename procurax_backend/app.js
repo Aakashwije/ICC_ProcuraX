@@ -3,23 +3,10 @@ import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+// ===== COMMUNICATION MODULES =====
+// =================================
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
-
-<<<<<<< Updated upstream
-dotenv.config();
-=======
-// ===== COMMUNICATION MODULES =====
-import userRoutes from "./communication/routes/userRoutes.js";
-import callRoutes from "./communication/routes/callRoutes.js";
-import chatRoutes from "./communication/routes/chatRoutes.js";
-import fileRoutes from "./communication/routes/fileRoutes.js";
-import messageRoutes from "./communication/routes/messageRoutes.js";
-import alertsRoutes from "./communication/routes/alertsRoutes.js";
-import presenceRoutes from "./communication/routes/presenceRoutes.js";
-import typingRoutes from "./communication/routes/typingRoutes.js";
-// =================================
->>>>>>> Stashed changes
 
 const app = express();
 app.use(cors());
@@ -49,6 +36,12 @@ process.on("uncaughtException", (err) => {
 // mount API under /api
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes); 
+
+// ===== COMMUNICATION MODULE ROUTES =====
+// =======================================
+// ===== COMMUNICATION MODULE ROUTES =====
+// No communication routes are being used in this backend.
+// =======================================
 
 // basic health
 app.get("/", (req, res) => res.send("ProcuraX backend running"));

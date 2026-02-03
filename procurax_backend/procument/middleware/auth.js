@@ -1,4 +1,5 @@
-// procurax_backend/procument/middleware/auth.js
+// Procurement API auth middleware.
+// Accepts either ADMIN_TOKEN or APP_TOKEN from the Authorization header.
 export function authenticate(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.split(" ")[1] || "";
