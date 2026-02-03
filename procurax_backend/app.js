@@ -18,9 +18,6 @@ import alertsRoutes from "./communication/routes/alertsRoutes.js";
 import presenceRoutes from "./communication/routes/presenceRoutes.js";
 import typingRoutes from "./communication/routes/typingRoutes.js";
 // =================================
-
-dotenv.config();
-
 const app = express();
 
 // Middleware
