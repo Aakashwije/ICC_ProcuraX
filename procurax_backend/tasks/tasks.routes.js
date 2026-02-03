@@ -6,6 +6,7 @@ import {
   getTaskById,
   updateTask,
   archiveTask,
+  restoreTask,
   deleteTask,
 } from "./tasks.controller.js";
 
@@ -16,6 +17,7 @@ router.get("/:id", authMiddleware, getTaskById);
 router.post("/", authMiddleware, createTask);
 router.put("/:id", authMiddleware, updateTask);
 router.patch("/:id/archive", authMiddleware, archiveTask);
+router.patch("/:id/restore", authMiddleware, restoreTask);
 router.delete("/:id", authMiddleware, deleteTask);
 
 export default router;
