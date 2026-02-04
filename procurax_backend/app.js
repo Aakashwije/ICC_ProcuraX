@@ -1,12 +1,13 @@
 // procurax_backend/app.js
+import "./config/env.js";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 
 // Existing modules
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
+import tasksRoutes from "./tasks/tasks.routes.js";
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
@@ -18,9 +19,6 @@ import alertsRoutes from "./communication/routes/alertsRoutes.js";
 import presenceRoutes from "./communication/routes/presenceRoutes.js";
 import typingRoutes from "./communication/routes/typingRoutes.js";
 // =================================
-
-dotenv.config();
-
 const app = express();
 
 // Middleware
@@ -53,6 +51,7 @@ process.on("uncaughtException", (err) => {
 // ===== EXISTING CORE ROUTES =====
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
+app.use("/api/tasks", tasksRoutes);
 
 // ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);

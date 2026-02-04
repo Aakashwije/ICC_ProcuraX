@@ -17,15 +17,10 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Single thin line above the nav bar, no box
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Divider(
-          height: 2,
-          thickness: 1,
-          color: const Color.fromARGB(255, 172, 169, 169),
-        ),
+        Divider(height: 2, thickness: 1, color: AppColours.divider),
         SafeArea(
           top: false,
           child: BottomNavigationBar(
@@ -35,8 +30,8 @@ class BottomNavBar extends StatelessWidget {
             selectedItemColor: AppColours.primary,
             unselectedItemColor: Colors.grey,
             showUnselectedLabels: true,
-            elevation: 0, // remove shadow so it doesn't look like a card
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor, // blend with page
+            elevation: 0,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             items: [
               BottomNavigationBarItem(
                 icon: _buildIconWithBadge(
@@ -49,7 +44,6 @@ class BottomNavBar extends StatelessWidget {
                 icon: Icon(Icons.call_outlined),
                 label: 'Calls',
               ),
-              
               BottomNavigationBarItem(
                 icon: _buildIconWithBadge(
                   icon: Icons.notifications_none,

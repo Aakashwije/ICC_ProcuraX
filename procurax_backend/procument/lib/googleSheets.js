@@ -1,12 +1,14 @@
+// Google Sheets client helper used by procurement services.
+// Loads credentials, configures auth, and provides a typed data fetch API.
 import { google } from "googleapis";
 import path from "path";
+import { fileURLToPath } from "url";
 
-// Absolute path to credentials.json
-const KEYFILE = path.resolve(
-  process.cwd(),
-  "procument",
-  "credentials.json"
-);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Absolute path to credentials.json (located at procurax_backend/credentials.json)
+const KEYFILE = path.resolve(__dirname, "..", "..", "credentials.json");
 
 // Create auth using keyFile (MOST RELIABLE)
 const auth = new google.auth.GoogleAuth({
@@ -20,6 +22,7 @@ const sheets = google.sheets({
   auth,
 });
 
+// Fetch raw procurement rows from Google Sheets.
 export async function fetchProcurementData() {
   if (!process.env.GOOGLE_SHEET_ID) {
     throw new Error("Missing GOOGLE_SHEET_ID env var");
