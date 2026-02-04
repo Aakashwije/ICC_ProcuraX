@@ -576,7 +576,6 @@ class _TasksPageState extends State<TasksPage> {
               _StatusChip(status: task.status),
             ],
           ),
-
         ],
       ),
     );
