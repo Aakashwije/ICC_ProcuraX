@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
+import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
+import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 
 enum ProjectStatus { active, pending, completed }
@@ -21,11 +23,41 @@ class _DashboardPageState extends State<DashboardPage> {
   // 🔴 Simulated real-time status
   final ProjectStatus projectStatus = ProjectStatus.active;
   late Future<ProcurementView> _procurementFuture;
+  late Future<List<Task>> _recentTasksFuture;
+  final TasksService _tasksService = TasksService();
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
+    _refreshDashboard();
+  }
+
+  void _refreshDashboard() {
     _procurementFuture = ProcurementService.fetchView();
+    _recentTasksFuture = _tasksService.fetchTasks().then(
+          (tasks) => tasks.take(2).toList(),
+        );
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+      _refreshDashboard();
+    });
+    try {
+      await Future.wait([
+        _procurementFuture,
+        _recentTasksFuture,
+      ]);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Dashboard refreshed")),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() => _isRefreshing = false);
+    }
   }
 
   @override
@@ -102,72 +134,69 @@ class _DashboardPageState extends State<DashboardPage> {
 
               const SizedBox(height: 24),
 
+              if (_isRefreshing)
+                const LinearProgressIndicator(
+                  minHeight: 3,
+                  color: primaryBlue,
+                  backgroundColor: lightBlue,
+                ),
+
+              if (_isRefreshing) const SizedBox(height: 16),
+
               // ================= CONTENT =================
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _searchBar(),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Project",
-                          child: _projectCard(projectStatus),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Upcoming Meetings",
-                          child: Column(
-                            children: [
-                              _infoRow(
-                                icon: Icons.calendar_today_outlined,
-                                title: "Meeting with IIT Rathmalana Team",
-                                subtitle: "10:00 A.M – 11:00 A.M",
-                              ),
-                              const SizedBox(height: 12),
-                              _infoRow(
-                                icon: Icons.calendar_today_outlined,
-                                title: "Weekly GM's Meeting",
-                                subtitle: "02:00 P.M – 02:30 P.M",
-                              ),
-                            ],
+                child: RefreshIndicator(
+                  onRefresh: _handleRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _searchBar(),
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Project",
+                            child: _projectCard(projectStatus),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Procurement Updates",
-                          child: _procurementUpdates(),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Urgent Tasks",
-                          child: Column(
-                            children: [
-                              _infoRow(
-                                icon: Icons.warning_amber_outlined,
-                                title:
-                                    "Review & Approve IIT Rathmalana Weekly Budget",
-                                subtitle: "Due: July 05, 2025",
-                              ),
-                              const SizedBox(height: 12),
-                              _infoRow(
-                                icon: Icons.warning_amber_outlined,
-                                title:
-                                    "Finalize Site Safety Checklist for IIT Rathmalana",
-                                subtitle: "Due: July 06, 2025",
-                              ),
-                            ],
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Upcoming Meetings",
+                            child: Column(
+                              children: [
+                                _infoRow(
+                                  icon: Icons.calendar_today_outlined,
+                                  title: "Meeting with IIT Rathmalana Team",
+                                  subtitle: "10:00 A.M – 11:00 A.M",
+                                ),
+                                const SizedBox(height: 12),
+                                _infoRow(
+                                  icon: Icons.calendar_today_outlined,
+                                  title: "Weekly GM's Meeting",
+                                  subtitle: "02:00 P.M – 02:30 P.M",
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Procurement Updates",
+                            child: _procurementUpdates(),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Recent Tasks",
+                            child: _recentTasksCard(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -256,6 +285,67 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
     );
+  }
+
+  Widget _recentTasksCard() {
+    return FutureBuilder<List<Task>>(
+      future: _recentTasksFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Text(
+            "Failed to load tasks",
+            style: const TextStyle(fontFamily: 'Poppins'),
+            textAlign: TextAlign.center,
+          );
+        }
+        final tasks = snapshot.data ?? [];
+        if (tasks.isEmpty) {
+          return Text(
+            "No tasks yet",
+            style: const TextStyle(fontFamily: 'Poppins'),
+            textAlign: TextAlign.center,
+          );
+        }
+        return Column(
+          children: [
+            for (var i = 0; i < tasks.length; i++) ...[
+              _recentTaskRow(tasks[i]),
+              if (i < tasks.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _recentTaskRow(Task task) {
+    final icon = _statusIcon(task.status);
+    final dueDate = task.dueDate;
+    final subtitle = dueDate == null
+        ? "No due date"
+        : "Due: ${dueDate.day}/${dueDate.month}/${dueDate.year}";
+
+    return _infoRow(
+      icon: icon,
+      title: task.title.isEmpty ? "Untitled task" : task.title,
+      subtitle: subtitle,
+    );
+  }
+
+  IconData _statusIcon(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.inProgress:
+        return Icons.timelapse_outlined;
+      case TaskStatus.blocked:
+        return Icons.block_outlined;
+      case TaskStatus.done:
+        return Icons.check_circle_outline;
+      case TaskStatus.todo:
+        return Icons.assignment_outlined;
+    }
   }
 
   Widget _projectCard(ProjectStatus status) {

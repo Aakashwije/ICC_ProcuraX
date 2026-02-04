@@ -3,17 +3,20 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/services/chat_service.dart';
 import '../../core/colors.dart';
 import '../../widgets/bottom_nav.dart';
-import 'package:procurax_frontend/services/chat_service.dart';
-
-import 'chat_title.dart';
+import '../chat/chat_screen.dart';
 //import '../files/files_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../calls/calls_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
-  const ChatListScreen({super.key});
+  final bool showDrawer;
+
+  const ChatListScreen({super.key, this.showDrawer = false});
 
   @override
   State<ChatListScreen> createState() => _ChatListScreenState();
@@ -128,7 +131,6 @@ class _ChatListScreenState extends State<ChatListScreen>
       await _refreshPresence();
     });
   }
-
 
   Future<void> _sendPresenceHeartbeat() async {
     try {
@@ -509,12 +511,23 @@ class _ChatListScreenState extends State<ChatListScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: widget.showDrawer
+          ? const AppDrawer(currentRoute: AppRoutes.communication)
+          : null,
 
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: AppColours.primary, size: 30,),
-          onPressed: () {},
-        ),
+        leading: widget.showDrawer
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(
+                    Icons.menu,
+                    color: AppColours.primary,
+                    size: 30,
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
         title: const Text(
           'Communication',
           style: TextStyle(
@@ -759,6 +772,126 @@ class MessagesPage extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class ChatTile extends StatelessWidget {
+  final String chatId;
+  final String currentUserId;
+  final String otherUserId;
+  final VoidCallback onChatClosed;
+  final VoidCallback? onChatRead;
+  final String name;
+  final String role;
+  final String message;
+  final String time;
+  final bool isOnline;
+  final int unreadCount;
+
+  const ChatTile({
+    super.key,
+    required this.chatId,
+    required this.currentUserId,
+    required this.otherUserId,
+    required this.onChatClosed,
+    this.onChatRead,
+    required this.name,
+    required this.role,
+    required this.message,
+    required this.time,
+    required this.isOnline,
+    required this.unreadCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Stack(
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.grey.shade200,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: const TextStyle(color: AppColours.primary),
+            ),
+          ),
+          if (isOnline)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 10,
+                width: 10,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+      title: Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            role,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            message.isEmpty ? 'No messages yet' : message,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ],
+      ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          if (unreadCount > 0) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColours.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                unreadCount.toString(),
+                style: const TextStyle(color: Colors.white, fontSize: 11),
+              ),
+            ),
+          ],
+        ],
+      ),
+      onTap: () async {
+        if (chatId.isEmpty) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              chatId: chatId,
+              currentUserId: currentUserId,
+              otherUserId: otherUserId,
+              userName: name,
+              userRole: role,
+              avatarUrl: '',
+              isOnline: isOnline,
+              onChatRead: onChatRead,
+            ),
+          ),
+        );
+        onChatClosed();
+      },
     );
   }
 }
