@@ -36,8 +36,8 @@ class _DashboardPageState extends State<DashboardPage> {
   void _refreshDashboard() {
     _procurementFuture = ProcurementService.fetchView();
     _recentTasksFuture = _tasksService.fetchTasks().then(
-          (tasks) => tasks.take(2).toList(),
-        );
+      (tasks) => tasks.take(2).toList(),
+    );
   }
 
   Future<void> _handleRefresh() async {
@@ -46,14 +46,11 @@ class _DashboardPageState extends State<DashboardPage> {
       _refreshDashboard();
     });
     try {
-      await Future.wait([
-        _procurementFuture,
-        _recentTasksFuture,
-      ]);
+      await Future.wait([_procurementFuture, _recentTasksFuture]);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Dashboard refreshed")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Dashboard refreshed")));
     } finally {
       if (!mounted) return;
       setState(() => _isRefreshing = false);
