@@ -1,6 +1,11 @@
-/// Application route constants used across the app.
+/*
+  Application route constants used across the app.
+  The procurement page uses AppRoutes.procurement.
+*/
 class AppRoutes {
-  /// Entry / welcome route
+  /*
+    Entry / welcome route
+  */
   static const getStarted = "/";
   static const login = "/login";
   static const createAccount = "/create-account";
