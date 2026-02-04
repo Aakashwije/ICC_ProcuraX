@@ -1,9 +1,22 @@
+/*
+  Procurement schedule UI.
+
+  This file renders a full-page procurement schedule that:
+  - fetches procurement data from the backend
+  - shows a list of procurement items
+  - shows a compact list of upcoming deliveries
+  - provides refresh and error states
+*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 
+/*
+  Public page widget mounted from the app routes. We keep it stateful to
+  manage the async fetch, refresh indicator, and last-updated timestamp.
+*/
 class ProcurementSchedulePage extends StatefulWidget {
   const ProcurementSchedulePage({super.key});
 
@@ -12,17 +25,30 @@ class ProcurementSchedulePage extends StatefulWidget {
       _ProcurementSchedulePageState();
 }
 
+/*
+  State holder for procurement schedule:
+  - _future is the async request for procurement data.
+  - _isRefreshing toggles the refresh button and indicator.
+  - _lastLoadedAt is used to show when data was last fetched.
+*/
 class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
   late Future<ProcurementView> _future;
   bool _isRefreshing = false;
   DateTime? _lastLoadedAt;
 
+  /*
+    Initial fetch kicks off when the widget is inserted into the tree.
+  */
   @override
   void initState() {
     super.initState();
     _future = ProcurementService.fetchView();
   }
 
+  /*
+    Manual refresh handler that re-fetches the procurement data and tracks
+    the last successful load timestamp.
+  */
   Future<void> _reload() async {
     setState(() {
       _isRefreshing = true;
@@ -41,6 +67,12 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
     }
   }
 
+  /*
+    Builds the overall page layout, including:
+    - app drawer
+    - loading / error / success states
+    - procurement items and upcoming deliveries lists
+  */
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1F4CCF);
@@ -48,19 +80,31 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
     const Color cardBg = Color(0xFFEAF2FB);
     const Color iconBg = Color(0xFFF3F7FF);
 
+    /*
+      Scaffold provides the screen structure with drawer support.
+    */
     return Scaffold(
       drawer: AppDrawer(currentRoute: AppRoutes.procurement),
       backgroundColor: Colors.white,
+      /*
+        SafeArea avoids notches/status bars and keeps the content visible.
+      */
       body: SafeArea(
         child: FutureBuilder<ProcurementView>(
           future: _future,
           builder: (context, snapshot) {
+            /*
+              Loading state: show a centered progress spinner.
+            */
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(
                 child: CircularProgressIndicator(color: primaryBlue),
               );
             }
 
+            /*
+              Error state: show retry UI with the backend error message.
+            */
             if (snapshot.hasError) {
               return _ErrorState(
                 message: snapshot.error.toString(),
@@ -68,6 +112,10 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
               );
             }
 
+            /*
+              Success state: either use the fetched data or a safe default
+              with empty collections to avoid null checks in the UI.
+            */
             final view =
                 snapshot.data ??
                 const ProcurementView(
@@ -78,10 +126,16 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
             final items = view.procurementItems;
             final upcomingDeliveries = view.upcomingDeliveries;
 
+            /*
+              Label shown in the header for last load time.
+            */
             final lastLoadedLabel = _lastLoadedAt == null
                 ? "Not loaded yet"
                 : "Updated ${_lastLoadedAt!.hour.toString().padLeft(2, '0')}:${_lastLoadedAt!.minute.toString().padLeft(2, '0')}";
 
+            /*
+              Pull-to-refresh wrapper for the scrollable content.
+            */
             return RefreshIndicator(
               color: primaryBlue,
               onRefresh: () async => _reload(),
@@ -91,10 +145,15 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
                   horizontal: 22,
                   vertical: 18,
                 ),
+                /*
+                  Main vertical layout for the page sections.
+                */
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top bar (menu icon + center title)
+                    /*
+                      Top bar: drawer menu button, centered title, refresh.
+                    */
                     Row(
                       children: [
                         Builder(
@@ -155,6 +214,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
 
                     const SizedBox(height: 30),
 
+                    /*
+                      Info row: loaded counts on the left, last updated on the right.
+                    */
                     Row(
                       children: [
                         Container(
@@ -198,6 +260,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
                       ],
                     ),
 
+                    /*
+                      Section heading for procurement items list.
+                    */
                     const Text(
                       "Procurement Items",
                       style: TextStyle(
@@ -209,6 +274,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
 
                     const SizedBox(height: 16),
 
+                    /*
+                      Empty state for items list.
+                    */
                     if (items.isEmpty)
                       const Padding(
                         padding: EdgeInsets.only(bottom: 12),
@@ -218,7 +286,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
                         ),
                       ),
 
-                    // Full procurement cards (showing the 4 fields; goodsAtLocation is a date)
+                    /*
+                      Full procurement cards (4 fields; goodsAtLocation is a date).
+                    */
                     Column(
                       children: items
                           .map(
@@ -238,6 +308,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
 
                     const SizedBox(height: 30),
 
+                    /*
+                      Section heading for upcoming deliveries list.
+                    */
                     const Text(
                       "Upcoming Deliveries",
                       style: TextStyle(
@@ -249,6 +322,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
 
                     const SizedBox(height: 14),
 
+                    /*
+                      Empty state for upcoming deliveries.
+                    */
                     if (upcomingDeliveries.isEmpty)
                       const Padding(
                         padding: EdgeInsets.only(bottom: 12),
@@ -258,7 +334,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
                         ),
                       ),
 
-                    // Compact list for upcoming deliveries (materialDescription + goodsAtLocationDate only)
+                    /*
+                      Compact list for upcoming deliveries (description + date only).
+                    */
                     Column(
                       children: upcomingDeliveries
                           .map(
@@ -287,7 +365,10 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
   }
 }
 
-/// Full procurement card (shows all four fields; goodsAtLocation is shown as a date)
+/*
+  Full procurement card (shows all four fields; goodsAtLocation is shown as a date).
+  This widget is reusable for each procurement item row in the list.
+*/
 class _ProcurementCard extends StatelessWidget {
   final ProcurementItemView item;
   final Color cardColor;
@@ -295,6 +376,9 @@ class _ProcurementCard extends StatelessWidget {
   final Color lightBlue;
   final Color iconBg;
 
+  /*
+    Required properties for rendering the card content and theme colors.
+  */
   const _ProcurementCard({
     required this.item,
     required this.cardColor,
@@ -303,6 +387,9 @@ class _ProcurementCard extends StatelessWidget {
     required this.iconBg,
   });
 
+  /*
+    Helper to render a single labeled row with an icon, label, and value.
+  */
   Widget _fieldRow(
     IconData icon,
     String label,
@@ -352,6 +439,9 @@ class _ProcurementCard extends StatelessWidget {
     );
   }
 
+  /*
+    Maps backend status to a semantic color used for badges.
+  */
   Color _statusColor(String? status) {
     final normalized = (status ?? '').toLowerCase();
     if (normalized == 'delayed') {
@@ -365,6 +455,9 @@ class _ProcurementCard extends StatelessWidget {
     return Colors.grey;
   }
 
+  /*
+    Builds a rounded badge using the computed status color.
+  */
   Widget _statusBadge(String status) {
     final color = _statusColor(status);
     return Container(
@@ -385,6 +478,10 @@ class _ProcurementCard extends StatelessWidget {
     );
   }
 
+  /*
+    Card layout with top row (description + status), middle row (qty + date),
+    and a final row for goods-at-location date.
+  */
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -445,7 +542,10 @@ class _ProcurementCard extends StatelessWidget {
   }
 }
 
-/// Compact card for upcoming deliveries (only description + date)
+/*
+  Compact card for upcoming deliveries (only description + date).
+  Used in the upcoming deliveries section for a denser list.
+*/
 class _DeliverySimpleCard extends StatelessWidget {
   final DeliverySimpleView delivery;
   final Color cardColor;
@@ -454,6 +554,9 @@ class _DeliverySimpleCard extends StatelessWidget {
   final Color iconColor;
   final Color primaryBlue;
 
+  /*
+    Required properties for the delivery item and card styling.
+  */
   const _DeliverySimpleCard({
     required this.delivery,
     required this.cardColor,
@@ -463,8 +566,14 @@ class _DeliverySimpleCard extends StatelessWidget {
     required this.primaryBlue,
   });
 
+  /*
+    Renders a compact row with an icon, description, date, and optional status.
+  */
   @override
   Widget build(BuildContext context) {
+    /*
+      Normalize status text to drive a simple color mapping for the UI.
+    */
     final status = delivery.status ?? '';
     final normalized = status.toLowerCase();
     final statusColor = normalized == 'delayed'
@@ -549,12 +658,22 @@ class _DeliverySimpleCard extends StatelessWidget {
   }
 }
 
+/*
+  Error UI shown when the fetch fails. Provides a retry action.
+*/
 class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
+  /*
+    message: error details to show.
+    onRetry: callback triggered by the retry button.
+  */
   const _ErrorState({required this.message, required this.onRetry});
 
+  /*
+    Centered error panel with icon, title, details, and retry button.
+  */
   @override
   Widget build(BuildContext context) {
     return Center(
