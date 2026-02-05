@@ -26,11 +26,37 @@ class _DashboardPageState extends State<DashboardPage> {
   late Future<List<Task>> _recentTasksFuture;
   final TasksService _tasksService = TasksService();
   bool _isRefreshing = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  bool get _isSearching => _searchQuery.trim().isNotEmpty;
+
+  bool _matchesQuery(String text) {
+    if (!_isSearching) return true;
+    return text.toLowerCase().contains(_searchQuery.toLowerCase());
+  }
+
+  List<Map<String, String>> get _meetingItems => [
+        {
+          "title": "Meeting with IIT Rathmalana Team",
+          "subtitle": "10:00 A.M – 11:00 A.M",
+        },
+        {
+          "title": "Weekly GM's Meeting",
+          "subtitle": "02:00 P.M – 02:30 P.M",
+        },
+      ];
 
   @override
   void initState() {
     super.initState();
     _refreshDashboard();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _refreshDashboard() {
@@ -150,32 +176,27 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _searchBar(),
-                        const SizedBox(height: 24),
+                        if (_isSearching) ...[
+                          const SizedBox(height: 12),
+                          _globalSearchBanner(),
+                          const SizedBox(height: 12),
+                        ] else
+                          const SizedBox(height: 24),
                         _animatedCard(
                           _sectionCard(
                             title: "Project",
-                            child: _projectCard(projectStatus),
+                            child: _matchesQuery("project iit rathmalana")
+                                ? _projectCard(projectStatus)
+                                : _emptyState(
+                                    "No project matches your search.",
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 24),
                         _animatedCard(
                           _sectionCard(
                             title: "Upcoming Meetings",
-                            child: Column(
-                              children: [
-                                _infoRow(
-                                  icon: Icons.calendar_today_outlined,
-                                  title: "Meeting with IIT Rathmalana Team",
-                                  subtitle: "10:00 A.M – 11:00 A.M",
-                                ),
-                                const SizedBox(height: 12),
-                                _infoRow(
-                                  icon: Icons.calendar_today_outlined,
-                                  title: "Weekly GM's Meeting",
-                                  subtitle: "02:00 P.M – 02:30 P.M",
-                                ),
-                              ],
-                            ),
+                            child: _meetingsSection(),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -214,18 +235,38 @@ class _DashboardPageState extends State<DashboardPage> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
-        children: const [
-          Icon(Icons.search_outlined, color: neutralText),
-          SizedBox(width: 8),
+        children: [
+          const Icon(Icons.search_outlined, color: neutralText),
+          const SizedBox(width: 8),
           Expanded(
             child: TextField(
-              decoration: InputDecoration(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: const InputDecoration(
                 hintText: "Search",
                 border: InputBorder.none,
               ),
             ),
           ),
-          Icon(Icons.mic_none_outlined, color: neutralText),
+          if (_searchQuery.trim().isNotEmpty)
+            IconButton(
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.close_rounded, color: neutralText),
+              tooltip: "Clear search",
+            ),
+          if (_searchQuery.trim().isNotEmpty)
+            IconButton(
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.clear_all_rounded, color: neutralText),
+              tooltip: "Clear all",
+            ),
+          const Icon(Icons.mic_none_outlined, color: neutralText),
         ],
       ),
     );
@@ -299,20 +340,83 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         }
         final tasks = snapshot.data ?? [];
-        if (tasks.isEmpty) {
+        final filteredTasks = _filterTasks(tasks);
+        if (filteredTasks.isEmpty) {
           return Text(
-            "No tasks yet",
+            _isSearching
+                ? "No tasks match your search"
+                : "No tasks yet",
             style: const TextStyle(fontFamily: 'Poppins'),
             textAlign: TextAlign.center,
           );
         }
         return Column(
           children: [
-            for (var i = 0; i < tasks.length; i++) ...[
-              _recentTaskRow(tasks[i]),
-              if (i < tasks.length - 1) const SizedBox(height: 12),
+            for (var i = 0; i < filteredTasks.length; i++) ...[
+              _recentTaskRow(filteredTasks[i]),
+              if (i < filteredTasks.length - 1) const SizedBox(height: 12),
             ],
           ],
+        );
+      },
+    );
+  }
+
+  Widget _globalSearchBanner() {
+    if (!_isSearching) return const SizedBox.shrink();
+
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([_procurementFuture, _recentTasksFuture]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+
+        final procurement = snapshot.data?.first as ProcurementView?;
+        final tasks = snapshot.data?.last as List<Task>? ?? [];
+        final hasProject = _matchesQuery("project iit rathmalana");
+        final hasMeetings = _meetingItems.any(
+          (m) => _matchesQuery("${m['title']} ${m['subtitle']}"),
+        );
+        final hasProcurement = _filterProcurementItems(
+          procurement?.procurementItems ?? <ProcurementItemView>[],
+        ).isNotEmpty;
+        final hasTasks = _filterTasks(tasks).isNotEmpty;
+
+        if (hasProject || hasMeetings || hasProcurement || hasTasks) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: lightBlue.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search_off_rounded, color: primaryBlue),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  "No dashboard results match your search.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: neutralText,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+                child: const Text("Clear search"),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -426,12 +530,17 @@ class _DashboardPageState extends State<DashboardPage> {
 
         final items =
             snapshot.data?.procurementItems ?? <ProcurementItemView>[];
+        final filtered = _filterProcurementItems(items);
 
-        if (items.isEmpty) {
-          return _emptyState("No procurement updates yet.");
+        if (filtered.isEmpty) {
+          return _emptyState(
+            _isSearching
+                ? "No procurement updates match your search."
+                : "No procurement updates yet.",
+          );
         }
 
-        final updates = items.take(2).toList();
+        final updates = filtered.take(2).toList();
         return Column(
           children: [
             for (var i = 0; i < updates.length; i++) ...[
@@ -480,6 +589,57 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
     );
+  }
+
+  Widget _meetingsSection() {
+    final visible = _meetingItems
+        .where(
+          (m) => _matchesQuery("${m['title']} ${m['subtitle']}"),
+        )
+        .toList();
+
+    if (visible.isEmpty) {
+      return _emptyState(
+        _isSearching ? "No meetings match your search." : "No meetings yet.",
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < visible.length; i++) ...[
+          _infoRow(
+            icon: Icons.calendar_today_outlined,
+            title: visible[i]["title"]!,
+            subtitle: visible[i]["subtitle"]!,
+          ),
+          if (i < visible.length - 1) const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+
+  List<Task> _filterTasks(List<Task> tasks) {
+    if (!_isSearching) return tasks;
+    final q = _searchQuery.toLowerCase();
+    return tasks.where((task) {
+      final due = task.dueDate == null
+          ? ""
+          : "${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}";
+      final haystack = "${task.title} ${task.description} $due";
+      return haystack.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  List<ProcurementItemView> _filterProcurementItems(
+    List<ProcurementItemView> items,
+  ) {
+    if (!_isSearching) return items;
+    final q = _searchQuery.toLowerCase();
+    return items.where((item) {
+      final haystack =
+          "${item.materialDescription} ${item.status ?? ''} ${item.goodsAtLocationDate} ${item.cmsRequiredDate}";
+      return haystack.toLowerCase().contains(q);
+    }).toList();
   }
 
   Widget _loadingState(String message) {

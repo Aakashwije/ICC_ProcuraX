@@ -26,6 +26,7 @@ class _TasksPageState extends State<TasksPage> {
 
   String filter = "Active";
   String _query = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -33,6 +34,12 @@ class _TasksPageState extends State<TasksPage> {
   void initState() {
     super.initState();
     _loadTasks();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTasks() async {
@@ -106,16 +113,47 @@ class _TasksPageState extends State<TasksPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Task"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+        contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        title: Row(
+          children: [
+            Container(
+              height: 34,
+              width: 34,
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_outline, color: Colors.red),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                "Delete Task",
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
         content: const Text(
           "Are you sure you want to delete this task? This action cannot be undone.",
+          style: TextStyle(color: neutralText, height: 1.4),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: neutralText,
+              side: BorderSide(color: Colors.black.withValues(alpha: 0.12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text("Cancel"),
           ),
-          TextButton(
+          ElevatedButton.icon(
             onPressed: () async {
               Navigator.pop(context);
               final index = tasks.indexWhere((t) => t.id == task.id);
@@ -125,12 +163,38 @@ class _TasksPageState extends State<TasksPage> {
               try {
                 await _tasksService.deleteTask(task.id);
                 await _loadTasks();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: const [
+                        Icon(Icons.check_circle, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(child: Text("Task deleted")),
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFF16A34A),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
               } catch (err) {
                 if (!mounted) return;
                 setState(() => tasks.insert(index, backup));
               }
             },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            icon: const Icon(Icons.delete, size: 18),
+            label: const Text("Delete"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
         ],
       ),
@@ -306,10 +370,6 @@ class _TasksPageState extends State<TasksPage> {
     required String emptyLabel,
     bool showRestore = false,
   }) {
-    if (visibleTasks.isEmpty) {
-      return Center(child: _emptyStateBox(label: emptyLabel));
-    }
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,13 +382,18 @@ class _TasksPageState extends State<TasksPage> {
 
           if (showFilters) const SizedBox(height: 16),
 
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: visibleTasks.length,
-            itemBuilder: (_, i) =>
-                _taskCard(visibleTasks[i], showRestore: showRestore),
-          ),
+          if (visibleTasks.isEmpty)
+            _query.trim().isEmpty
+                ? Center(child: _emptyStateBox(label: emptyLabel))
+                : _emptySearchState()
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: visibleTasks.length,
+              itemBuilder: (_, i) =>
+                  _taskCard(visibleTasks[i], showRestore: showRestore),
+            ),
         ],
       ),
     );
@@ -350,12 +415,36 @@ class _TasksPageState extends State<TasksPage> {
         ],
       ),
       child: TextField(
+        controller: _searchController,
         onChanged: (v) => setState(() => _query = v),
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           hintText: "Search",
           border: InputBorder.none,
-          prefixIcon: Icon(Icons.search_rounded),
-          suffixIcon: Icon(Icons.keyboard_voice_outlined),
+          prefixIcon: const Icon(Icons.search_rounded),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_query.trim().isNotEmpty)
+                IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: "Clear search",
+                ),
+              if (_query.trim().isNotEmpty)
+                IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                  icon: const Icon(Icons.clear_all_rounded),
+                  tooltip: "Clear all",
+                ),
+              const Icon(Icons.keyboard_voice_outlined),
+            ],
+          ),
         ),
       ),
     );
@@ -393,6 +482,44 @@ class _TasksPageState extends State<TasksPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _emptySearchState() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: lightBlue.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.search_off_rounded, color: primaryBlue, size: 36),
+            SizedBox(height: 10),
+            Text(
+              "No results",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: primaryBlue,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              "Try a different keyword",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -475,8 +602,15 @@ class _TasksPageState extends State<TasksPage> {
                 ),
               ),
 
-              // menu: edit / delete
+              // menu: edit / archive / delete
               PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: neutralText),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                color: Colors.white,
+                elevation: 8,
+                offset: const Offset(0, 40),
                 onSelected: (value) async {
                   if (value == "edit") {
                     final updated = await Navigator.push<Task>(
@@ -524,20 +658,65 @@ class _TasksPageState extends State<TasksPage> {
                 },
                 itemBuilder: (_) => [
                   if (!showRestore)
-                    const PopupMenuItem(value: "edit", child: Text("Edit")),
+                    PopupMenuItem(
+                      value: "edit",
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: neutralText,
+                          ),
+                          SizedBox(width: 10),
+                          Text("Edit"),
+                        ],
+                      ),
+                    ),
                   if (!showRestore)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: "archive",
-                      child: Text("Archive"),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.archive_outlined,
+                            size: 18,
+                            color: neutralText,
+                          ),
+                          SizedBox(width: 10),
+                          Text("Archive"),
+                        ],
+                      ),
                     ),
                   if (showRestore)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: "restore",
-                      child: Text("Restore"),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.restore_outlined,
+                            size: 18,
+                            color: neutralText,
+                          ),
+                          SizedBox(width: 10),
+                          Text("Restore"),
+                        ],
+                      ),
                     ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: "delete",
-                    child: Text("Delete", style: TextStyle(color: Colors.red)),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                        SizedBox(width: 10),
+                        Text(
+                          "Delete",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
