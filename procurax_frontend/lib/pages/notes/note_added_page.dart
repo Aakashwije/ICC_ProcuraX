@@ -46,7 +46,10 @@ class NoteAddedPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Text("View Notes"),
+                  child: const Text(
+                    "View Notes",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],
