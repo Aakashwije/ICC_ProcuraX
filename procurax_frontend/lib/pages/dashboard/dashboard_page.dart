@@ -37,15 +37,12 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   List<Map<String, String>> get _meetingItems => [
-        {
-          "title": "Meeting with IIT Rathmalana Team",
-          "subtitle": "10:00 A.M – 11:00 A.M",
-        },
-        {
-          "title": "Weekly GM's Meeting",
-          "subtitle": "02:00 P.M – 02:30 P.M",
-        },
-      ];
+    {
+      "title": "Meeting with IIT Rathmalana Team",
+      "subtitle": "10:00 A.M – 11:00 A.M",
+    },
+    {"title": "Weekly GM's Meeting", "subtitle": "02:00 P.M – 02:30 P.M"},
+  ];
 
   @override
   void initState() {
@@ -343,9 +340,7 @@ class _DashboardPageState extends State<DashboardPage> {
         final filteredTasks = _filterTasks(tasks);
         if (filteredTasks.isEmpty) {
           return Text(
-            _isSearching
-                ? "No tasks match your search"
-                : "No tasks yet",
+            _isSearching ? "No tasks match your search" : "No tasks yet",
             style: const TextStyle(fontFamily: 'Poppins'),
             textAlign: TextAlign.center,
           );
@@ -593,9 +588,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _meetingsSection() {
     final visible = _meetingItems
-        .where(
-          (m) => _matchesQuery("${m['title']} ${m['subtitle']}"),
-        )
+        .where((m) => _matchesQuery("${m['title']} ${m['subtitle']}"))
         .toList();
 
     if (visible.isEmpty) {
