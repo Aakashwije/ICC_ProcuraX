@@ -1,10 +1,11 @@
-// procurax_backend/procument/services/procurement.service.js
+// Procurement service: fetches raw sheet data, enriches it, and caches results.
 import { fetchProcurementData } from "../lib/googleSheets.js";
 
 let cachedData = null;
 let lastFetch = 0;
 const CACHE_TTL = Number(process.env.CACHE_TTL_MS || 60000);
 
+// Compute delivery status based on required vs actual dates.
 function calculateStatus(cmsDate, goodsDate) {
   try {
     const cms = new Date(cmsDate);
@@ -18,6 +19,7 @@ function calculateStatus(cmsDate, goodsDate) {
   }
 }
 
+// Returns a cached view of procurement items and upcoming deliveries.
 export async function getProcurementView() {
   const now = Date.now();
   if (cachedData && now - lastFetch < CACHE_TTL) {

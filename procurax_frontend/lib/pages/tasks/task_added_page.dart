@@ -31,6 +31,7 @@ class TaskAddedPage extends StatelessWidget {
               const Text(
                 "Your task has been created and added to your list.",
                 textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Poppins'),
               ),
               const SizedBox(height: 28),
 
@@ -41,17 +42,27 @@ class TaskAddedPage extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Text("View Task"),
+                  child: const Text(
+                    "View Task",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
 
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Add Another Task"),
+                child: const Text(
+                  "Add Another Task",
+                  style: TextStyle(fontFamily: 'Poppins'),
+                ),
               ),
             ],
           ),

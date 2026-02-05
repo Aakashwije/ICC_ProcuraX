@@ -112,7 +112,7 @@ class GetStartedPage extends StatelessWidget {
 
               // Footer
               const Text(
-                "@2024 ICC ProcuraX. All rights reserved.",
+                "@2026 ICC ProcuraX. All rights reserved.",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

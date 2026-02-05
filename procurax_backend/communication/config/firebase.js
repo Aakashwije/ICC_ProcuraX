@@ -1,3 +1,4 @@
+import "../../config/env.js";
 import admin from "firebase-admin";
 
 let db = null;

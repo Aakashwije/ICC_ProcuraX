@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
+import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
+import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 
 enum ProjectStatus { active, pending, completed }
@@ -21,11 +23,61 @@ class _DashboardPageState extends State<DashboardPage> {
   // 🔴 Simulated real-time status
   final ProjectStatus projectStatus = ProjectStatus.active;
   late Future<ProcurementView> _procurementFuture;
+  late Future<List<Task>> _recentTasksFuture;
+  final TasksService _tasksService = TasksService();
+  bool _isRefreshing = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  bool get _isSearching => _searchQuery.trim().isNotEmpty;
+
+  bool _matchesQuery(String text) {
+    if (!_isSearching) return true;
+    return text.toLowerCase().contains(_searchQuery.toLowerCase());
+  }
+
+  List<Map<String, String>> get _meetingItems => [
+    {
+      "title": "Meeting with IIT Rathmalana Team",
+      "subtitle": "10:00 A.M – 11:00 A.M",
+    },
+    {"title": "Weekly GM's Meeting", "subtitle": "02:00 P.M – 02:30 P.M"},
+  ];
 
   @override
   void initState() {
     super.initState();
+    _refreshDashboard();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _refreshDashboard() {
     _procurementFuture = ProcurementService.fetchView();
+    _recentTasksFuture = _tasksService.fetchTasks().then(
+      (tasks) => tasks.take(2).toList(),
+    );
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+      _refreshDashboard();
+    });
+    try {
+      await Future.wait([_procurementFuture, _recentTasksFuture]);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Dashboard refreshed")));
+    } finally {
+      if (!mounted) return;
+      setState(() => _isRefreshing = false);
+    }
   }
 
   @override
@@ -102,72 +154,64 @@ class _DashboardPageState extends State<DashboardPage> {
 
               const SizedBox(height: 24),
 
+              if (_isRefreshing)
+                const LinearProgressIndicator(
+                  minHeight: 3,
+                  color: primaryBlue,
+                  backgroundColor: lightBlue,
+                ),
+
+              if (_isRefreshing) const SizedBox(height: 16),
+
               // ================= CONTENT =================
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _searchBar(),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Project",
-                          child: _projectCard(projectStatus),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Upcoming Meetings",
-                          child: Column(
-                            children: [
-                              _infoRow(
-                                icon: Icons.calendar_today_outlined,
-                                title: "Meeting with IIT Rathmalana Team",
-                                subtitle: "10:00 A.M – 11:00 A.M",
-                              ),
-                              const SizedBox(height: 12),
-                              _infoRow(
-                                icon: Icons.calendar_today_outlined,
-                                title: "Weekly GM's Meeting",
-                                subtitle: "02:00 P.M – 02:30 P.M",
-                              ),
-                            ],
+                child: RefreshIndicator(
+                  onRefresh: _handleRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _searchBar(),
+                        if (_isSearching) ...[
+                          const SizedBox(height: 12),
+                          _globalSearchBanner(),
+                          const SizedBox(height: 12),
+                        ] else
+                          const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Project",
+                            child: _matchesQuery("project iit rathmalana")
+                                ? _projectCard(projectStatus)
+                                : _emptyState(
+                                    "No project matches your search.",
+                                  ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Procurement Updates",
-                          child: _procurementUpdates(),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _animatedCard(
-                        _sectionCard(
-                          title: "Urgent Tasks",
-                          child: Column(
-                            children: [
-                              _infoRow(
-                                icon: Icons.warning_amber_outlined,
-                                title:
-                                    "Review & Approve IIT Rathmalana Weekly Budget",
-                                subtitle: "Due: July 05, 2025",
-                              ),
-                              const SizedBox(height: 12),
-                              _infoRow(
-                                icon: Icons.warning_amber_outlined,
-                                title:
-                                    "Finalize Site Safety Checklist for IIT Rathmalana",
-                                subtitle: "Due: July 06, 2025",
-                              ),
-                            ],
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Upcoming Meetings",
+                            child: _meetingsSection(),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Procurement Updates",
+                            child: _procurementUpdates(),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _animatedCard(
+                          _sectionCard(
+                            title: "Recent Tasks",
+                            child: _recentTasksCard(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -188,18 +232,38 @@ class _DashboardPageState extends State<DashboardPage> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
-        children: const [
-          Icon(Icons.search_outlined, color: neutralText),
-          SizedBox(width: 8),
+        children: [
+          const Icon(Icons.search_outlined, color: neutralText),
+          const SizedBox(width: 8),
           Expanded(
             child: TextField(
-              decoration: InputDecoration(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: const InputDecoration(
                 hintText: "Search",
                 border: InputBorder.none,
               ),
             ),
           ),
-          Icon(Icons.mic_none_outlined, color: neutralText),
+          if (_searchQuery.trim().isNotEmpty)
+            IconButton(
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.close_rounded, color: neutralText),
+              tooltip: "Clear search",
+            ),
+          if (_searchQuery.trim().isNotEmpty)
+            IconButton(
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.clear_all_rounded, color: neutralText),
+              tooltip: "Clear all",
+            ),
+          const Icon(Icons.mic_none_outlined, color: neutralText),
         ],
       ),
     );
@@ -256,6 +320,128 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
     );
+  }
+
+  Widget _recentTasksCard() {
+    return FutureBuilder<List<Task>>(
+      future: _recentTasksFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Text(
+            "Failed to load tasks",
+            style: const TextStyle(fontFamily: 'Poppins'),
+            textAlign: TextAlign.center,
+          );
+        }
+        final tasks = snapshot.data ?? [];
+        final filteredTasks = _filterTasks(tasks);
+        if (filteredTasks.isEmpty) {
+          return Text(
+            _isSearching ? "No tasks match your search" : "No tasks yet",
+            style: const TextStyle(fontFamily: 'Poppins'),
+            textAlign: TextAlign.center,
+          );
+        }
+        return Column(
+          children: [
+            for (var i = 0; i < filteredTasks.length; i++) ...[
+              _recentTaskRow(filteredTasks[i]),
+              if (i < filteredTasks.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _globalSearchBanner() {
+    if (!_isSearching) return const SizedBox.shrink();
+
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([_procurementFuture, _recentTasksFuture]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+
+        final procurement = snapshot.data?.first as ProcurementView?;
+        final tasks = snapshot.data?.last as List<Task>? ?? [];
+        final hasProject = _matchesQuery("project iit rathmalana");
+        final hasMeetings = _meetingItems.any(
+          (m) => _matchesQuery("${m['title']} ${m['subtitle']}"),
+        );
+        final hasProcurement = _filterProcurementItems(
+          procurement?.procurementItems ?? <ProcurementItemView>[],
+        ).isNotEmpty;
+        final hasTasks = _filterTasks(tasks).isNotEmpty;
+
+        if (hasProject || hasMeetings || hasProcurement || hasTasks) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: lightBlue.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search_off_rounded, color: primaryBlue),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  "No dashboard results match your search.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: neutralText,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+                child: const Text("Clear search"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _recentTaskRow(Task task) {
+    final icon = _statusIcon(task.status);
+    final dueDate = task.dueDate;
+    final subtitle = dueDate == null
+        ? "No due date"
+        : "Due: ${dueDate.day}/${dueDate.month}/${dueDate.year}";
+
+    return _infoRow(
+      icon: icon,
+      title: task.title.isEmpty ? "Untitled task" : task.title,
+      subtitle: subtitle,
+    );
+  }
+
+  IconData _statusIcon(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.inProgress:
+        return Icons.timelapse_outlined;
+      case TaskStatus.blocked:
+        return Icons.block_outlined;
+      case TaskStatus.done:
+        return Icons.check_circle_outline;
+      case TaskStatus.todo:
+        return Icons.assignment_outlined;
+    }
   }
 
   Widget _projectCard(ProjectStatus status) {
@@ -339,12 +525,17 @@ class _DashboardPageState extends State<DashboardPage> {
 
         final items =
             snapshot.data?.procurementItems ?? <ProcurementItemView>[];
+        final filtered = _filterProcurementItems(items);
 
-        if (items.isEmpty) {
-          return _emptyState("No procurement updates yet.");
+        if (filtered.isEmpty) {
+          return _emptyState(
+            _isSearching
+                ? "No procurement updates match your search."
+                : "No procurement updates yet.",
+          );
         }
 
-        final updates = items.take(2).toList();
+        final updates = filtered.take(2).toList();
         return Column(
           children: [
             for (var i = 0; i < updates.length; i++) ...[
@@ -393,6 +584,55 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
     );
+  }
+
+  Widget _meetingsSection() {
+    final visible = _meetingItems
+        .where((m) => _matchesQuery("${m['title']} ${m['subtitle']}"))
+        .toList();
+
+    if (visible.isEmpty) {
+      return _emptyState(
+        _isSearching ? "No meetings match your search." : "No meetings yet.",
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < visible.length; i++) ...[
+          _infoRow(
+            icon: Icons.calendar_today_outlined,
+            title: visible[i]["title"]!,
+            subtitle: visible[i]["subtitle"]!,
+          ),
+          if (i < visible.length - 1) const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+
+  List<Task> _filterTasks(List<Task> tasks) {
+    if (!_isSearching) return tasks;
+    final q = _searchQuery.toLowerCase();
+    return tasks.where((task) {
+      final due = task.dueDate == null
+          ? ""
+          : "${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}";
+      final haystack = "${task.title} ${task.description} $due";
+      return haystack.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  List<ProcurementItemView> _filterProcurementItems(
+    List<ProcurementItemView> items,
+  ) {
+    if (!_isSearching) return items;
+    final q = _searchQuery.toLowerCase();
+    return items.where((item) {
+      final haystack =
+          "${item.materialDescription} ${item.status ?? ''} ${item.goodsAtLocationDate} ${item.cmsRequiredDate}";
+      return haystack.toLowerCase().contains(q);
+    }).toList();
   }
 
   Widget _loadingState(String message) {
