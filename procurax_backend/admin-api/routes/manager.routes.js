@@ -1,11 +1,17 @@
-const router = require("express").Router();
+import { Router } from "express";
+import {
+	getManagers,
+	addManager,
+	deleteManager,
+	toggleAccess
+} from "../controllers/manager.controller.js";
+import adminAuth from "../middleware/adminAuth.middleware.js";
 
-const Manager = require("../controllers/manager.controller");
-const adminAuth = require("../middleware/adminAuth.middleware");
+const router = Router();
 
-router.get("/", adminAuth, Manager.getManagers);
-router.post("/", adminAuth, Manager.addManager);
-router.delete("/:id", adminAuth, Manager.deleteManager);
-router.post("/toggle/:id", adminAuth, Manager.toggleAccess);
+router.get("/", adminAuth, getManagers);
+router.post("/", adminAuth, addManager);
+router.delete("/:id", adminAuth, deleteManager);
+router.post("/toggle/:id", adminAuth, toggleAccess);
 
-module.exports = router;
+export default router;
