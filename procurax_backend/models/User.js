@@ -32,16 +32,21 @@ const UserSchema = new mongoose.Schema(
 
     isApproved: {
       type: Boolean,
-      default: false   // admin must approve PM
+      default: false
     },
 
     isActive: {
       type: Boolean,
-      default: true    // admin can deactivate
+      default: true
     },
 
     googleSheetUrl: {
       type: String,
+      default: null
+    },
+
+    lastLogin: {
+      type: Date,
       default: null
     }
   },
@@ -50,8 +55,10 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
+// 🔍 Index
+UserSchema.index({ email: 1 });
 
-// 🔐 Hash password before save
+// 🔐 Hash password
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -60,8 +67,7 @@ UserSchema.pre("save", async function (next) {
   next();
 });
 
-
-// 🔑 Compare password on login
+// 🔑 Compare password
 UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
