@@ -12,6 +12,18 @@ class AddTaskPage extends StatefulWidget {
 class _AddTaskPageState extends State<AddTaskPage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
+  static const Map<TaskStatus, Color> _statusColors = {
+    TaskStatus.todo: Color(0xFF9CA3AF),
+    TaskStatus.inProgress: Color(0xFF2563EB),
+    TaskStatus.blocked: Color(0xFFE11D48),
+    TaskStatus.done: Color(0xFF16A34A),
+  };
+  static const Map<TaskPriority, Color> _priorityColors = {
+    TaskPriority.critical: Color(0xFF7C3AED),
+    TaskPriority.high: Color(0xFFE11D48),
+    TaskPriority.medium: Color(0xFFF59E0B),
+    TaskPriority.low: Color(0xFF2563EB),
+  };
 
   final title = TextEditingController();
   final desc = TextEditingController();
@@ -92,6 +104,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   _sectionLabel("Status"),
                   const SizedBox(height: 8),
                   _statusSelector(),
+                  const SizedBox(height: 8),
+                  _selectedStatusChip(),
                   const SizedBox(height: 12),
                   _sectionLabel("Due date"),
                   const SizedBox(height: 8),
@@ -100,6 +114,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   _sectionLabel("Priority"),
                   const SizedBox(height: 8),
                   _priorityChips(),
+                  const SizedBox(height: 8),
+                  _selectedPriorityChip(),
                 ],
               ),
             ),
@@ -200,7 +216,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
   Widget _statusSelector() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -213,23 +229,112 @@ class _AddTaskPageState extends State<AddTaskPage> {
           ),
         ],
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<TaskStatus>(
-          value: status,
-          icon: const Icon(Icons.expand_more_rounded),
-          items: const [
-            DropdownMenuItem(value: TaskStatus.todo, child: Text("To do")),
-            DropdownMenuItem(
-              value: TaskStatus.inProgress,
-              child: Text("In progress"),
+      child: Row(
+        children: [
+          Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              color: lightBlue,
+              borderRadius: BorderRadius.circular(10),
             ),
-            DropdownMenuItem(value: TaskStatus.blocked, child: Text("Blocked")),
-            DropdownMenuItem(value: TaskStatus.done, child: Text("Done")),
+            child: const Icon(Icons.flag_rounded, color: primaryBlue, size: 18),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              "Select status",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<TaskStatus>(
+              value: status,
+              icon: const Icon(Icons.expand_more_rounded),
+              items:
+                  [
+                        TaskStatus.todo,
+                        TaskStatus.inProgress,
+                        TaskStatus.blocked,
+                        TaskStatus.done,
+                      ]
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: _statusColors[value] ?? primaryBlue,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _statusLabel(value),
+                                style: const TextStyle(fontFamily: 'Poppins'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => status = value);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _statusLabel(TaskStatus value) {
+    switch (value) {
+      case TaskStatus.todo:
+        return "To do";
+      case TaskStatus.inProgress:
+        return "In progress";
+      case TaskStatus.blocked:
+        return "Blocked";
+      case TaskStatus.done:
+        return "Done";
+    }
+  }
+
+  Widget _selectedStatusChip() {
+    final color = _statusColors[status] ?? primaryBlue;
+    return Align(
+      alignment: Alignment.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flag_rounded, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              _statusLabel(status),
+              style: TextStyle(
+                color: color,
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
-          onChanged: (value) {
-            if (value == null) return;
-            setState(() => status = value);
-          },
         ),
       ),
     );
@@ -272,13 +377,15 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
   Widget _priorityChips() {
     return Wrap(
+      alignment: WrapAlignment.center,
       spacing: 8,
       children: TaskPriority.values.map((p) {
         final selected = priority == p;
+        final color = _priorityColors[p] ?? primaryBlue;
         return ChoiceChip(
-          label: Text(p.name),
+          label: Text(_priorityLabel(p)),
           selected: selected,
-          selectedColor: primaryBlue,
+          selectedColor: color,
           onSelected: (_) => setState(() => priority = p),
           labelStyle: TextStyle(
             color: selected ? Colors.white : Colors.black,
@@ -287,6 +394,50 @@ class _AddTaskPageState extends State<AddTaskPage> {
         );
       }).toList(),
     );
+  }
+
+  Widget _selectedPriorityChip() {
+    final color = _priorityColors[priority] ?? primaryBlue;
+    return Align(
+      alignment: Alignment.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.priority_high_rounded, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              _priorityLabel(priority),
+              style: TextStyle(
+                color: color,
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _priorityLabel(TaskPriority value) {
+    switch (value) {
+      case TaskPriority.critical:
+        return "Critical";
+      case TaskPriority.high:
+        return "High";
+      case TaskPriority.medium:
+        return "Medium";
+      case TaskPriority.low:
+        return "Low";
+    }
   }
 
   Widget _field(
