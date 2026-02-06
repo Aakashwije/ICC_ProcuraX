@@ -90,3 +90,8 @@ server.on("error", (err) => {
 	console.error("Server failed to start:", err);
 	process.exit(1);
 });
+
+app.use("/admin-auth", require("./admin-api/routes/adminAuth.routes"));
+app.use("/admin-managers", require("./admin-api/routes/manager.routes"));
+app.use("/admin-projects", require("./admin-api/routes/project.routes"));
+app.use("/admin-stats", require("./admin-api/routes/stats.routes"));
