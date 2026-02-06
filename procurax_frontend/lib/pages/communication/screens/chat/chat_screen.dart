@@ -381,6 +381,7 @@ class _ChatScreenState extends State<ChatScreen> {
         throw Exception('Upload failed: missing url');
       }
 
+      if (!mounted) return;
       final time = TimeOfDay.now().format(context);
       setState(() {
         messages.add(
@@ -552,7 +553,7 @@ class _ChatScreenState extends State<ChatScreen> {
               color: const Color.fromARGB(255, 209, 221, 234),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 6,
                   offset: const Offset(0, -3),
                 ),

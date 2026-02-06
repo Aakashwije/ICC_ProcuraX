@@ -1,12 +1,12 @@
-const Project = require("../../models/Project");
-const User = require("../../models/User");
+import Project from "../../models/Project.js";
+import User from "../../models/User.js";
 
-exports.getProjects = async (req, res) => {
+export const getProjects = async (req, res) => {
   const projects = await Project.find();
   res.json(projects);
 };
 
-exports.addProject = async (req, res) => {
+export const addProject = async (req, res) => {
   const { name, sheetUrl } = req.body;
 
   const project = new Project({
@@ -19,7 +19,7 @@ exports.addProject = async (req, res) => {
   res.json({ success: true });
 };
 
-exports.assignManager = async (req, res) => {
+export const assignManager = async (req, res) => {
   const { projectId, managerId } = req.body;
 
   const manager = await User.findById(managerId);
@@ -32,7 +32,7 @@ exports.assignManager = async (req, res) => {
   res.json({ success: true });
 };
 
-exports.deleteProject = async (req, res) => {
+export const deleteProject = async (req, res) => {
   await Project.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 };

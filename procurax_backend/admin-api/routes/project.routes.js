@@ -1,11 +1,17 @@
-const router = require("express").Router();
+import { Router } from "express";
+import {
+	getProjects,
+	addProject,
+	assignManager,
+	deleteProject
+} from "../controllers/project.controller.js";
+import adminAuth from "../middleware/adminAuth.middleware.js";
 
-const Project = require("../controllers/project.controller");
-const adminAuth = require("../middleware/adminAuth.middleware");
+const router = Router();
 
-router.get("/", adminAuth, Project.getProjects);
-router.post("/", adminAuth, Project.addProject);
-router.post("/assign", adminAuth, Project.assignManager);
-router.delete("/:id", adminAuth, Project.deleteProject);
+router.get("/", adminAuth, getProjects);
+router.post("/", adminAuth, addProject);
+router.post("/assign", adminAuth, assignManager);
+router.delete("/:id", adminAuth, deleteProject);
 
-module.exports = router;
+export default router;

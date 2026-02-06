@@ -1,9 +1,9 @@
-const User = require("../../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const config = require("../../config/jwt");
+import User from "../../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { secret } from "../../config/jwt.js";
 
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   const { email, password } = req.body;
 
   const admin = await User.findOne({ email });
@@ -22,10 +22,7 @@ exports.login = async (req, res) => {
     });
   }
 
-  const token = jwt.sign(
-    { id: admin._id, role: "ADMIN" },
-    config.secret
-  );
+  const token = jwt.sign({ id: admin._id, role: "ADMIN" }, secret);
 
   res.json({
     success: true,
