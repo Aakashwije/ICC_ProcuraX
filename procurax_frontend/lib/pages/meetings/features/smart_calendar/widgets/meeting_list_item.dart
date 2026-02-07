@@ -16,7 +16,9 @@ class MeetingListItem extends StatelessWidget {
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
-        meeting.time,
+        meeting.location.isNotEmpty
+            ? '${meeting.timeLabel} • ${meeting.location}'
+            : meeting.timeLabel,
         style: const TextStyle(color: greyText, fontSize: 12),
       ),
       contentPadding: EdgeInsets.zero,
