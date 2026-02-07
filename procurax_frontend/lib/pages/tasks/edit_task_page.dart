@@ -59,8 +59,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to update task: $err')));
     } finally {
-      if (!mounted) return;
-      setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 

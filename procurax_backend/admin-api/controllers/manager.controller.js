@@ -1,11 +1,11 @@
-const User = require("../../models/User");
+import User from "../../models/User.js";
 
-exports.getManagers = async (req, res) => {
+export const getManagers = async (req, res) => {
   const managers = await User.find({ role: "USER" });
   res.json(managers);
 };
 
-exports.addManager = async (req, res) => {
+export const addManager = async (req, res) => {
   const { name, email, phone } = req.body;
 
   const user = new User({
@@ -22,12 +22,12 @@ exports.addManager = async (req, res) => {
   res.json({ success: true });
 };
 
-exports.deleteManager = async (req, res) => {
+export const deleteManager = async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 };
 
-exports.toggleAccess = async (req, res) => {
+export const toggleAccess = async (req, res) => {
   const user = await User.findById(req.params.id);
 
   user.status =

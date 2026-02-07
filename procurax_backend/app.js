@@ -18,6 +18,10 @@ import messageRoutes from "./communication/routes/messageRoutes.js";
 import alertsRoutes from "./communication/routes/alertsRoutes.js";
 import presenceRoutes from "./communication/routes/presenceRoutes.js";
 import typingRoutes from "./communication/routes/typingRoutes.js";
+import adminAuthRoutes from "./admin-api/routes/adminAuth.routes.js";
+import adminManagerRoutes from "./admin-api/routes/manager.routes.js";
+import adminProjectRoutes from "./admin-api/routes/project.routes.js";
+import adminStatsRoutes from "./admin-api/routes/stats.routes.js";
 // =================================
 const app = express();
 
@@ -91,7 +95,7 @@ server.on("error", (err) => {
 	process.exit(1);
 });
 
-app.use("/admin-auth", require("./admin-api/routes/adminAuth.routes"));
-app.use("/admin-managers", require("./admin-api/routes/manager.routes"));
-app.use("/admin-projects", require("./admin-api/routes/project.routes"));
-app.use("/admin-stats", require("./admin-api/routes/stats.routes"));
+app.use("/admin-auth", adminAuthRoutes);
+app.use("/admin-managers", adminManagerRoutes);
+app.use("/admin-projects", adminProjectRoutes);
+app.use("/admin-stats", adminStatsRoutes);

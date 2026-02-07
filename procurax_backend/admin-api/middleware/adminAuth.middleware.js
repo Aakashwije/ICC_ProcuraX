@@ -1,7 +1,7 @@
-const jwt = require("jsonwebtoken");
-const config = require("../../config/jwt");
+import jwt from "jsonwebtoken";
+import { secret } from "../../config/jwt.js";
 
-module.exports = function (req, res, next) {
+const adminAuthMiddleware = (req, res, next) => {
   const token = req.headers["authorization"];
 
   if (!token) {
@@ -11,7 +11,7 @@ module.exports = function (req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, config.secret);
+  const decoded = jwt.verify(token, secret);
 
     if (decoded.role !== "ADMIN") {
       return res.status(403).json({
@@ -28,3 +28,5 @@ module.exports = function (req, res, next) {
     });
   }
 };
+
+export default adminAuthMiddleware;

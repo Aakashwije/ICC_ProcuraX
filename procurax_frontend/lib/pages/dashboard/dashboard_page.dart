@@ -75,8 +75,9 @@ class _DashboardPageState extends State<DashboardPage> {
         context,
       ).showSnackBar(const SnackBar(content: Text("Dashboard refreshed")));
     } finally {
-      if (!mounted) return;
-      setState(() => _isRefreshing = false);
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
     }
   }
 
