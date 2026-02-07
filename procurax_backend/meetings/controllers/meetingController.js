@@ -18,6 +18,8 @@ export const createMeeting = async (req, res) => {
 			startTime = "",
 			endTime = "",
 			location = "",
+			priority = "medium",
+			done = false,
 		} = req.body;
 
 		if (!title || !date) {
@@ -31,6 +33,8 @@ export const createMeeting = async (req, res) => {
 			startTime,
 			endTime,
 			location,
+			priority,
+			done,
 		});
 
 		res.status(201).json(meeting);
@@ -45,5 +49,43 @@ export const deleteMeeting = async (req, res) => {
 		res.json({ success: true });
 	} catch (error) {
 		res.status(500).json({ message: "Failed to delete meeting" });
+	}
+};
+
+export const updateMeeting = async (req, res) => {
+	try {
+		const {
+			title,
+			description = "",
+			date,
+			startTime = "",
+			endTime = "",
+			location = "",
+			priority = "medium",
+			done = false,
+		} = req.body;
+
+		if (!title || !date) {
+			return res.status(400).json({ message: "Title and date are required" });
+		}
+
+		const updated = await Meeting.findByIdAndUpdate(
+			req.params.id,
+			{
+				title,
+				description,
+				date,
+				startTime,
+				endTime,
+				location,
+				priority,
+				done,
+			},
+			{ new: true }
+		);
+
+		res.json(updated);
+	} catch (error) {
+		res.status(500).json({ message: "Failed to update meeting" });
 	}
 };
