@@ -66,8 +66,9 @@ class _TasksPageState extends State<TasksPage> {
       if (!mounted) return;
       setState(() => _errorMessage = err.toString());
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -81,6 +82,8 @@ class _TasksPageState extends State<TasksPage> {
 
     if (task != null) {
       await _loadTasks();
+
+      if (!mounted) return;
 
       await Navigator.push(
         context,

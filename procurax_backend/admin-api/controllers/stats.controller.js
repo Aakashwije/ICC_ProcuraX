@@ -1,7 +1,7 @@
-const User = require("../../models/User");
-const Project = require("../../models/Project");
+import User from "../../models/User.js";
+import Project from "../../models/Project.js";
 
-exports.getStats = async (req, res) => {
+export const getStats = async (req, res) => {
   const totalManagers = await User.countDocuments({
     role: "USER"
   });
