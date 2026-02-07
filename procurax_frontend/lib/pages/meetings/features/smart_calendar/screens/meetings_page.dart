@@ -10,6 +10,7 @@ import '../widgets/tab_selector.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/meeting_list_item.dart';
 import 'add_meeting_page.dart';
+import '../../../../../../services/meetings_service.dart';
 
 class MeetingsPage extends StatefulWidget {
   const MeetingsPage({super.key});
@@ -22,6 +23,9 @@ class _MeetingsPageState extends State<MeetingsPage> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
+  List<Meeting> _meetings = [];
+  bool _loading = true;
+  String? _errorMessage;
 
   // Filter meetings based on Day / Week / Month
   List<Meeting> _filteredMeetings(List<Meeting> allMeetings) {
@@ -51,21 +55,34 @@ class _MeetingsPageState extends State<MeetingsPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadMeetings();
+  }
+
+  Future<void> _loadMeetings() async {
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final meetings = await MeetingsService.fetchMeetings();
+      if (!mounted) return;
+      setState(() => _meetings = meetings);
+    } catch (err) {
+      if (!mounted) return;
+      setState(() => _errorMessage = err.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Dummy meetings (UI only for now)
-    final meetings = [
-      Meeting(
-        'Project Alpha Team Meeting',
-        '10:00 AM - 11:00 AM',
-        DateTime.now(),
-      ),
-      Meeting('Procurement Review', '10:00 AM - 11:00 AM', DateTime.now()),
-      Meeting(
-        'Team Sync',
-        '10:00 AM - 11:00 AM',
-        DateTime.now().add(const Duration(days: 1)),
-      ),
-    ];
+    final meetings = _meetings;
 
     return Scaffold(
       drawer: const AppDrawer(currentRoute: AppRoutes.meetings),
@@ -76,11 +93,17 @@ class _MeetingsPageState extends State<MeetingsPage> {
         backgroundColor: lightBlue,
         elevation: 0,
         child: const Icon(Icons.add, color: primaryBlue),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final created = await Navigator.push<Meeting>(
             context,
             MaterialPageRoute(builder: (_) => const AddMeetingPage()),
           );
+
+          if (!mounted) return;
+
+          if (created != null) {
+            await _loadMeetings();
+          }
         },
       ),
 
@@ -167,11 +190,20 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
               // 🔹 Meetings list (filtered)
               Expanded(
-                child: ListView(
-                  children: _filteredMeetings(
-                    meetings,
-                  ).map((m) => MeetingListItem(m)).toList(),
-                ),
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _errorMessage != null
+                    ? Center(child: Text(_errorMessage!))
+                    : _filteredMeetings(meetings).isEmpty
+                    ? const Center(child: Text('No meetings found'))
+                    : RefreshIndicator(
+                        onRefresh: _loadMeetings,
+                        child: ListView(
+                          children: _filteredMeetings(
+                            meetings,
+                          ).map((m) => MeetingListItem(m)).toList(),
+                        ),
+                      ),
               ),
             ],
           ),
