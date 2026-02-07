@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
 import tasksRoutes from "./tasks/tasks.routes.js";
+import meetingRoutes from "./meetings/routes/meetingRoutes.js";
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
@@ -56,6 +57,7 @@ process.on("uncaughtException", (err) => {
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/tasks", tasksRoutes);
+app.use("/api/meetings", meetingRoutes);
 
 // ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);
@@ -66,6 +68,10 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/alerts", alertsRoutes);
 app.use("/api/presence", presenceRoutes);
 app.use("/api/typing", typingRoutes);
+app.use("/admin-auth", adminAuthRoutes);
+app.use("/admin-managers", adminManagerRoutes);
+app.use("/admin-projects", adminProjectRoutes);
+app.use("/admin-stats", adminStatsRoutes);
 // =======================================
 
 // Basic health route
@@ -94,8 +100,3 @@ server.on("error", (err) => {
 	console.error("Server failed to start:", err);
 	process.exit(1);
 });
-
-app.use("/admin-auth", adminAuthRoutes);
-app.use("/admin-managers", adminManagerRoutes);
-app.use("/admin-projects", adminProjectRoutes);
-app.use("/admin-stats", adminStatsRoutes);
