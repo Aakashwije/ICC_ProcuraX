@@ -6,6 +6,8 @@ class Meeting {
   final String startTime;
   final String endTime;
   final String location;
+  final String priority;
+  final bool done;
 
   const Meeting({
     required this.id,
@@ -15,6 +17,8 @@ class Meeting {
     this.startTime = '',
     this.endTime = '',
     this.location = '',
+    this.priority = 'medium',
+    this.done = false,
   });
 
   String get timeLabel {
@@ -33,6 +37,8 @@ class Meeting {
       startTime: json['startTime']?.toString() ?? '',
       endTime: json['endTime']?.toString() ?? '',
       location: json['location']?.toString() ?? '',
+      priority: json['priority']?.toString() ?? 'medium',
+      done: json['done'] == true,
     );
   }
 
@@ -44,6 +50,8 @@ class Meeting {
       'startTime': startTime,
       'endTime': endTime,
       'location': location,
+      'priority': priority,
+      'done': done,
     };
   }
 }
