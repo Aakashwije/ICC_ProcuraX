@@ -10,7 +10,7 @@ import 'pages/notes/notes_page.dart';
 import 'pages/documents/documents_page.dart';
 import 'pages/build_assist/build_assist_page.dart';
 import 'pages/communication/communication_page.dart';
-import 'pages/meetings/meetings_page.dart';
+import 'pages/meetings/features/smart_calendar/screens/meetings_page.dart';
 import 'pages/sign_in/create_account_page.dart';
 import 'pages/log_in/login_page.dart';
 import 'pages/settings/settings_page.dart';
