@@ -3,22 +3,25 @@ import '../../../theme.dart';
 import '../models/meeting.dart';
 import '../../../../../../services/meetings_service.dart';
 
-class AddMeetingPage extends StatefulWidget {
-  const AddMeetingPage({super.key});
+class EditMeetingPage extends StatefulWidget {
+  final Meeting meeting;
+
+  const EditMeetingPage({super.key, required this.meeting});
 
   @override
-  State<AddMeetingPage> createState() => _AddMeetingPageState();
+  State<EditMeetingPage> createState() => _EditMeetingPageState();
 }
 
-class _AddMeetingPageState extends State<AddMeetingPage> {
+class _EditMeetingPageState extends State<EditMeetingPage> {
   static const Map<String, Color> _priorityColors = {
     'high': Color(0xFFDC2626),
     'medium': Color(0xFFF59E0B),
     'low': Color(0xFF0EA5E9),
   };
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
+
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _locationController;
 
   DateTime? _selectedDate;
   TimeOfDay? _startTime;
@@ -27,11 +30,39 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.meeting.title);
+    _descriptionController = TextEditingController(
+      text: widget.meeting.description,
+    );
+    _locationController = TextEditingController(text: widget.meeting.location);
+    _selectedDate = widget.meeting.date;
+    _startTime = _parseTime(widget.meeting.startTime);
+    _endTime = _parseTime(widget.meeting.endTime);
+    _priority = widget.meeting.priority;
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
+  }
+
+  TimeOfDay? _parseTime(String value) {
+    if (value.isEmpty) return null;
+    final parts = value.split(' ');
+    if (parts.isEmpty) return null;
+    final timeParts = parts[0].split(':');
+    if (timeParts.length < 2) return null;
+    var hour = int.tryParse(timeParts[0]) ?? 0;
+    final minute = int.tryParse(timeParts[1]) ?? 0;
+    final period = parts.length > 1 ? parts[1].toLowerCase() : '';
+    if (period == 'pm' && hour < 12) hour += 12;
+    if (period == 'am' && hour == 12) hour = 0;
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
   String _formatTime(TimeOfDay? time) {
@@ -84,8 +115,8 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
 
     setState(() => _saving = true);
 
-    final meeting = Meeting(
-      id: '',
+    final updated = Meeting(
+      id: widget.meeting.id,
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       date: _selectedDate!,
@@ -93,17 +124,18 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       endTime: _formatTime(_endTime),
       location: _locationController.text.trim(),
       priority: _priority,
+      done: widget.meeting.done,
     );
 
     try {
-      final created = await MeetingsService.createMeeting(meeting);
+      final saved = await MeetingsService.updateMeeting(updated);
       if (!mounted) return;
-      Navigator.pop(context, created);
+      Navigator.pop(context, saved);
     } catch (err) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save meeting: $err')));
+      ).showSnackBar(SnackBar(content: Text('Failed to update meeting: $err')));
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -218,7 +250,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('Add New Meeting'),
+        title: const Text('Edit Meeting'),
       ),
       body: SafeArea(
         child: Column(
@@ -227,36 +259,6 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.event_note, color: primaryBlue),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Plan a focused meeting with the right priority.',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: primaryBlue,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   _input(
                     'Meeting Title',
                     _titleController,
@@ -317,7 +319,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                           ),
                         )
                       : const Icon(Icons.save),
-                  label: Text(_saving ? 'Saving...' : 'Save Meeting'),
+                  label: Text(_saving ? 'Saving...' : 'Save Changes'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
                     shape: RoundedRectangleBorder(

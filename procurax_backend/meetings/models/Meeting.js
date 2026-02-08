@@ -31,6 +31,15 @@ const MeetingSchema = new mongoose.Schema(
 			default: "",
 			trim: true,
 		},
+		priority: {
+			type: String,
+			enum: ["low", "medium", "high"],
+			default: "medium",
+		},
+		done: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	{
 		timestamps: true,
