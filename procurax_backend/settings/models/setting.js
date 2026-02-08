@@ -16,7 +16,7 @@ const settingSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['appearance', 'notifications', 'privacy', 'general'],
+    enum: ['appearance', 'notifications', 'privacy', 'general', 'app'],
     default: 'general'
   },
   createdAt: {
