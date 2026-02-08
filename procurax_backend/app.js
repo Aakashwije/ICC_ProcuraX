@@ -78,6 +78,8 @@ app.use("/admin-projects", adminProjectRoutes);
 app.use("/admin-stats", adminStatsRoutes);
 // =======================================
 
+// ===== CHATBOT MODULE ROUTES =====
+
 // Basic health route
 app.get("/", (req, res) => res.send("ProcuraX backend running"));
 
