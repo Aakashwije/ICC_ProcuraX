@@ -1,17 +1,23 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:procurax_frontend/services/api_service.dart' as core_api;
 
 class ApiService {
-  // Now using port 3000
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+  static String get baseUrl => '${core_api.ApiService.baseUrl}/api';
+
+  static const Duration _timeout = Duration(seconds: 8);
 
   /// Fetch settings from MongoDB backend
   static Future<Map<String, dynamic>> getSettings() async {
     try {
       final url = Uri.parse('$baseUrl/settings');
-      print('📡 Fetching settings from: $url');
+      if (kDebugMode) {
+        debugPrint('📡 Fetching settings from: $url');
+      }
 
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -21,7 +27,9 @@ class ApiService {
         }
       }
     } catch (e) {
-      print('⚠️ Error in getSettings: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Error in getSettings: $e');
+      }
     }
 
     // Return default settings if anything fails
@@ -40,19 +48,27 @@ class ApiService {
   ) async {
     try {
       final url = Uri.parse('$baseUrl/settings/bulk');
-      print('📡 Updating settings at: $url');
+      if (kDebugMode) {
+        debugPrint('📡 Updating settings at: $url');
+      }
 
-      final response = await http.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(settings),
-      );
+      final response = await http
+          .put(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(settings),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
-        print('✅ Settings saved to MongoDB');
+        if (kDebugMode) {
+          debugPrint('✅ Settings saved to MongoDB');
+        }
       }
     } catch (e) {
-      print('⚠️ Error saving settings: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Error saving settings: $e');
+      }
     }
   }
 }

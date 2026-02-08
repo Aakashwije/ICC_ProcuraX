@@ -1,4 +1,4 @@
-import User from '../models/user.js';
+import User from '../../models/User.js';
 import Setting from '../models/setting.js';
 import { generateToken } from '../authMiddleware.js';
 
@@ -25,7 +25,14 @@ export const getAllUsers = async (req, res) => {
 // Register new user
 export const addUser = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, ...otherData } = req.body;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      name: providedName,
+      ...otherData
+    } = req.body;
     
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -37,11 +44,12 @@ export const addUser = async (req, res) => {
     }
     
     // Create user
+    const name = (providedName || `${firstName || ''} ${lastName || ''}`.trim() || email).trim();
+
     const user = new User({
+      name,
       email,
       password,
-      firstName: firstName || '',
-      lastName: lastName || '',
       ...otherData
     });
     
@@ -93,7 +101,7 @@ export const loginUser = async (req, res) => {
     }
     
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -102,7 +110,7 @@ export const loginUser = async (req, res) => {
     }
     
     // Check password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -141,6 +149,15 @@ export const updateUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    if ((updateData.firstName || updateData.lastName) && !updateData.name) {
+      updateData.name = `${updateData.firstName || ''} ${updateData.lastName || ''}`.trim();
+    }
+
+    if (updateData.firstName || updateData.lastName) {
+      delete updateData.firstName;
+      delete updateData.lastName;
+    }
     
     // Remove password from update data (use separate endpoint for password change)
     if (updateData.password) {
