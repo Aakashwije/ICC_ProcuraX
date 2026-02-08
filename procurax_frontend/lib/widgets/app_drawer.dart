@@ -149,8 +149,8 @@ class AppDrawer extends StatelessWidget {
             _DrawerTile(
               title: "Settings",
               icon: Icons.settings,
-              selected: false,
-              onTap: () {},
+              selected: currentRoute == AppRoutes.settings,
+              onTap: () => _go(context, AppRoutes.settings),
             ),
 
             _DrawerTile(
