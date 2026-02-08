@@ -1,11 +1,20 @@
 // src/controllers/settings.controller.js - SIMPLIFIED
+import mongoose from 'mongoose';
 import Setting from '../models/setting.js';
+
+const DEFAULT_USER_ID = new mongoose.Types.ObjectId('000000000000000000000000');
+
+const resolveUserId = (req) => {
+  const userId = req.query.userId || req.body.userId;
+  return userId || DEFAULT_USER_ID;
+};
 
 // Get all settings (for current user or default)
 export const getSettings = async (req, res) => {
   try {
     // For now, get first settings or create default
-    let settings = await Setting.findOne();
+    const userId = resolveUserId(req);
+    let settings = await Setting.findOne({ key: 'default_settings', userId });
     
     if (!settings) {
       // Create default settings
@@ -17,7 +26,8 @@ export const getSettings = async (req, res) => {
           notifications_email: true,
           notifications_alerts: true
         },
-        category: 'app'
+        category: 'app',
+        userId
       });
       await settings.save();
     }
@@ -40,15 +50,17 @@ export const getSettings = async (req, res) => {
 export const updateMultipleSettings = async (req, res) => {
   try {
     const updates = req.body;
+    const userId = resolveUserId(req);
     
     // Find or create settings
-    let settings = await Setting.findOne({ key: 'default_settings' });
+    let settings = await Setting.findOne({ key: 'default_settings', userId });
     
     if (!settings) {
       settings = new Setting({
         key: 'default_settings',
         value: updates,
-        category: 'app'
+        category: 'app',
+        userId
       });
     } else {
       settings.value = { ...settings.value, ...updates };

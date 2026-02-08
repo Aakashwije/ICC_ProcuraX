@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
@@ -57,12 +58,16 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadSettings() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
       final settings = await ApiService.getSettings();
-      print('📱 Loaded settings from MongoDB: $settings');
+      if (kDebugMode) {
+        debugPrint('📱 Loaded settings from MongoDB: $settings');
+      }
 
+      if (!mounted) return;
       setState(() {
         selectedTheme = settings['theme'] ?? 'Light';
         selectedTimezone = settings['timezone'] ?? 'UTC';
@@ -72,13 +77,19 @@ class _SettingsPageState extends State<SettingsPage> {
       });
 
       // Update app theme immediately
-      final themeNotifier = context.read<ThemeNotifier>();
-      themeNotifier.setTheme(selectedTheme);
+      if (mounted) {
+        final themeNotifier = context.read<ThemeNotifier>();
+        themeNotifier.setTheme(selectedTheme);
+      }
     } catch (e) {
-      print('⚠️ Error loading settings from backend: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Error loading settings from backend: $e');
+      }
       // Use default values if API fails
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -92,9 +103,13 @@ class _SettingsPageState extends State<SettingsPage> {
         'defaultProject': defaultProject,
       });
 
-      print('✅ Settings saved to MongoDB silently');
+      if (kDebugMode) {
+        debugPrint('✅ Settings saved to MongoDB silently');
+      }
     } catch (e) {
-      print('⚠️ Error saving settings: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Error saving settings: $e');
+      }
     }
   }
 
@@ -488,7 +503,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        value: value,
+  initialValue: value,
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
