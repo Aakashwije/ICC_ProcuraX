@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'theme_notifier.dart';
+import 'services/api_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,7 +14,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   String selectedTheme = "Light";
-  String selectedTimezone = "Pacific Time (PST)";
+  String selectedTimezone = "UTC";
   String role = "Project Manager";
   String department = "Construction";
   String defaultProject = "Tower A - Downtown";
@@ -22,6 +23,111 @@ class _SettingsPageState extends State<SettingsPage> {
   String lastName = "Doe";
   String email = "john.doe@company.com";
   String phone = "+1 (555) 123-4567";
+
+  bool isLoading = false;
+
+  // Text controllers
+  late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
+  late TextEditingController emailController;
+  late TextEditingController phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize controllers
+    firstNameController = TextEditingController(text: firstName);
+    lastNameController = TextEditingController(text: lastName);
+    emailController = TextEditingController(text: email);
+    phoneController = TextEditingController(text: phone);
+
+    // Load settings from MongoDB automatically
+    _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    // Clean up controllers
+    firstNameController.dispose();
+    lastNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() => isLoading = true);
+
+    try {
+      final settings = await ApiService.getSettings();
+      print('📱 Loaded settings from MongoDB: $settings');
+
+      setState(() {
+        selectedTheme = settings['theme'] ?? 'Light';
+        selectedTimezone = settings['timezone'] ?? 'UTC';
+        role = settings['role'] ?? 'Project Manager';
+        department = settings['department'] ?? 'Construction';
+        defaultProject = settings['defaultProject'] ?? 'Tower A - Downtown';
+      });
+
+      // Update app theme immediately
+      final themeNotifier = context.read<ThemeNotifier>();
+      themeNotifier.setTheme(selectedTheme);
+    } catch (e) {
+      print('⚠️ Error loading settings from backend: $e');
+      // Use default values if API fails
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    try {
+      await ApiService.updateMultipleSettings({
+        'theme': selectedTheme,
+        'timezone': selectedTimezone,
+        'role': role,
+        'department': department,
+        'defaultProject': defaultProject,
+      });
+
+      print('✅ Settings saved to MongoDB silently');
+    } catch (e) {
+      print('⚠️ Error saving settings: $e');
+    }
+  }
+
+  void _handleThemeChange(String value) {
+    setState(() => selectedTheme = value);
+
+    // Update app theme
+    final themeNotifier = context.read<ThemeNotifier>();
+    themeNotifier.setTheme(value);
+
+    // Save to MongoDB silently
+    _saveSettings();
+  }
+
+  void _handleTimezoneChange(String value) {
+    setState(() => selectedTimezone = value);
+    _saveSettings();
+  }
+
+  void _handleRoleChange(String value) {
+    setState(() => role = value);
+    _saveSettings();
+  }
+
+  void _handleDepartmentChange(String value) {
+    setState(() => department = value);
+    _saveSettings();
+  }
+
+  void _handleProjectChange(String value) {
+    setState(() => defaultProject = value);
+    _saveSettings();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +150,7 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
           child: Column(
             children: [
-              // ---------- HEADER (kept from your original code) ----------
+              // ---------- HEADER (your original code) ----------
               Row(
                 children: [
                   Builder(
@@ -64,7 +170,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 48),
+                  if (isLoading)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(
+                        color: blue,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
                 ],
               ),
 
@@ -72,108 +187,215 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // ---------- SETTINGS CONTENT ----------
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _card(
-                        cardBg,
-                        blue,
-                        lightBlue,
-                        Icons.person_outline,
-                        "Profile",
-                        "Update your personal info",
-                        Column(
+                child: isLoading
+                    ? Center(child: CircularProgressIndicator(color: blue))
+                    : SingleChildScrollView(
+                        child: Column(
                           children: [
-                            _input("First Name", firstName, fieldBg),
-                            _input("Last Name", lastName, fieldBg),
-                            _input("Email", email, fieldBg),
-                            _input("Phone Number", phone, fieldBg),
-                          ],
-                        ),
-                      ),
+                            // ---------- Profile Card ----------
+                            _card(
+                              cardBg,
+                              blue,
+                              lightBlue,
+                              Icons.person_outline,
+                              "Profile",
+                              "Update your personal info",
+                              Column(
+                                children: [
+                                  // Profile Picture
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 72,
+                                        height: 72,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: fieldBg,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            "${firstName[0]}${lastName[0]}",
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: blue,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          OutlinedButton(
+                                            onPressed: () {},
+                                            child: const Text("Change Photo"),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            "JPG, PNG or GIF. Max size 2MB",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: lightBlue,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  // Input Fields
+                                  _input(
+                                    "First Name",
+                                    firstNameController,
+                                    fieldBg,
+                                  ),
+                                  _input(
+                                    "Last Name",
+                                    lastNameController,
+                                    fieldBg,
+                                  ),
+                                  _input(
+                                    "Email",
+                                    emailController,
+                                    fieldBg,
+                                    isEditable: false,
+                                  ),
+                                  _input(
+                                    "Phone Number",
+                                    phoneController,
+                                    fieldBg,
+                                  ),
+                                ],
+                              ),
+                            ),
 
-                      _card(
-                        cardBg,
-                        blue,
-                        lightBlue,
-                        Icons.badge_outlined,
-                        "Role & Department",
-                        "Configure your role",
-                        Column(
-                          children: [
-                            _dropdown(
-                              "Role",
-                              role,
-                              ["Project Manager", "Engineer", "Site Worker"],
-                              fieldBg,
-                              (v) => setState(() => role = v),
+                            // ---------- Role & Department Card ----------
+                            _card(
+                              cardBg,
+                              blue,
+                              lightBlue,
+                              Icons.badge_outlined,
+                              "Role & Department",
+                              "Configure your role",
+                              Column(
+                                children: [
+                                  _dropdown(
+                                    "Role",
+                                    role,
+                                    [
+                                      "Project Manager",
+                                      "Engineer",
+                                      "Site Worker",
+                                      "Architect",
+                                      "Contractor",
+                                    ],
+                                    fieldBg,
+                                    _handleRoleChange,
+                                  ),
+                                  _dropdown(
+                                    "Department",
+                                    department,
+                                    [
+                                      "Construction",
+                                      "IT",
+                                      "Engineering",
+                                      "Design",
+                                      "Management",
+                                    ],
+                                    fieldBg,
+                                    _handleDepartmentChange,
+                                  ),
+                                  _dropdown(
+                                    "Default Project",
+                                    defaultProject,
+                                    [
+                                      "Tower A - Downtown",
+                                      "Tower B - Uptown",
+                                      "Bridge Project",
+                                      "Hospital Renovation",
+                                    ],
+                                    fieldBg,
+                                    _handleProjectChange,
+                                  ),
+                                ],
+                              ),
                             ),
-                            _dropdown(
-                              "Department",
-                              department,
-                              ["Construction", "IT"],
-                              fieldBg,
-                              (v) => setState(() => department = v),
-                            ),
-                            _dropdown(
-                              "Default Project",
-                              defaultProject,
-                              ["Tower A - Downtown", "Tower B"],
-                              fieldBg,
-                              (v) => setState(() => defaultProject = v),
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      _card(
-                        cardBg,
-                        blue,
-                        lightBlue,
-                        Icons.palette_outlined,
-                        "Display Preferences",
-                        "Customize appearance",
-                        Column(
-                          children: [
-                            _dropdown(
-                              "Theme",
-                              selectedTheme,
-                              ["Light", "Dark"],
-                              fieldBg,
-                              (v) {
-                                setState(() => selectedTheme = v);
-                                themeNotifier.setTheme(v);
-                              },
+                            // ---------- Display Preferences Card ----------
+                            _card(
+                              cardBg,
+                              blue,
+                              lightBlue,
+                              Icons.palette_outlined,
+                              "Display Preferences",
+                              "Customize appearance",
+                              Column(
+                                children: [
+                                  _dropdown(
+                                    "Theme",
+                                    selectedTheme,
+                                    ["Light", "Dark"],
+                                    fieldBg,
+                                    _handleThemeChange,
+                                  ),
+                                  _dropdown(
+                                    "Timezone",
+                                    selectedTimezone,
+                                    [
+                                      "UTC",
+                                      "Pacific Time (PST)",
+                                      "Eastern Time (EST)",
+                                      "Central Time (CST)",
+                                      "Mountain Time (MST)",
+                                    ],
+                                    fieldBg,
+                                    _handleTimezoneChange,
+                                  ),
+                                ],
+                              ),
                             ),
-                            _dropdown(
-                              "Timezone",
-                              selectedTimezone,
-                              ["Pacific Time (PST)", "Eastern Time (EST)"],
-                              fieldBg,
-                              (v) => setState(() => selectedTimezone = v),
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      _card(
-                        cardBg,
-                        blue,
-                        lightBlue,
-                        Icons.info_outline,
-                        "About",
-                        "Application info",
-                        Column(
-                          children: [
-                            _aboutRow("Version", "2.4.1", lightBlue),
-                            const Divider(),
-                            _aboutRow("Last Updated", "Nov 2, 2025", lightBlue),
+                            // ---------- About Card ----------
+                            _card(
+                              cardBg,
+                              blue,
+                              lightBlue,
+                              Icons.info_outline,
+                              "About",
+                              "Application info",
+                              Column(
+                                children: [
+                                  _aboutRow("Version", "2.4.1", lightBlue),
+                                  const Divider(),
+                                  _aboutRow(
+                                    "Last Updated",
+                                    "Nov 2, 2025",
+                                    lightBlue,
+                                  ),
+                                  const Divider(),
+                                  _aboutRow("Database", "MongoDB", lightBlue),
+                                  const SizedBox(height: 16),
+                                  _aboutButton(
+                                    "Contact Support",
+                                    fieldBg,
+                                    blue,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _aboutButton("Privacy Policy", fieldBg, blue),
+                                  const SizedBox(height: 8),
+                                  _aboutButton(
+                                    "Terms of Service",
+                                    fieldBg,
+                                    blue,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
@@ -219,26 +441,39 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 4),
           Text(subtitle, style: TextStyle(color: lightBlue)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           child,
         ],
       ),
     );
   }
 
-  Widget _input(String label, String value, Color bg) {
+  Widget _input(
+    String label,
+    TextEditingController controller,
+    Color bg, {
+    bool isEditable = true,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: bg,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[400])),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            enabled: isEditable,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: bg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -253,7 +488,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        initialValue: value,
+        value: value,
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
@@ -278,6 +513,26 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(l, style: TextStyle(color: c)),
         Text(r, style: TextStyle(color: c)),
       ],
+    );
+  }
+
+  Widget _aboutButton(String text, Color bg, Color textColor) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: bg,
+          foregroundColor: textColor,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: () {
+          // TODO: Add action or navigation
+        },
+        child: Text(text),
+      ),
     );
   }
 }
