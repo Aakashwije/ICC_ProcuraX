@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
 import 'package:procurax_frontend/models/task_model.dart';
+import 'package:procurax_frontend/pages/meetings/features/smart_calendar/models/meeting.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/services/meetings_service.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
@@ -24,10 +26,12 @@ class _DashboardPageState extends State<DashboardPage> {
   final ProjectStatus projectStatus = ProjectStatus.active;
   late Future<ProcurementView> _procurementFuture;
   late Future<List<Task>> _recentTasksFuture;
+  late Future<List<Meeting>> _recentMeetingsFuture;
   final TasksService _tasksService = TasksService();
   bool _isRefreshing = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  List<Meeting> _recentMeetings = [];
 
   bool get _isSearching => _searchQuery.trim().isNotEmpty;
 
@@ -35,14 +39,6 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!_isSearching) return true;
     return text.toLowerCase().contains(_searchQuery.toLowerCase());
   }
-
-  List<Map<String, String>> get _meetingItems => [
-    {
-      "title": "Meeting with IIT Rathmalana Team",
-      "subtitle": "10:00 A.M – 11:00 A.M",
-    },
-    {"title": "Weekly GM's Meeting", "subtitle": "02:00 P.M – 02:30 P.M"},
-  ];
 
   @override
   void initState() {
@@ -61,6 +57,14 @@ class _DashboardPageState extends State<DashboardPage> {
     _recentTasksFuture = _tasksService.fetchTasks().then(
       (tasks) => tasks.take(2).toList(),
     );
+    _recentMeetingsFuture = MeetingsService.fetchMeetings().then((meetings) {
+      meetings.sort((a, b) => b.date.compareTo(a.date));
+      final recent = meetings.take(2).toList();
+      if (mounted) {
+        setState(() => _recentMeetings = recent);
+      }
+      return recent;
+    });
   }
 
   Future<void> _handleRefresh() async {
@@ -69,7 +73,11 @@ class _DashboardPageState extends State<DashboardPage> {
       _refreshDashboard();
     });
     try {
-      await Future.wait([_procurementFuture, _recentTasksFuture]);
+      await Future.wait([
+        _procurementFuture,
+        _recentTasksFuture,
+        _recentMeetingsFuture,
+      ]);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -362,17 +370,23 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!_isSearching) return const SizedBox.shrink();
 
     return FutureBuilder<List<dynamic>>(
-      future: Future.wait([_procurementFuture, _recentTasksFuture]),
+      future: Future.wait([
+        _procurementFuture,
+        _recentTasksFuture,
+        _recentMeetingsFuture,
+      ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
         }
 
         final procurement = snapshot.data?.first as ProcurementView?;
-        final tasks = snapshot.data?.last as List<Task>? ?? [];
+        final tasks = snapshot.data?[1] as List<Task>? ?? [];
+        final meetings = snapshot.data?[2] as List<Meeting>? ?? [];
         final hasProject = _matchesQuery("project iit rathmalana");
-        final hasMeetings = _meetingItems.any(
-          (m) => _matchesQuery("${m['title']} ${m['subtitle']}"),
+        final hasMeetings = meetings.any(
+          (meeting) =>
+              _matchesQuery("${meeting.title} ${_meetingSubtitle(meeting)}"),
         );
         final hasProcurement = _filterProcurementItems(
           procurement?.procurementItems ?? <ProcurementItemView>[],
@@ -588,28 +602,68 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _meetingsSection() {
-    final visible = _meetingItems
-        .where((m) => _matchesQuery("${m['title']} ${m['subtitle']}"))
-        .toList();
+    return FutureBuilder<List<Meeting>>(
+      future: _recentMeetingsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _loadingState("Loading meetings...");
+        }
 
-    if (visible.isEmpty) {
-      return _emptyState(
-        _isSearching ? "No meetings match your search." : "No meetings yet.",
-      );
-    }
+        if (snapshot.hasError) {
+          return _emptyState("Unable to load meetings.");
+        }
 
-    return Column(
-      children: [
-        for (var i = 0; i < visible.length; i++) ...[
-          _infoRow(
-            icon: Icons.calendar_today_outlined,
-            title: visible[i]["title"]!,
-            subtitle: visible[i]["subtitle"]!,
-          ),
-          if (i < visible.length - 1) const SizedBox(height: 12),
-        ],
-      ],
+        final meetings = snapshot.data ?? _recentMeetings;
+        final visible = meetings
+            .where(
+              (meeting) => _matchesQuery(
+                "${meeting.title} ${_meetingSubtitle(meeting)}",
+              ),
+            )
+            .toList();
+
+        if (visible.isEmpty) {
+          return _emptyState(
+            _isSearching
+                ? "No meetings match your search."
+                : "No meetings yet.",
+          );
+        }
+
+        return Column(
+          children: [
+            for (var i = 0; i < visible.length; i++) ...[
+              _infoRow(
+                icon: Icons.calendar_today_outlined,
+                title: visible[i].title.isEmpty
+                    ? "Untitled meeting"
+                    : visible[i].title,
+                subtitle: _meetingSubtitle(visible[i]),
+              ),
+              if (i < visible.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
     );
+  }
+
+  String _meetingSubtitle(Meeting meeting) {
+    final date = meeting.date;
+    final dateLabel = "${date.day}/${date.month}/${date.year}";
+    final timeLabel = meeting.timeLabel;
+    final locationLabel = meeting.location.trim().isEmpty
+        ? "Location TBD"
+        : meeting.location.trim();
+    final priorityLabel = _formatPriority(meeting.priority);
+    return "$dateLabel • $timeLabel • $locationLabel • $priorityLabel";
+  }
+
+  String _formatPriority(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) return "Priority: —";
+    final label = "${normalized[0].toUpperCase()}${normalized.substring(1)}";
+    return "Priority: $label";
   }
 
   List<Task> _filterTasks(List<Task> tasks) {
