@@ -629,33 +629,68 @@ class MessagesPage extends StatelessWidget {
   });
 
   String _formatChatTime(dynamic updatedAt, BuildContext context) {
-    if (updatedAt == null) return '';
+    final dt = _parseChatTime(updatedAt);
+    if (dt == null) return '';
 
-    if (updatedAt is DateTime) {
-      return TimeOfDay.fromDateTime(updatedAt.toLocal()).format(context);
+    final local = dt.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(local.year, local.month, local.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (date == today) {
+      return TimeOfDay.fromDateTime(local).format(context);
     }
+
+    if (date == yesterday) {
+      return 'Yesterday';
+    }
+
+    return '${local.day.toString().padLeft(2, '0')} '
+        '${_monthName(local.month)} '
+        '${local.year}';
+  }
+
+  DateTime? _parseChatTime(dynamic updatedAt) {
+    if (updatedAt == null) return null;
+
+    if (updatedAt is DateTime) return updatedAt;
 
     if (updatedAt is Map) {
       final seconds = updatedAt['_seconds'] ?? updatedAt['seconds'];
       if (seconds is int) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(
+        return DateTime.fromMillisecondsSinceEpoch(
           seconds * 1000,
           isUtc: true,
-        ).toLocal();
-        return TimeOfDay.fromDateTime(dt).format(context);
+        );
       }
     }
 
     if (updatedAt is String) {
       final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(updatedAt);
       final normalized = hasTz ? updatedAt : '${updatedAt}Z';
-      final parsed = DateTime.tryParse(normalized);
-      if (parsed != null) {
-        return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
-      }
+      return DateTime.tryParse(normalized);
     }
 
-    return '';
+    return null;
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[month - 1];
   }
 
   @override
