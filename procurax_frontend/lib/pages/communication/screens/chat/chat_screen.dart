@@ -122,32 +122,53 @@ class _ChatScreenState extends State<ChatScreen> {
   String _formatMessageTime(dynamic createdAt) {
     if (createdAt == null) return '';
 
-    if (createdAt is DateTime) {
-      return TimeOfDay.fromDateTime(createdAt.toLocal()).format(context);
-    }
+    DateTime? dt;
 
-    if (createdAt is Map) {
+    if (createdAt is DateTime) {
+      dt = createdAt.toLocal();
+    } else if (createdAt is Map) {
       final seconds = createdAt['_seconds'] ?? createdAt['seconds'];
       if (seconds is int) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(
+        dt = DateTime.fromMillisecondsSinceEpoch(
           seconds * 1000,
           isUtc: true,
         ).toLocal();
-        return TimeOfDay.fromDateTime(dt).format(context);
       }
-    }
-
-    if (createdAt is String) {
+    } else if (createdAt is String) {
       final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(createdAt);
       final normalized = hasTz ? createdAt : '${createdAt}Z';
       final parsed = DateTime.tryParse(normalized);
       if (parsed != null) {
-        return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
+        dt = parsed.toLocal();
       }
     }
 
-    return '';
+    if (dt == null) return '';
+
+    final time = TimeOfDay.fromDateTime(dt).format(context);
+    return '${dt.day.toString().padLeft(2, '0')} '
+        '${_monthName(dt.month)} '
+        '${dt.year}, $time';
   }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[month - 1];
+  }
+  
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -315,7 +336,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    final time = TimeOfDay.now().format(context);
+    final time = _formatMessageTime(DateTime.now());
 
     setState(() {
       messages.add(Message(text: text, isMe: true, time: time));
@@ -382,7 +403,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       if (!mounted) return;
-      final time = TimeOfDay.now().format(context);
+      final time = _formatMessageTime(DateTime.now());
       setState(() {
         messages.add(
           Message(
