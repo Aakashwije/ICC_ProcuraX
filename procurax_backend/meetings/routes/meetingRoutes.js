@@ -1,7 +1,21 @@
-import { Router } from "express";
+const router = require("express").Router();
+const {
+  createMeeting,
+  getMeetings,
+  updateMeeting,
+  deleteMeeting
+} = require("../controllers/meetingController");
 
-const router = Router();
+const { protect } = require("../middleware/authMiddleware");
 
-// Meetings module disabled; routes intentionally empty.
+router.use(protect);
 
-export default router;
+router.route("/")
+  .post(createMeeting)
+  .get(getMeetings);
+
+router.route("/:id")
+  .put(updateMeeting)
+  .delete(deleteMeeting);
+
+module.exports = router;
