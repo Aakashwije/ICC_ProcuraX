@@ -1,44 +1,44 @@
 class Meeting {
   final String id;
   final String title;
-  final String description;
+  final String time;
   final DateTime date;
-  final String startTime;
-  final String endTime;
+  final String description;
   final String location;
   final String priority;
   final bool done;
+  final String startTime;
+  final String endTime;
 
-  const Meeting({
-    required this.id,
-    required this.title,
-    required this.date,
+  Meeting(
+    this.title,
+    this.time,
+    this.date, {
+    this.id = '',
     this.description = '',
-    this.startTime = '',
-    this.endTime = '',
     this.location = '',
     this.priority = 'medium',
     this.done = false,
+    this.startTime = '',
+    this.endTime = '',
   });
 
-  String get timeLabel {
-    if (startTime.isEmpty && endTime.isEmpty) return 'Time TBD';
-    if (startTime.isEmpty) return endTime;
-    if (endTime.isEmpty) return startTime;
-    return '$startTime - $endTime';
-  }
-
   factory Meeting.fromJson(Map<String, dynamic> json) {
+    final start = json['startTime']?.toString() ?? '';
+    final end = json['endTime']?.toString() ?? '';
+    final timeLabel = json['time']?.toString() ?? _formatTime(start, end);
+
     return Meeting(
-      id: json['_id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
+      json['title']?.toString() ?? '',
+      timeLabel,
+      DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
-      startTime: json['startTime']?.toString() ?? '',
-      endTime: json['endTime']?.toString() ?? '',
       location: json['location']?.toString() ?? '',
       priority: json['priority']?.toString() ?? 'medium',
       done: json['done'] == true,
+      startTime: start,
+      endTime: end,
     );
   }
 
@@ -52,6 +52,16 @@ class Meeting {
       'location': location,
       'priority': priority,
       'done': done,
+      'time': time,
     };
+  }
+
+  String get timeLabel => time;
+
+  static String _formatTime(String start, String end) {
+    if (start.isEmpty && end.isEmpty) return '';
+    if (start.isEmpty) return end;
+    if (end.isEmpty) return start;
+    return '$start - $end';
   }
 }
