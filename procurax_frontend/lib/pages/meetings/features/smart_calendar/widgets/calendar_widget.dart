@@ -15,14 +15,10 @@ class CalendarWidget extends StatelessWidget {
     required this.calendarFormat,
     required this.focusedDay,
     required this.selectedDay,
-    required this.meetingCounts,
+    this.meetingCounts = const {},
     required this.onDaySelected,
     required this.onPageChanged,
   });
-
-  DateTime _normalizeDay(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +28,11 @@ class CalendarWidget extends StatelessWidget {
       focusedDay: focusedDay,
       calendarFormat: calendarFormat,
       selectedDayPredicate: (day) => isSameDay(day, selectedDay),
+      eventLoader: (day) {
+        final key = DateTime(day.year, day.month, day.day);
+        final count = meetingCounts[key] ?? 0;
+        return List.filled(count, 'event');
+      },
       onDaySelected: (selected, focused) {
         onDaySelected(selected);
       },
@@ -53,34 +54,6 @@ class CalendarWidget extends StatelessWidget {
           color: primaryBlue,
           shape: BoxShape.circle,
         ),
-      ),
-      calendarBuilders: CalendarBuilders(
-        markerBuilder: (context, day, events) {
-          final key = _normalizeDay(day);
-          final count = meetingCounts[key] ?? 0;
-          if (count == 0) return const SizedBox.shrink();
-
-          return Positioned(
-            right: 4,
-            bottom: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: primaryBlue,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-              child: Text(
-                count > 9 ? '9+' : '$count',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
