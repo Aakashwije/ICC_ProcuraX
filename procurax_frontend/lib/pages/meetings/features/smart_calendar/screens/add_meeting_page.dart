@@ -1,75 +1,152 @@
 import 'package:flutter/material.dart';
-import '../../../theme.dart';
+import 'package:intl/intl.dart';
 
-class AddMeetingPage extends StatelessWidget {
+import '../../../theme.dart';
+import '../models/meeting.dart';
+import '../../../../../../services/meetings_service.dart';
+
+class AddMeetingPage extends StatefulWidget {
   const AddMeetingPage({super.key});
 
-  Widget input(String label, String hint, {bool large = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: primaryBlue)),
-        const SizedBox(height: 6),
-        TextField(
-          maxLines: large ? 4 : 1,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: lightBlue,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
+  @override
+  State<AddMeetingPage> createState() => _AddMeetingPageState();
+}
+
+class _AddMeetingPageState extends State<AddMeetingPage> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+
+  DateTime? _startDateTime;
+  DateTime? _endDateTime;
+
+  bool _isLoading = false;
+
+  String _formatDateTime(DateTime dateTime) {
+    return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
+  }
+
+  Future<void> _addMeeting() async {
+    if (_titleController.text.trim().isEmpty ||
+        _startDateTime == null ||
+        _endDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final meeting = Meeting(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+
+        startTime: _startDateTime!,
+        endTime: _endDateTime!,
+        location: _locationController.text.trim(),
+      );
+
+      await MeetingsService.addMeeting(meeting);
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to add meeting: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickDateTime(bool isStart) async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
     );
+
+    if (date == null) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (time == null) return;
+
+    final dateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    setState(() {
+      if (isStart) {
+        _startDateTime = dateTime;
+      } else {
+        _endDateTime = dateTime;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('Add New Meeting'),
-      ),
+      appBar: AppBar(title: const Text('Add Meeting')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            input('Meeting Title', 'Enter meeting title'),
-            input(
-              'Description (Optional)',
-              'Add meeting details...',
-              large: true,
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title *'),
             ),
-            input('Select Date', ''),
-            Row(
-              children: [
-                Expanded(child: input('Start Time', '')),
-                const SizedBox(width: 12),
-                Expanded(child: input('End Time', '')),
-              ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
             ),
-            input(
-              'Meeting Type or Location (Optional)',
-              'Enter location or meeting type',
+            const SizedBox(height: 12),
+            TextField(
+              controller: _locationController,
+              decoration: const InputDecoration(labelText: 'Location'),
             ),
+            const SizedBox(height: 16),
+
+            ListTile(
+              title: Text(
+                _startDateTime == null
+                    ? 'Select start date & time *'
+                    : _formatDateTime(_startDateTime!),
+              ),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () => _pickDateTime(true),
+            ),
+
+            ListTile(
+              title: Text(
+                _endDateTime == null
+                    ? 'Select end date & time *'
+                    : _formatDateTime(_endDateTime!),
+              ),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () => _pickDateTime(false),
+            ),
+
             const Spacer(),
+
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: const Text('Save Meeting'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {},
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _addMeeting,
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Add Meeting'),
               ),
             ),
           ],

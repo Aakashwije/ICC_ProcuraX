@@ -39,11 +39,7 @@ const meetingSchema = new mongoose.Schema(
       default: false,
     },
 
-    createdBy: {
-      type: String,
-      required: true,
     },
-  },
   {
     timestamps: true,
   }

@@ -9,7 +9,8 @@ import '../models/meeting.dart';
 import '../widgets/tab_selector.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/meeting_list_item.dart';
-import 'package:procurax_frontend/pages/meetings/features/smart_calendar/screens/add_meeting_page.dart';
+import 'add_meeting_page.dart';
+import '../services/meeting_api_service.dart';
 
 class MeetingsPage extends StatefulWidget {
   const MeetingsPage({super.key});
@@ -23,50 +24,62 @@ class _MeetingsPageState extends State<MeetingsPage> {
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
 
-  // Filter meetings based on Day / Week / Month
-  List<Meeting> _filteredMeetings(List<Meeting> allMeetings) {
-    return allMeetings.where((meeting) {
-      // Day view
+  final MeetingApiService _api = MeetingApiService();
+  List<Meeting> _allMeetings = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMeetings();
+  }
+
+  Future<void> _loadMeetings() async {
+    try {
+      final meetings = await _api.getMeetings();
+      setState(() {
+        _allMeetings = meetings;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // 🔹 Filter meetings based on Day / Week / Month
+  List<Meeting> _filteredMeetings() {
+    return _allMeetings.where((meeting) {
+      final meetingDate = meeting.startTime;
+
+      // DAY
       if (_calendarFormat == CalendarFormat.week) {
-        return isSameDay(meeting.date, _selectedDay);
+        return isSameDay(meetingDate, _selectedDay);
       }
 
-      // Week view
+      // WEEK
       if (_calendarFormat == CalendarFormat.twoWeeks) {
         final weekStart = _focusedDay.subtract(
           Duration(days: _focusedDay.weekday - 1),
         );
         final weekEnd = weekStart.add(const Duration(days: 6));
 
-        return meeting.date.isAfter(
+        return meetingDate.isAfter(
               weekStart.subtract(const Duration(days: 1)),
             ) &&
-            meeting.date.isBefore(weekEnd.add(const Duration(days: 1)));
+            meetingDate.isBefore(weekEnd.add(const Duration(days: 1)));
       }
 
-      // Month view
-      return meeting.date.month == _focusedDay.month &&
-          meeting.date.year == _focusedDay.year;
+      // MONTH
+      return meetingDate.month == _focusedDay.month &&
+          meetingDate.year == _focusedDay.year;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Dummy meetings (UI only for now)
-    final meetings = [
-      Meeting(
-        'Project Alpha Team Meeting',
-        '10:00 AM - 11:00 AM',
-        DateTime.now(),
-      ),
-      Meeting('Procurement Review', '10:00 AM - 11:00 AM', DateTime.now()),
-      Meeting(
-        'Team Sync',
-        '10:00 AM - 11:00 AM',
-        DateTime.now().add(const Duration(days: 1)),
-      ),
-    ];
-
     return Scaffold(
       drawer: const AppDrawer(currentRoute: AppRoutes.meetings),
       backgroundColor: Colors.white,
@@ -76,11 +89,12 @@ class _MeetingsPageState extends State<MeetingsPage> {
         backgroundColor: lightBlue,
         elevation: 0,
         child: const Icon(Icons.add, color: primaryBlue),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddMeetingPage()),
           );
+          _loadMeetings(); // 🔁 refresh after add
         },
       ),
 
@@ -90,7 +104,7 @@ class _MeetingsPageState extends State<MeetingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔹 TOP BAR (Drawer + Centered title)
+              // 🔹 TOP BAR
               Row(
                 children: [
                   Builder(
@@ -154,7 +168,6 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
               const SizedBox(height: 20),
 
-              // 🔹 Meetings header
               const Text(
                 'Meetings',
                 style: TextStyle(
@@ -165,13 +178,22 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
               const SizedBox(height: 10),
 
-              // 🔹 Meetings list (filtered)
+              // 🔹 Meetings list
               Expanded(
-                child: ListView(
-                  children: _filteredMeetings(
-                    meetings,
-                  ).map((m) => MeetingListItem(m)).toList(),
-                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredMeetings().isEmpty
+                    ? const Center(
+                        child: Text(
+                          "No meetings found",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView(
+                        children: _filteredMeetings()
+                            .map((m) => MeetingListItem(m))
+                            .toList(),
+                      ),
               ),
             ],
           ),

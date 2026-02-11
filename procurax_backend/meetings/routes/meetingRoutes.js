@@ -1,21 +1,31 @@
-const router = require("express").Router();
+const express = require("express");
+const router = express.Router();
+
 const {
   createMeeting,
   getMeetings,
+  getMeetingById,
   updateMeeting,
-  deleteMeeting
+  markMeetingDone,
+  deleteMeeting,
 } = require("../controllers/meetingController");
 
-const { protect } = require("../middleware/authMiddleware");
+// CREATE meeting
+router.post("/", createMeeting);
 
-router.use(protect);
+// GET all meetings
+router.get("/", getMeetings);
 
-router.route("/")
-  .post(createMeeting)
-  .get(getMeetings);
+// GET single meeting
+router.get("/:id", getMeetingById);
 
-router.route("/:id")
-  .put(updateMeeting)
-  .delete(deleteMeeting);
+// UPDATE / reschedule meeting
+router.put("/:id", updateMeeting);
+
+// MARK meeting as done
+router.patch("/:id/done", markMeetingDone);
+
+// DELETE meeting
+router.delete("/:id", deleteMeeting);
 
 module.exports = router;
