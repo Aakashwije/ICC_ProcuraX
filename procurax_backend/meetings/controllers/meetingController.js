@@ -1,7 +1,7 @@
 const Meeting = require("../models/Meeting");
 const {
   findConflicts,
-  suggestNextSlot
+  suggestNextSlot,
 } = require("../services/meetingService");
 
 /**
@@ -17,26 +17,25 @@ exports.createMeeting = async (req, res) => {
       startTime,
       endTime,
       location,
-      done
+      done = false,
     } = req.body;
 
-    // Check time conflicts for this user
-    const conflicts = await findConflicts(
-      startTime,
-      endTime,
-      req.user._id
-    );
+    if (!title || !startTime || !endTime) {
+      return res.status(400).json({
+        message: "Title, startTime and endTime are required",
+      });
+    }
+
+    // Check overlapping meetings
+    const conflicts = await findConflicts(startTime, endTime);
 
     if (conflicts.length > 0) {
-      const suggestion = await suggestNextSlot(
-        startTime,
-        req.user._id
-      );
+      const suggestion = await suggestNextSlot(startTime);
 
       return res.status(409).json({
         message: "Meeting time conflicts with existing meetings",
         conflicts,
-        suggestion
+        suggestion,
       });
     }
 
@@ -47,7 +46,6 @@ exports.createMeeting = async (req, res) => {
       endTime,
       location,
       done,
-      createdBy: req.user._id // AUTO from JWT
     });
 
     res.status(201).json(meeting);
@@ -58,13 +56,14 @@ exports.createMeeting = async (req, res) => {
 
 /**
  * ===========================
- * GET ALL MEETINGS (SECURE)
+ * GET ALL MEETINGS
+ * (search, filter, sort)
  * ===========================
  */
 exports.getMeetings = async (req, res) => {
   try {
     const { title, from, to, done } = req.query;
-    const query = { createdBy: req.user._id };
+    const query = {};
 
     if (title) {
       query.title = new RegExp(title, "i");
@@ -80,7 +79,6 @@ exports.getMeetings = async (req, res) => {
     }
 
     const meetings = await Meeting.find(query).sort({ startTime: 1 });
-
     res.json(meetings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -89,15 +87,12 @@ exports.getMeetings = async (req, res) => {
 
 /**
  * ===========================
- * GET SINGLE MEETING
+ * GET SINGLE MEETING BY ID
  * ===========================
  */
 exports.getMeetingById = async (req, res) => {
   try {
-    const meeting = await Meeting.findOne({
-      _id: req.params.id,
-      createdBy: req.user._id
-    });
+    const meeting = await Meeting.findById(req.params.id);
 
     if (!meeting) {
       return res.status(404).json({ message: "Meeting not found" });
@@ -122,20 +117,19 @@ exports.updateMeeting = async (req, res) => {
       const conflicts = await findConflicts(
         startTime,
         endTime,
-        req.user._id,
         req.params.id
       );
 
       if (conflicts.length > 0) {
         return res.status(409).json({
           message: "Reschedule conflict detected",
-          conflicts
+          conflicts,
         });
       }
     }
 
-    const updatedMeeting = await Meeting.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user._id },
+    const updatedMeeting = await Meeting.findByIdAndUpdate(
+      req.params.id,
       req.body,
       { new: true }
     );
@@ -157,8 +151,8 @@ exports.updateMeeting = async (req, res) => {
  */
 exports.markMeetingDone = async (req, res) => {
   try {
-    const meeting = await Meeting.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user._id },
+    const meeting = await Meeting.findByIdAndUpdate(
+      req.params.id,
       { done: true },
       { new: true }
     );
@@ -180,10 +174,7 @@ exports.markMeetingDone = async (req, res) => {
  */
 exports.deleteMeeting = async (req, res) => {
   try {
-    const meeting = await Meeting.findOneAndDelete({
-      _id: req.params.id,
-      createdBy: req.user._id
-    });
+    const meeting = await Meeting.findByIdAndDelete(req.params.id);
 
     if (!meeting) {
       return res.status(404).json({ message: "Meeting not found" });
