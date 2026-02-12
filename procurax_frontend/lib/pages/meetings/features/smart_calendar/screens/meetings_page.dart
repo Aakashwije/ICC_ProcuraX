@@ -24,6 +24,19 @@ class _MeetingsPageState extends State<MeetingsPage> {
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
 
+  Map<DateTime, int> _getMeetingCounts() {
+    final Map<DateTime, int> counts = {};
+    for (var meeting in _allMeetings) {
+      final day = DateTime(
+        meeting.startTime.year,
+        meeting.startTime.month,
+        meeting.startTime.day,
+      );
+      counts[day] = (counts[day] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   final MeetingApiService _api = MeetingApiService();
   List<Meeting> _allMeetings = [];
   bool _isLoading = true;
@@ -94,7 +107,7 @@ class _MeetingsPageState extends State<MeetingsPage> {
             context,
             MaterialPageRoute(builder: (_) => const AddMeetingPage()),
           );
-          _loadMeetings(); // 🔁 refresh after add
+          _loadMeetings();
         },
       ),
 
@@ -153,6 +166,7 @@ class _MeetingsPageState extends State<MeetingsPage> {
                   calendarFormat: _calendarFormat,
                   focusedDay: _focusedDay,
                   selectedDay: _selectedDay,
+                  meetingCounts: _getMeetingCounts(),
                   onPageChanged: (day) {
                     setState(() {
                       _focusedDay = day;
@@ -178,7 +192,7 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
               const SizedBox(height: 10),
 
-              // 🔹 Meetings list
+              // Meetings list
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
@@ -191,7 +205,13 @@ class _MeetingsPageState extends State<MeetingsPage> {
                       )
                     : ListView(
                         children: _filteredMeetings()
-                            .map((m) => MeetingListItem(m))
+                            .map(
+                              (m) => MeetingListItem(
+                                m,
+                                onDeleted: _loadMeetings, // ADD THIS
+                                onUpdated: _loadMeetings, // ADD THIS
+                              ),
+                            )
                             .toList(),
                       ),
               ),
