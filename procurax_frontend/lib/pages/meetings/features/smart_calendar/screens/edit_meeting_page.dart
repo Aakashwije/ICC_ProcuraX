@@ -5,44 +5,59 @@ import '../../../theme.dart';
 import '../models/meeting.dart';
 import '../services/meeting_api_service.dart';
 
-class AddMeetingPage extends StatefulWidget {
-  const AddMeetingPage({super.key});
+class EditMeetingPage extends StatefulWidget {
+  final Meeting meeting;
+
+  const EditMeetingPage({super.key, required this.meeting});
 
   @override
-  State<AddMeetingPage> createState() => _AddMeetingPageState();
+  State<EditMeetingPage> createState() => _EditMeetingPageState();
 }
 
-class _AddMeetingPageState extends State<AddMeetingPage> {
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _locationController = TextEditingController();
+class _EditMeetingPageState extends State<EditMeetingPage> {
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _locationController;
 
-  String _selectedPriority = 'medium';
-
-  DateTime? _startDateTime;
-  DateTime? _endDateTime;
+  late String _selectedPriority;
+  late DateTime _startDateTime;
+  late DateTime _endDateTime;
+  late bool _done;
 
   bool _isLoading = false;
 
   final MeetingApiService _apiService = MeetingApiService();
 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with existing meeting data
+    _titleController = TextEditingController(text: widget.meeting.title);
+    _descriptionController = TextEditingController(
+      text: widget.meeting.description,
+    );
+    _locationController = TextEditingController(text: widget.meeting.location);
+    _selectedPriority = widget.meeting.priority;
+    _startDateTime = widget.meeting.startTime;
+    _endDateTime = widget.meeting.endTime;
+    _done = widget.meeting.done;
+  }
+
   String _formatDateTime(DateTime dateTime) {
     return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
   }
 
-  Future<void> _addMeeting() async {
-    if (_titleController.text.trim().isEmpty ||
-        _startDateTime == null ||
-        _endDateTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
-      );
+  Future<void> _updateMeeting() async {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Title is required')));
       return;
     }
 
     // Validate end time > start time
-    if (_endDateTime!.isBefore(_startDateTime!) ||
-        _endDateTime!.isAtSameMomentAs(_startDateTime!)) {
+    if (_endDateTime.isBefore(_startDateTime) ||
+        _endDateTime.isAtSameMomentAs(_startDateTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End time must be after start time')),
       );
@@ -52,29 +67,51 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
     setState(() => _isLoading = true);
 
     try {
-      final meeting = Meeting(
+      final updatedMeeting = widget.meeting.copyWith(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        startTime: _startDateTime!,
-        endTime: _endDateTime!,
+        startTime: _startDateTime,
+        endTime: _endDateTime,
         location: _locationController.text.trim(),
         priority: _selectedPriority,
+        done: _done,
       );
 
-      await _apiService.createMeeting(meeting);
+      await _apiService.updateMeeting(widget.meeting.id!, updatedMeeting);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Meeting added successfully')),
-        );
-        Navigator.pop(context, true);
+        Navigator.pop(context, true); // Return true to indicate success
       }
     } on MeetingConflictException catch (e) {
       _showConflictDialog(e);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to add meeting: $e')));
+      ).showSnackBar(SnackBar(content: Text('Failed to update meeting: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _markAsDone() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await _apiService.markMeetingDone(widget.meeting.id!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Meeting marked as done'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to mark as done: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -128,14 +165,16 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      initialDate: DateTime.now(),
+      initialDate: isStart ? _startDateTime : _endDateTime,
     );
 
     if (date == null) return;
 
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: TimeOfDay.fromDateTime(
+        isStart ? _startDateTime : _endDateTime,
+      ),
     );
 
     if (time == null) return;
@@ -161,15 +200,28 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Meeting'),
+        title: const Text('Edit Meeting'),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // Mark as done button
+          if (!_done)
+            TextButton.icon(
+              onPressed: _isLoading ? null : _markAsDone,
+              icon: const Icon(Icons.check_circle, color: Colors.green),
+              label: const Text(
+                'Mark Done',
+                style: TextStyle(color: Colors.green),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Title field
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
@@ -180,6 +232,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
             ),
             const SizedBox(height: 16),
 
+            // Description field
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(
@@ -191,6 +244,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
             ),
             const SizedBox(height: 16),
 
+            // Location field
             TextField(
               controller: _locationController,
               decoration: const InputDecoration(
@@ -201,6 +255,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
             ),
             const SizedBox(height: 16),
 
+            // Priority dropdown
             DropdownButtonFormField<String>(
               value: _selectedPriority,
               decoration: const InputDecoration(
@@ -220,6 +275,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
             ),
             const SizedBox(height: 24),
 
+            // Date/Time card
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -233,14 +289,8 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                     subtitle: Text(
-                      _startDateTime == null
-                          ? 'Not selected'
-                          : _formatDateTime(_startDateTime!),
-                      style: TextStyle(
-                        color: _startDateTime == null
-                            ? Colors.grey
-                            : Colors.black,
-                      ),
+                      _formatDateTime(_startDateTime),
+                      style: const TextStyle(color: Colors.black),
                     ),
                     trailing: const Icon(
                       Icons.calendar_month,
@@ -255,14 +305,8 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                     subtitle: Text(
-                      _endDateTime == null
-                          ? 'Not selected'
-                          : _formatDateTime(_endDateTime!),
-                      style: TextStyle(
-                        color: _endDateTime == null
-                            ? Colors.grey
-                            : Colors.black,
-                      ),
+                      _formatDateTime(_endDateTime),
+                      style: const TextStyle(color: Colors.black),
                     ),
                     trailing: const Icon(
                       Icons.calendar_month,
@@ -273,13 +317,28 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                 ],
               ),
             ),
+
+            // Done status checkbox
+            CheckboxListTile(
+              title: const Text('Meeting Completed'),
+              value: _done,
+              onChanged: (value) {
+                setState(() {
+                  _done = value ?? false;
+                });
+              },
+              activeColor: Colors.green,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+
             const SizedBox(height: 32),
 
+            // Update button
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _addMeeting,
+                onPressed: _isLoading ? null : _updateMeeting,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   foregroundColor: Colors.white,
@@ -291,7 +350,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                        'Add Meeting',
+                        'Update Meeting',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
