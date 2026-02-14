@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../theme.dart';
 import '../models/meeting.dart';
 import '../../../../../../services/meetings_service.dart';
 
@@ -50,8 +49,10 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
 
       await MeetingsService.addMeeting(meeting);
 
-      if (mounted) Navigator.pop(context, true);
+      if (!mounted) return;
+      Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to add meeting: $e')));
@@ -69,6 +70,8 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
     );
 
     if (date == null) return;
+
+  if (!mounted) return;
 
     final time = await showTimePicker(
       context: context,

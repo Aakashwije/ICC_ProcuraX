@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
 import 'package:procurax_frontend/models/task_model.dart';
+import 'package:procurax_frontend/pages/meetings/features/smart_calendar/models/meeting.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/services/meetings_service.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
@@ -24,10 +26,12 @@ class _DashboardPageState extends State<DashboardPage> {
   final ProjectStatus projectStatus = ProjectStatus.active;
   late Future<ProcurementView> _procurementFuture;
   late Future<List<Task>> _recentTasksFuture;
+  late Future<List<Meeting>> _recentMeetingsFuture;
   final TasksService _tasksService = TasksService();
   bool _isRefreshing = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  List<Meeting> _recentMeetings = [];
 
   bool get _isSearching => _searchQuery.trim().isNotEmpty;
 
@@ -53,6 +57,14 @@ class _DashboardPageState extends State<DashboardPage> {
     _recentTasksFuture = _tasksService.fetchTasks().then(
       (tasks) => tasks.take(2).toList(),
     );
+    _recentMeetingsFuture = MeetingsService.getMeetings().then((meetings) {
+      meetings.sort((a, b) => b.startTime.compareTo(a.startTime));
+      final recent = meetings.take(2).toList();
+      if (mounted) {
+        setState(() => _recentMeetings = recent);
+      }
+      return recent;
+    });
   }
 
   Future<void> _handleRefresh() async {
@@ -61,7 +73,11 @@ class _DashboardPageState extends State<DashboardPage> {
       _refreshDashboard();
     });
     try {
-      await Future.wait([_procurementFuture, _recentTasksFuture]);
+      await Future.wait([
+        _procurementFuture,
+        _recentTasksFuture,
+        _recentMeetingsFuture,
+      ]);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -354,21 +370,30 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!_isSearching) return const SizedBox.shrink();
 
     return FutureBuilder<List<dynamic>>(
-      future: Future.wait([_procurementFuture, _recentTasksFuture]),
+      future: Future.wait([
+        _procurementFuture,
+        _recentTasksFuture,
+        _recentMeetingsFuture,
+      ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
         }
 
         final procurement = snapshot.data?.first as ProcurementView?;
-        final tasks = snapshot.data?.last as List<Task>? ?? [];
+        final tasks = snapshot.data?[1] as List<Task>? ?? [];
+        final meetings = snapshot.data?[2] as List<Meeting>? ?? [];
         final hasProject = _matchesQuery("project iit rathmalana");
+        final hasMeetings = meetings.any(
+          (meeting) =>
+              _matchesQuery("${meeting.title} ${_meetingSubtitle(meeting)}"),
+        );
         final hasProcurement = _filterProcurementItems(
           procurement?.procurementItems ?? <ProcurementItemView>[],
         ).isNotEmpty;
         final hasTasks = _filterTasks(tasks).isNotEmpty;
 
-        if (hasProject || hasProcurement || hasTasks) {
+        if (hasProject || hasMeetings || hasProcurement || hasTasks) {
           return const SizedBox.shrink();
         }
 
@@ -577,11 +602,60 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _meetingsSection() {
-    return _emptyState(
-      _isSearching
-          ? "No meetings match your search."
-          : "Meetings module disabled.",
+    return FutureBuilder<List<Meeting>>(
+      future: _recentMeetingsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _loadingState("Loading meetings...");
+        }
+
+        if (snapshot.hasError) {
+          return _emptyState("Unable to load meetings.");
+        }
+
+        final meetings = snapshot.data ?? _recentMeetings;
+        final visible = meetings
+            .where(
+              (meeting) => _matchesQuery(
+                "${meeting.title} ${_meetingSubtitle(meeting)}",
+              ),
+            )
+            .toList();
+
+        if (visible.isEmpty) {
+          return _emptyState(
+            _isSearching
+                ? "No meetings match your search."
+                : "No meetings yet.",
+          );
+        }
+
+        return Column(
+          children: [
+            for (var i = 0; i < visible.length; i++) ...[
+              _infoRow(
+                icon: Icons.calendar_today_outlined,
+                title: visible[i].title.isEmpty
+                    ? "Untitled meeting"
+                    : visible[i].title,
+                subtitle: _meetingSubtitle(visible[i]),
+              ),
+              if (i < visible.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
     );
+  }
+
+  String _meetingSubtitle(Meeting meeting) {
+    final date = meeting.startTime;
+    final dateLabel = "${date.day}/${date.month}/${date.year}";
+    final timeLabel = meeting.timeRange;
+    final locationLabel = meeting.location.trim().isEmpty
+        ? "Location TBD"
+        : meeting.location.trim();
+    return "$dateLabel • $timeLabel • $locationLabel";
   }
 
   List<Task> _filterTasks(List<Task> tasks) {
