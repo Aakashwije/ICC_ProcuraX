@@ -1,15 +1,12 @@
-const Meeting = require("../models/Meeting");
-const {
-  findConflicts,
-  suggestNextSlot,
-} = require("../services/meetingService");
+import Meeting from "../models/Meeting.js";
+import { findConflicts, suggestNextSlot } from "../services/meetingService.js";
 
 /**
  * ===========================
  * CREATE MEETING
  * ===========================
  */
-exports.createMeeting = async (req, res) => {
+export const createMeeting = async (req, res) => {
   try {
     const {
       title,
@@ -60,7 +57,7 @@ exports.createMeeting = async (req, res) => {
  * (search, filter, sort)
  * ===========================
  */
-exports.getMeetings = async (req, res) => {
+export const getMeetings = async (req, res) => {
   try {
     const { title, from, to, done } = req.query;
     const query = {};
@@ -90,7 +87,7 @@ exports.getMeetings = async (req, res) => {
  * GET SINGLE MEETING BY ID
  * ===========================
  */
-exports.getMeetingById = async (req, res) => {
+export const getMeetingById = async (req, res) => {
   try {
     const meeting = await Meeting.findById(req.params.id);
 
@@ -109,7 +106,7 @@ exports.getMeetingById = async (req, res) => {
  * UPDATE / RESCHEDULE MEETING
  * ===========================
  */
-exports.updateMeeting = async (req, res) => {
+export const updateMeeting = async (req, res) => {
   try {
     const { startTime, endTime } = req.body;
 
@@ -149,7 +146,7 @@ exports.updateMeeting = async (req, res) => {
  * MARK MEETING AS DONE
  * ===========================
  */
-exports.markMeetingDone = async (req, res) => {
+export const markMeetingDone = async (req, res) => {
   try {
     const meeting = await Meeting.findByIdAndUpdate(
       req.params.id,
@@ -172,7 +169,7 @@ exports.markMeetingDone = async (req, res) => {
  * DELETE MEETING
  * ===========================
  */
-exports.deleteMeeting = async (req, res) => {
+export const deleteMeeting = async (req, res) => {
   try {
     const meeting = await Meeting.findByIdAndDelete(req.params.id);
 

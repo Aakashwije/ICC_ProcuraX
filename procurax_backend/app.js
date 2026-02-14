@@ -3,7 +3,6 @@ import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { createRequire } from "module";
 
 // Existing modules
 import procurementRoutes from "./procument/routes/procurement.js";
@@ -11,8 +10,7 @@ import notesRoutes from "./notes/notes.routes.js";
 import tasksRoutes from "./tasks/tasks.routes.js";
 import settingsRoutes from "./settings/routes/settings.routes.js";
 import settingsUserRoutes from "./settings/routes/user.routes.js";
-const require = createRequire(import.meta.url);
-const meetingRoutes = require("./meetings/routes/meetingRoutes.js");
+import meetingRoutes from "./meetings/routes/meetingRoutes.js";
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
