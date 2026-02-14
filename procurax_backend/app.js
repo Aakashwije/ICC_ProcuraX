@@ -3,6 +3,7 @@ import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import { createRequire } from "module";
 
 // Existing modules
 import procurementRoutes from "./procument/routes/procurement.js";
@@ -10,6 +11,8 @@ import notesRoutes from "./notes/notes.routes.js";
 import tasksRoutes from "./tasks/tasks.routes.js";
 import settingsRoutes from "./settings/routes/settings.routes.js";
 import settingsUserRoutes from "./settings/routes/user.routes.js";
+const require = createRequire(import.meta.url);
+const meetingRoutes = require("./meetings/routes/meetingRoutes.js");
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
@@ -58,6 +61,7 @@ process.on("uncaughtException", (err) => {
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/tasks", tasksRoutes);
+app.use("/api/meetings", meetingRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/settings/users", settingsUserRoutes);
 
