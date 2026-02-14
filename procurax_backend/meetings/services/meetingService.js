@@ -1,6 +1,6 @@
-const Meeting = require("../models/Meeting");
+import Meeting from "../models/Meeting.js";
 
-exports.findConflicts = async (startTime, endTime, excludeId = null) => {
+export const findConflicts = async (startTime, endTime, excludeId = null) => {
   const query = {
     startTime: { $lt: endTime },
     endTime: { $gt: startTime }
@@ -13,7 +13,7 @@ exports.findConflicts = async (startTime, endTime, excludeId = null) => {
   return await Meeting.find(query);
 };
 
-exports.suggestNextSlot = async (startTime, durationMinutes = 60) => {
+export const suggestNextSlot = async (startTime, durationMinutes = 60) => {
   const meetings = await Meeting.find().sort({ startTime: 1 });
 
   let proposedStart = new Date(startTime);
