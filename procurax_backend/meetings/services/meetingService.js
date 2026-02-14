@@ -2,6 +2,7 @@ import Meeting from "../models/Meeting.js";
 
 export const findConflicts = async (startTime, endTime, excludeId = null) => {
   const query = {
+    done: false,
     startTime: { $lt: endTime },
     endTime: { $gt: startTime }
   };
@@ -14,7 +15,7 @@ export const findConflicts = async (startTime, endTime, excludeId = null) => {
 };
 
 export const suggestNextSlot = async (startTime, durationMinutes = 60) => {
-  const meetings = await Meeting.find().sort({ startTime: 1 });
+  const meetings = await Meeting.find({ done: false }).sort({ startTime: 1 });
 
   let proposedStart = new Date(startTime);
 

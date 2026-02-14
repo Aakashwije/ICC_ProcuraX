@@ -16,12 +16,18 @@ class Meeting {
   });
 
   factory Meeting.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic value) {
+      final parsed = DateTime.tryParse(value?.toString() ?? '');
+      if (parsed == null) return null;
+      return parsed.isUtc ? parsed.toLocal() : parsed;
+    }
+
     return Meeting(
-      id: json['id']?.toString(),
-      title: json['title'],
-      description: json['description'] ?? '',
-      startTime: DateTime.parse(json['startTime']),
-      endTime: DateTime.parse(json['endTime']),
+      id: json['_id']?.toString() ?? json['id']?.toString(),
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      startTime: parseDate(json['startTime']) ?? DateTime.now(),
+      endTime: parseDate(json['endTime']) ?? DateTime.now(),
       location: json['location'] ?? '',
     );
   }
@@ -30,8 +36,8 @@ class Meeting {
     return {
       'title': title,
       'description': description,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
+      'startTime': startTime.toUtc().toIso8601String(),
+      'endTime': endTime.toUtc().toIso8601String(),
       'location': location,
     };
   }
