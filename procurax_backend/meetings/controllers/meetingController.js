@@ -23,8 +23,23 @@ export const createMeeting = async (req, res) => {
       });
     }
 
+    const parsedStart = new Date(startTime);
+    const parsedEnd = new Date(endTime);
+
+    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+      return res.status(400).json({
+        message: "Invalid startTime or endTime",
+      });
+    }
+
+    if (parsedStart >= parsedEnd) {
+      return res.status(400).json({
+        message: "startTime must be before endTime",
+      });
+    }
+
     // Check overlapping meetings
-    const conflicts = await findConflicts(startTime, endTime);
+    const conflicts = await findConflicts(parsedStart, parsedEnd);
 
     if (conflicts.length > 0) {
       const suggestion = await suggestNextSlot(startTime);
@@ -39,8 +54,8 @@ export const createMeeting = async (req, res) => {
     const meeting = await Meeting.create({
       title,
       description,
-      startTime,
-      endTime,
+      startTime: parsedStart,
+      endTime: parsedEnd,
       location,
       done,
     });
@@ -110,30 +125,49 @@ export const updateMeeting = async (req, res) => {
   try {
     const { startTime, endTime } = req.body;
 
-    if (startTime && endTime) {
-      const conflicts = await findConflicts(
-        startTime,
-        endTime,
-        req.params.id
-      );
+    const existingMeeting = await Meeting.findById(req.params.id);
 
-      if (conflicts.length > 0) {
-        return res.status(409).json({
-          message: "Reschedule conflict detected",
-          conflicts,
-        });
-      }
+    if (!existingMeeting) {
+      return res.status(404).json({ message: "Meeting not found" });
+    }
+
+    const parsedStart = startTime ? new Date(startTime) : existingMeeting.startTime;
+    const parsedEnd = endTime ? new Date(endTime) : existingMeeting.endTime;
+
+    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+      return res.status(400).json({
+        message: "Invalid startTime or endTime",
+      });
+    }
+
+    if (parsedStart >= parsedEnd) {
+      return res.status(400).json({
+        message: "startTime must be before endTime",
+      });
+    }
+
+    const conflicts = await findConflicts(
+      parsedStart,
+      parsedEnd,
+      req.params.id
+    );
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        message: "Reschedule conflict detected",
+        conflicts,
+      });
     }
 
     const updatedMeeting = await Meeting.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        startTime: parsedStart,
+        endTime: parsedEnd,
+      },
       { new: true }
     );
-
-    if (!updatedMeeting) {
-      return res.status(404).json({ message: "Meeting not found" });
-    }
 
     res.json(updatedMeeting);
   } catch (err) {

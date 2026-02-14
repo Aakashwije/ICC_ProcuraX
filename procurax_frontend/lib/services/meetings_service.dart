@@ -5,7 +5,38 @@ import 'api_service.dart';
 import '../pages/meetings/features/smart_calendar/models/meeting.dart';
 
 class MeetingsService {
-  static const String _endpoint = '/meetings';
+  static const String _endpoint = '/api/meetings';
+
+  static String _extractErrorMessage(http.Response response) {
+    if (response.body.isEmpty) {
+      return 'Request failed with status ${response.statusCode}';
+    }
+
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map && data['message'] != null) {
+        if (data['conflicts'] is List &&
+            (data['conflicts'] as List).isNotEmpty) {
+          final conflicts = data['conflicts'] as List;
+          final first = conflicts.first;
+          if (first is Map &&
+              first['startTime'] != null &&
+              first['endTime'] != null) {
+            return '${data['message']} (conflicts: ${conflicts.length}, first: ${first['startTime']} → ${first['endTime']})';
+          }
+          return '${data['message']} (conflicts: ${conflicts.length})';
+        }
+        return data['message'].toString();
+      }
+      if (data is Map && data['error'] != null) {
+        return data['error'].toString();
+      }
+    } catch (_) {
+      // ignore parse errors and fall back to raw body
+    }
+
+    return 'Request failed (${response.statusCode}): ${response.body}';
+  }
 
   /// Create meeting
   static Future<void> addMeeting(Meeting meeting) async {
@@ -16,7 +47,7 @@ class MeetingsService {
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
-      throw Exception('Failed to create meeting');
+      throw Exception(_extractErrorMessage(response));
     }
   }
 
@@ -33,7 +64,7 @@ class MeetingsService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to update meeting');
+      throw Exception(_extractErrorMessage(response));
     }
   }
 
