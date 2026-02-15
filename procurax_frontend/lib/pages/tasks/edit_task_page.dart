@@ -1,8 +1,15 @@
+/*
+  Edit Task screen.
+  Lets the user update task fields and save changes.
+*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 
 class EditTaskPage extends StatefulWidget {
+/*
+  Stateful widget because it holds form state and API calls.
+*/
   final Task task;
 
   const EditTaskPage({super.key, required this.task});
@@ -12,6 +19,9 @@ class EditTaskPage extends StatefulWidget {
 }
 
 class _EditTaskPageState extends State<EditTaskPage> {
+/*
+  State holder for edit form fields and selections.
+*/
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
 
@@ -37,6 +47,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
   Future<void> _saveChanges() async {
     if (_titleController.text.trim().isEmpty) return;
 
+/*
+    Save updated task details to backend.
+*/
     setState(() => _saving = true);
 
     final updatedTask = widget.task.copyWith(
@@ -67,6 +80,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
 
   @override
   Widget build(BuildContext context) {
+/*
+    Build the edit task UI layout.
+*/
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
