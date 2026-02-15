@@ -1,3 +1,7 @@
+/*
+  Notes page UI.
+  Shows a list of notes with add/edit/delete actions.
+*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
@@ -7,6 +11,9 @@ import 'add_note_page.dart';
 import 'edit_note_page.dart';
 import 'note_added_page.dart';
 
+/*
+  Stateful widget because it loads notes from the backend.
+*/
 class NotesPage extends StatefulWidget {
   const NotesPage({super.key});
 
@@ -14,6 +21,9 @@ class NotesPage extends StatefulWidget {
   State<NotesPage> createState() => _NotesPageState();
 }
 
+/*
+  State holder for NotesPage data and UI.
+*/
 class _NotesPageState extends State<NotesPage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
@@ -23,30 +33,45 @@ class _NotesPageState extends State<NotesPage> {
   String _query = '';
   final TextEditingController _searchController = TextEditingController();
 
+  /*
+    Load notes when the widget is created.
+  */
   @override
   void initState() {
     super.initState();
     _notesFuture = NotesService.fetchNotes();
   }
 
+  /*
+    Dispose of controllers when leaving the page.
+  */
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
+  /*
+    Refresh notes list from backend.
+  */
   Future<void> _refreshNotes() async {
     setState(() {
       _notesFuture = NotesService.fetchNotes();
     });
   }
 
+  /*
+    Helper to show an error snackbar.
+  */
   void _showError(String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /*
+    Helper to show a success snackbar.
+  */
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -64,6 +89,9 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
+  /*
+    Open AddNote page and save the new note.
+  */
   Future<void> _addNote() async {
     final note = await Navigator.push<Note>(
       context,
@@ -89,6 +117,9 @@ class _NotesPageState extends State<NotesPage> {
     }
   }
 
+  /*
+    Open EditNote page and update the note.
+  */
   Future<void> _editNote(Note note) async {
     final updated = await Navigator.push<Note>(
       context,
@@ -107,6 +138,9 @@ class _NotesPageState extends State<NotesPage> {
     }
   }
 
+  /*
+    Confirm and delete a note.
+  */
   Future<void> _deleteNote(Note note) async {
     final confirm = await showDialog<bool>(
       context: context,
