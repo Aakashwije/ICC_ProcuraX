@@ -1,12 +1,30 @@
+/*
+  Tasks controller: handles CRUD logic for tasks.
+  If MongoDB is down, it falls back to an in-memory store.
+*/
 import mongoose from "mongoose";
 import Task from "./tasks.model.js";
 
+/*
+  In-memory fallback store, keyed by owner.
+  This allows basic CRUD even if DB is disconnected.
+*/
 const inMemoryStore = new Map();
 
+/*
+  Get a stable key for the current user.
+  If no userId, use "unknown" so we still have a key.
+*/
 const getOwnerKey = (req) => req.userId?.toString() ?? "unknown";
 
+/*
+  If Mongo connection is not "connected", use the in-memory store.
+*/
 const useInMemory = () => mongoose.connection.readyState !== 1;
 
+/*
+  Normalize task model into the shape the frontend expects.
+*/
 const normalizeTask = (task) => ({
   id: task._id.toString(),
   title: task.title,
@@ -21,6 +39,10 @@ const normalizeTask = (task) => ({
   updatedAt: task.updatedAt ?? task.updatedAt,
 });
 
+/*
+  Validate required fields for create requests.
+  Returns null if validation fails (response already sent).
+*/
 const requireTitle = (req, res) => {
   const { title } = req.body || {};
   if (!title) {
@@ -30,6 +52,10 @@ const requireTitle = (req, res) => {
   return { title };
 };
 
+/*
+  Build the task payload using request data, with defaults.
+  We reuse this in create + update to keep logic consistent.
+*/
 const buildTaskPayload = (req, base = {}) => ({
   ...base,
   title: req.body.title ?? base.title,
@@ -42,11 +68,18 @@ const buildTaskPayload = (req, base = {}) => ({
   isArchived: typeof req.body.isArchived === "boolean" ? req.body.isArchived : base.isArchived ?? false,
 });
 
+/*
+  Create a new task.
+  Uses MongoDB if connected, otherwise uses in-memory store.
+*/
 export const createTask = async (req, res) => {
   const body = requireTitle(req, res);
   if (!body) return;
 
   try {
+    /*
+      In-memory mode: build a task object and store it locally.
+    */
     if (useInMemory()) {
       const now = new Date();
       const task = {
@@ -63,6 +96,9 @@ export const createTask = async (req, res) => {
       return res.status(201).json(normalizeTask(task));
     }
 
+    /*
+      DB mode: write task to MongoDB.
+    */
     const task = await Task.create({
       ...buildTaskPayload(req, { title: body.title }),
       owner: req.userId,
@@ -75,9 +111,16 @@ export const createTask = async (req, res) => {
   }
 };
 
+/*
+  Get tasks for current user.
+  Supports archived filtering using query param ?archived=true.
+*/
 export const getTasks = async (req, res) => {
   const archivedOnly = req.query.archived === "true";
   try {
+    /*
+      In-memory mode: filter tasks locally by archived state.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
@@ -87,6 +130,9 @@ export const getTasks = async (req, res) => {
       return res.json(filtered.map(normalizeTask));
     }
 
+    /*
+      DB mode: query tasks by owner and archived state.
+    */
     const tasks = await Task.find({
       owner: req.userId,
       isArchived: archivedOnly ? true : false,
@@ -98,12 +144,18 @@ export const getTasks = async (req, res) => {
   }
 };
 
+/*
+  Get a single task by id for the current user.
+*/
 export const getTaskById = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid task id" });
   }
 
   try {
+    /*
+      In-memory mode: find the task in the list.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
@@ -112,6 +164,9 @@ export const getTaskById = async (req, res) => {
       return res.json(normalizeTask(task));
     }
 
+    /*
+      DB mode: find by id + owner.
+    */
     const task = await Task.findOne({ _id: req.params.id, owner: req.userId });
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -124,12 +179,18 @@ export const getTaskById = async (req, res) => {
   }
 };
 
+/*
+  Update a task by id.
+*/
 export const updateTask = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid task id" });
   }
 
   try {
+    /*
+      In-memory mode: merge new fields into existing task.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
@@ -148,6 +209,9 @@ export const updateTask = async (req, res) => {
       return res.json(normalizeTask(updated));
     }
 
+    /*
+      DB mode: update and return the latest doc.
+    */
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, owner: req.userId },
       buildTaskPayload(req),
@@ -165,12 +229,18 @@ export const updateTask = async (req, res) => {
   }
 };
 
+/*
+  Archive a task (soft delete) by setting isArchived=true.
+*/
 export const archiveTask = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid task id" });
   }
 
   try {
+    /*
+      In-memory mode: toggle isArchived flag.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
@@ -189,6 +259,9 @@ export const archiveTask = async (req, res) => {
       return res.json(normalizeTask(updated));
     }
 
+    /*
+      DB mode: set isArchived to true.
+    */
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, owner: req.userId },
       { isArchived: true },
@@ -206,12 +279,18 @@ export const archiveTask = async (req, res) => {
   }
 };
 
+/*
+  Restore a task by setting isArchived=false.
+*/
 export const restoreTask = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid task id" });
   }
 
   try {
+    /*
+      In-memory mode: toggle isArchived back to false.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
@@ -230,6 +309,9 @@ export const restoreTask = async (req, res) => {
       return res.json(normalizeTask(updated));
     }
 
+    /*
+      DB mode: set isArchived to false.
+    */
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, owner: req.userId },
       { isArchived: false },
@@ -247,12 +329,18 @@ export const restoreTask = async (req, res) => {
   }
 };
 
+/*
+  Delete a task permanently.
+*/
 export const deleteTask = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid task id" });
   }
 
   try {
+    /*
+      In-memory mode: remove task from list.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
