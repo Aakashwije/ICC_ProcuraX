@@ -1,13 +1,6 @@
-/*
-  Task Added screen.
-  Shows a simple success message after creating a task.
-*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/task_model.dart';
 
-/*
-  Stateless widget: just displays a confirmation UI.
-*/
 class TaskAddedPage extends StatelessWidget {
   final Task task;
   const TaskAddedPage({super.key, required this.task});

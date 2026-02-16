@@ -1,14 +1,7 @@
-/*
-  Task model helpers and enums.
-  These define the allowed values for task status and priority.
-*/
 enum TaskPriority { low, medium, high, critical }
 
 enum TaskStatus { todo, inProgress, blocked, done }
 
-/*
-  Convert JSON string to TaskPriority enum.
-*/
 TaskPriority _priorityFromJson(String? value) {
   switch (value) {
     case "low":
@@ -22,9 +15,6 @@ TaskPriority _priorityFromJson(String? value) {
   }
 }
 
-/*
-  Convert TaskPriority enum to JSON string.
-*/
 String _priorityToJson(TaskPriority priority) {
   switch (priority) {
     case TaskPriority.low:
@@ -38,9 +28,6 @@ String _priorityToJson(TaskPriority priority) {
   }
 }
 
-/*
-  Convert JSON string to TaskStatus enum.
-*/
 TaskStatus _statusFromJson(String? value) {
   switch (value) {
     case "in_progress":
@@ -54,9 +41,6 @@ TaskStatus _statusFromJson(String? value) {
   }
 }
 
-/*
-  Convert TaskStatus enum to JSON string.
-*/
 String _statusToJson(TaskStatus status) {
   switch (status) {
     case TaskStatus.inProgress:
@@ -70,9 +54,6 @@ String _statusToJson(TaskStatus status) {
   }
 }
 
-/*
-  Task model used in the UI.
-*/
 class Task {
   final String id;
   final String title;
@@ -96,14 +77,8 @@ class Task {
     required this.isArchived,
   });
 
-  /*
-    Convenience getter to check if task is done.
-  */
   bool get completed => status == TaskStatus.done;
 
-  /*
-    Copy helper to create a new Task with updated fields.
-  */
   Task copyWith({
     String? id,
     String? title,
@@ -128,9 +103,6 @@ class Task {
     );
   }
 
-  /*
-    Build a Task from backend JSON.
-  */
   factory Task.fromJson(Map<String, dynamic> json) {
     final dueDateValue = json["dueDate"];
     DateTime? parsedDueDate;
@@ -153,9 +125,6 @@ class Task {
     );
   }
 
-  /*
-    JSON used for create requests.
-  */
   Map<String, dynamic> toCreateJson() => {
     "title": title,
     "description": description,
@@ -166,9 +135,6 @@ class Task {
     "tags": tags,
   };
 
-  /*
-    JSON used for update requests.
-  */
   Map<String, dynamic> toUpdateJson() => {
     "title": title,
     "description": description,

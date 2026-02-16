@@ -1,13 +1,6 @@
-/*
-  Note Added screen.
-  Shows a success message after creating a note.
-*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 
-/*
-  Stateless widget because it only displays UI.
-*/
 class NoteAddedPage extends StatelessWidget {
   final Note note;
   const NoteAddedPage({super.key, required this.note});

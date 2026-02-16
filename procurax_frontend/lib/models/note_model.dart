@@ -1,6 +1,3 @@
-/*
-  Note model used by the UI.
-*/
 class Note {
   final String id;
   final String title;
@@ -20,9 +17,6 @@ class Note {
     required this.hasAttachment,
   });
 
-  /*
-    Copy helper to create a new Note with updated fields.
-  */
   Note copyWith({
     String? id,
     String? title,
@@ -43,9 +37,6 @@ class Note {
     );
   }
 
-  /*
-    Build a Note from backend JSON.
-  */
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(
       id: json["id"]?.toString() ?? json["_id"]?.toString() ?? "",
@@ -62,9 +53,6 @@ class Note {
     );
   }
 
-  /*
-    Convert Note into JSON for create/update requests.
-  */
   Map<String, dynamic> toJson() {
     return {
       "title": title,
