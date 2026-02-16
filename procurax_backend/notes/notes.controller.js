@@ -1,12 +1,28 @@
+/*
+  Notes controller: handles CRUD logic for notes.
+  Falls back to in-memory store if MongoDB is not connected.
+*/
 import mongoose from "mongoose";
 import Note from "./notes.model.js";
 
+/*
+  In-memory fallback store for notes.
+*/
 const inMemoryStore = new Map();
 
+/*
+  Use a stable key for current user.
+*/
 const getOwnerKey = (req) => req.userId?.toString() ?? "unknown";
 
+/*
+  If DB is not connected, use memory instead.
+*/
 const useInMemory = () => mongoose.connection.readyState !== 1;
 
+/*
+  Normalize note into UI-friendly shape.
+*/
 const normalizeNote = (note) => ({
   id: note._id.toString(),
   title: note.title,
@@ -17,6 +33,9 @@ const normalizeNote = (note) => ({
   hasAttachment: note.hasAttachment,
 });
 
+/*
+  Validate required fields for create.
+*/
 const requireBodyFields = (req, res) => {
   const { title, content } = req.body || {};
   if (!title || !content) {
@@ -26,11 +45,17 @@ const requireBodyFields = (req, res) => {
   return { title, content };
 };
 
+/*
+  Create a note.
+*/
 export const createNote = async (req, res) => {
   const body = requireBodyFields(req, res);
   if (!body) return;
 
   try {
+    /*
+      In-memory mode: create and store the note locally.
+    */
     if (useInMemory()) {
       const now = new Date();
       const note = {
@@ -49,6 +74,9 @@ export const createNote = async (req, res) => {
       return res.status(201).json(normalizeNote(note));
     }
 
+    /*
+      DB mode: create note in MongoDB.
+    */
     const note = await Note.create({
       title: body.title,
       content: body.content,
@@ -65,14 +93,23 @@ export const createNote = async (req, res) => {
   }
 };
 
+/*
+  Get all notes for the current user.
+*/
 export const getNotes = async (req, res) => {
   try {
+    /*
+      In-memory mode: return stored notes.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
       return res.json(list.map(normalizeNote));
     }
 
+    /*
+      DB mode: query notes by owner.
+    */
     const notes = await Note.find({ owner: req.userId }).sort({ createdAt: -1 });
     res.json(notes.map(normalizeNote));
   } catch (err) {
@@ -81,12 +118,18 @@ export const getNotes = async (req, res) => {
   }
 };
 
+/*
+  Update a note by id.
+*/
 export const updateNote = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid note id" });
   }
 
   try {
+    /*
+      In-memory mode: update note in list.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];
@@ -110,6 +153,9 @@ export const updateNote = async (req, res) => {
       return res.json(normalizeNote(updated));
     }
 
+    /*
+      Build update payload for DB write.
+    */
     const update = {
       title: req.body.title,
       content: req.body.content,
@@ -118,6 +164,9 @@ export const updateNote = async (req, res) => {
       lastEdited: new Date(),
     };
 
+    /*
+      DB mode: update note and return newest version.
+    */
     const note = await Note.findOneAndUpdate(
       { _id: req.params.id, owner: req.userId },
       update,
@@ -135,12 +184,18 @@ export const updateNote = async (req, res) => {
   }
 };
 
+/*
+  Delete a note by id.
+*/
 export const deleteNote = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: "Invalid note id" });
   }
 
   try {
+    /*
+      In-memory mode: remove note from list.
+    */
     if (useInMemory()) {
       const ownerKey = getOwnerKey(req);
       const list = inMemoryStore.get(ownerKey) ?? [];

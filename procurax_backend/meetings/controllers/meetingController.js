@@ -1,15 +1,12 @@
-const Meeting = require("../models/Meeting");
-const {
-  findConflicts,
-  suggestNextSlot,
-} = require("../services/meetingService");
+import Meeting from "../models/Meeting.js";
+import { findConflicts, suggestNextSlot } from "../services/meetingService.js";
 
 /**
  * ===========================
  * CREATE MEETING
  * ===========================
  */
-exports.createMeeting = async (req, res) => {
+export const createMeeting = async (req, res) => {
   try {
     const {
       title,
@@ -26,8 +23,23 @@ exports.createMeeting = async (req, res) => {
       });
     }
 
+    const parsedStart = new Date(startTime);
+    const parsedEnd = new Date(endTime);
+
+    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+      return res.status(400).json({
+        message: "Invalid startTime or endTime",
+      });
+    }
+
+    if (parsedStart >= parsedEnd) {
+      return res.status(400).json({
+        message: "startTime must be before endTime",
+      });
+    }
+
     // Check overlapping meetings
-    const conflicts = await findConflicts(startTime, endTime);
+    const conflicts = await findConflicts(parsedStart, parsedEnd);
 
     if (conflicts.length > 0) {
       const suggestion = await suggestNextSlot(startTime);
@@ -42,8 +54,8 @@ exports.createMeeting = async (req, res) => {
     const meeting = await Meeting.create({
       title,
       description,
-      startTime,
-      endTime,
+      startTime: parsedStart,
+      endTime: parsedEnd,
       location,
       done,
     });
@@ -60,7 +72,7 @@ exports.createMeeting = async (req, res) => {
  * (search, filter, sort)
  * ===========================
  */
-exports.getMeetings = async (req, res) => {
+export const getMeetings = async (req, res) => {
   try {
     const { title, from, to, done } = req.query;
     const query = {};
@@ -90,7 +102,7 @@ exports.getMeetings = async (req, res) => {
  * GET SINGLE MEETING BY ID
  * ===========================
  */
-exports.getMeetingById = async (req, res) => {
+export const getMeetingById = async (req, res) => {
   try {
     const meeting = await Meeting.findById(req.params.id);
 
@@ -109,34 +121,53 @@ exports.getMeetingById = async (req, res) => {
  * UPDATE / RESCHEDULE MEETING
  * ===========================
  */
-exports.updateMeeting = async (req, res) => {
+export const updateMeeting = async (req, res) => {
   try {
     const { startTime, endTime } = req.body;
 
-    if (startTime && endTime) {
-      const conflicts = await findConflicts(
-        startTime,
-        endTime,
-        req.params.id
-      );
+    const existingMeeting = await Meeting.findById(req.params.id);
 
-      if (conflicts.length > 0) {
-        return res.status(409).json({
-          message: "Reschedule conflict detected",
-          conflicts,
-        });
-      }
+    if (!existingMeeting) {
+      return res.status(404).json({ message: "Meeting not found" });
+    }
+
+    const parsedStart = startTime ? new Date(startTime) : existingMeeting.startTime;
+    const parsedEnd = endTime ? new Date(endTime) : existingMeeting.endTime;
+
+    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+      return res.status(400).json({
+        message: "Invalid startTime or endTime",
+      });
+    }
+
+    if (parsedStart >= parsedEnd) {
+      return res.status(400).json({
+        message: "startTime must be before endTime",
+      });
+    }
+
+    const conflicts = await findConflicts(
+      parsedStart,
+      parsedEnd,
+      req.params.id
+    );
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        message: "Reschedule conflict detected",
+        conflicts,
+      });
     }
 
     const updatedMeeting = await Meeting.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        startTime: parsedStart,
+        endTime: parsedEnd,
+      },
       { new: true }
     );
-
-    if (!updatedMeeting) {
-      return res.status(404).json({ message: "Meeting not found" });
-    }
 
     res.json(updatedMeeting);
   } catch (err) {
@@ -149,7 +180,7 @@ exports.updateMeeting = async (req, res) => {
  * MARK MEETING AS DONE
  * ===========================
  */
-exports.markMeetingDone = async (req, res) => {
+export const markMeetingDone = async (req, res) => {
   try {
     const meeting = await Meeting.findByIdAndUpdate(
       req.params.id,
@@ -172,7 +203,7 @@ exports.markMeetingDone = async (req, res) => {
  * DELETE MEETING
  * ===========================
  */
-exports.deleteMeeting = async (req, res) => {
+export const deleteMeeting = async (req, res) => {
   try {
     const meeting = await Meeting.findByIdAndDelete(req.params.id);
 

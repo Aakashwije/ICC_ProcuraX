@@ -3,25 +3,45 @@ import 'package:intl/intl.dart';
 
 import '../../../theme.dart';
 import '../models/meeting.dart';
-import 'meeting_added_page.dart';
-import '../../../../../../services/meetings_service.dart';
 
-class AddMeetingPage extends StatefulWidget {
-  const AddMeetingPage({super.key});
+class EditMeetingPage extends StatefulWidget {
+  final Meeting meeting;
+
+  const EditMeetingPage({super.key, required this.meeting});
 
   @override
-  State<AddMeetingPage> createState() => _AddMeetingPageState();
+  State<EditMeetingPage> createState() => _EditMeetingPageState();
 }
 
-class _AddMeetingPageState extends State<AddMeetingPage> {
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _locationController = TextEditingController();
+class _EditMeetingPageState extends State<EditMeetingPage> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _locationController;
 
   DateTime? _startDateTime;
   DateTime? _endDateTime;
 
-  bool _isLoading = false;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.meeting.title);
+    _descriptionController = TextEditingController(
+      text: widget.meeting.description,
+    );
+    _locationController = TextEditingController(text: widget.meeting.location);
+    _startDateTime = widget.meeting.startTime;
+    _endDateTime = widget.meeting.endTime;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
 
   String _formatDate(DateTime dateTime) {
     return DateFormat('dd MMM yyyy').format(dateTime);
@@ -31,7 +51,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
     return DateFormat('hh:mm a').format(dateTime);
   }
 
-  Future<void> _addMeeting() async {
+  Future<void> _saveMeeting() async {
     if (_titleController.text.trim().isEmpty ||
         _startDateTime == null ||
         _endDateTime == null) {
@@ -48,32 +68,19 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isSaving = true);
 
-    try {
-      final meeting = Meeting(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        startTime: _startDateTime!,
-        endTime: _endDateTime!,
-        location: _locationController.text.trim(),
-      );
+    final updatedMeeting = Meeting(
+      id: widget.meeting.id,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      startTime: _startDateTime!,
+      endTime: _endDateTime!,
+      location: _locationController.text.trim(),
+    );
 
-      await MeetingsService.addMeeting(meeting);
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => MeetingAddedPage(meeting: meeting)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to add meeting: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    if (!mounted) return;
+    Navigator.pop(context, updatedMeeting);
   }
 
   Future<void> _pickDate(bool isStart) async {
@@ -146,7 +153,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'New Meeting',
+          'Edit Meeting',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         foregroundColor: primaryBlue,
@@ -159,8 +166,8 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
         child: Column(
           children: [
             _headerCard(
-              title: 'Plan a new meeting',
-              subtitle: 'Capture agenda, location, and timing details.',
+              title: 'Update meeting details',
+              subtitle: 'Adjust schedule, location, and agenda notes.',
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -244,8 +251,8 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _addMeeting,
-                icon: _isLoading
+                onPressed: _isSaving ? null : _saveMeeting,
+                icon: _isSaving
                     ? const SizedBox(
                         width: 18,
                         height: 18,
@@ -256,7 +263,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                       )
                     : const Icon(Icons.save_rounded),
                 label: Text(
-                  _isLoading ? 'Saving...' : 'Add Meeting',
+                  _isSaving ? 'Saving...' : 'Save Changes',
                   style: const TextStyle(fontSize: 16),
                 ),
                 style: ElevatedButton.styleFrom(
