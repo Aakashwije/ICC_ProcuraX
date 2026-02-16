@@ -1,9 +1,3 @@
-/*
-  Tasks page UI.
-
-  This screen shows active + archived tasks, lets the user
-  search, add, edit, archive, restore, and delete tasks.
-*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
@@ -14,9 +8,6 @@ import 'package:procurax_frontend/pages/tasks/edit_task_page.dart';
 import 'package:procurax_frontend/pages/tasks/task_added_page.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 
-/*
-  TasksPage widget - stateful because it loads data from API.
-*/
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
 
@@ -24,9 +15,6 @@ class TasksPage extends StatefulWidget {
   State<TasksPage> createState() => _TasksPageState();
 }
 
-/*
-  State holder for TasksPage UI + data.
-*/
 class _TasksPageState extends State<TasksPage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
@@ -42,27 +30,18 @@ class _TasksPageState extends State<TasksPage> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  /*
-    Fetch initial data when widget mounts.
-  */
   @override
   void initState() {
     super.initState();
     _loadTasks();
   }
 
-  /*
-    Clean up controllers when widget is disposed.
-  */
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  /*
-    Load active + archived tasks from backend.
-  */
   Future<void> _loadTasks() async {
     setState(() {
       _isLoading = true;
@@ -93,9 +72,6 @@ class _TasksPageState extends State<TasksPage> {
     }
   }
 
-  /*
-    Open AddTaskPage and show confirmation screen.
-  */
   Future<void> _addTask() async {
     final task = await Navigator.push<Task>(
       context,
@@ -116,9 +92,6 @@ class _TasksPageState extends State<TasksPage> {
     }
   }
 
-  /*
-    Toggle task completion and persist update.
-  */
   Future<void> _toggleComplete(Task task) async {
     final index = tasks.indexWhere((t) => t.id == task.id);
     if (index == -1) return;
@@ -139,9 +112,6 @@ class _TasksPageState extends State<TasksPage> {
     }
   }
 
-  /*
-    Confirmation dialog before deleting a task.
-  */
   void _confirmDelete(Task task) {
     showDialog(
       context: context,

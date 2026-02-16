@@ -1,14 +1,7 @@
-/*
-  Add Task screen.
-  Lets the user create a new task with status, date, and priority.
-*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 
-/*
-  Stateful widget because it holds form state and API calls.
-*/
 class AddTaskPage extends StatefulWidget {
   const AddTaskPage({super.key});
 
@@ -16,9 +9,6 @@ class AddTaskPage extends StatefulWidget {
   State<AddTaskPage> createState() => _AddTaskPageState();
 }
 
-/*
-  State for AddTaskPage form controls and selections.
-*/
 class _AddTaskPageState extends State<AddTaskPage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
@@ -44,9 +34,6 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
   final TasksService _tasksService = TasksService();
 
-  /*
-    Save the task to backend.
-  */
   Future<void> _save() async {
     if (title.text.trim().isEmpty) return;
 
@@ -80,9 +67,6 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
-  /*
-    Build the full UI layout for the add task form.
-  */
   @override
   Widget build(BuildContext context) {
     return Scaffold(

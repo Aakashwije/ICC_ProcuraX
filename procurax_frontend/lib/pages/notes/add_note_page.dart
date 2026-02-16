@@ -1,13 +1,6 @@
-/*
-  Add Note screen.
-  Lets the user create a new note with title/content/tag.
-*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 
-/*
-  Stateful widget because it keeps form state.
-*/
 class AddNotePage extends StatefulWidget {
   const AddNotePage({super.key});
 
@@ -15,9 +8,6 @@ class AddNotePage extends StatefulWidget {
   State<AddNotePage> createState() => _AddNotePageState();
 }
 
-/*
-  State for AddNotePage form fields and UI.
-*/
 class _AddNotePageState extends State<AddNotePage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
@@ -48,9 +38,6 @@ class _AddNotePageState extends State<AddNotePage> {
     Navigator.pop(context, note);
   }
 
-  /*
-    Build the add note form UI.
-  */
   @override
   Widget build(BuildContext context) {
     return Scaffold(

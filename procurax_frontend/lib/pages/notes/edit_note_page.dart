@@ -1,13 +1,6 @@
-/*
-  Edit Note screen.
-  Lets the user change title/content/tag and save.
-*/
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 
-/*
-  Stateful widget because it edits form fields.
-*/
 class EditNotePage extends StatefulWidget {
   final Note note;
 
@@ -17,9 +10,6 @@ class EditNotePage extends StatefulWidget {
   State<EditNotePage> createState() => _EditNotePageState();
 }
 
-/*
-  State for edit note form values.
-*/
 class _EditNotePageState extends State<EditNotePage> {
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
@@ -52,9 +42,6 @@ class _EditNotePageState extends State<EditNotePage> {
     Navigator.pop(context, updatedNote);
   }
 
-  /*
-    Build the edit note form UI.
-  */
   @override
   Widget build(BuildContext context) {
     return Scaffold(

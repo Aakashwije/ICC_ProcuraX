@@ -1,27 +1,12 @@
-/*
-  NotesService
-
-  This service calls the backend notes API.
-  It converts JSON responses into Note models for the UI.
-*/
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:procurax_frontend/models/note_model.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 
-/*
-  Static helper class so screens can fetch/create/update notes easily.
-*/
 class NotesService {
-  /*
-    Notes endpoint built from the API base URL.
-  */
   static String get _endpoint => "${ApiService.baseUrl}/api/notes";
 
-  /*
-    Get all notes from backend.
-  */
   static Future<List<Note>> fetchNotes() async {
     try {
       final response = await http
@@ -47,9 +32,6 @@ class NotesService {
     }
   }
 
-  /*
-    Create a new note on the backend.
-  */
   static Future<Note> createNote(Note note) async {
     try {
       final response = await http
@@ -80,9 +62,6 @@ class NotesService {
     }
   }
 
-  /*
-    Update an existing note by id.
-  */
   static Future<Note> updateNote(Note note) async {
     try {
       final response = await http
@@ -113,9 +92,6 @@ class NotesService {
     }
   }
 
-  /*
-    Delete a note by id.
-  */
   static Future<void> deleteNote(String id) async {
     try {
       final response = await http
