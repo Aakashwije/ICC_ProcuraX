@@ -2,7 +2,10 @@ import jwt from "jsonwebtoken";
 import { secret } from "../../config/jwt.js";
 
 const adminAuthMiddleware = (req, res, next) => {
-  const token = req.headers["authorization"];
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : authHeader;
 
   if (!token) {
     return res.status(401).json({
@@ -11,9 +14,9 @@ const adminAuthMiddleware = (req, res, next) => {
   }
 
   try {
-  const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, secret);
 
-    if (decoded.role !== "ADMIN") {
+    if (decoded.role !== "admin") {
       return res.status(403).json({
         message: "Admins only"
       });

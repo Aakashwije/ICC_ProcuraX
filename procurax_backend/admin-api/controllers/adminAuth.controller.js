@@ -6,9 +6,9 @@ import { secret } from "../../config/jwt.js";
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
-  const admin = await User.findOne({ email });
+  const admin = await User.findOne({ email }).select("+password");
 
-  if (!admin || admin.role !== "ADMIN") {
+  if (!admin || admin.role !== "admin") {
     return res.status(403).json({
       message: "Admin access only"
     });
@@ -22,7 +22,7 @@ export const login = async (req, res) => {
     });
   }
 
-  const token = jwt.sign({ id: admin._id, role: "ADMIN" }, secret);
+  const token = jwt.sign({ id: admin._id, role: "admin" }, secret);
 
   res.json({
     success: true,

@@ -1,9 +1,15 @@
-const User = require("../../models/User");
-const AuthService = require("../services/auth.service");
+import User from "../../models/User.js";
+import * as AuthService from "../services/auth.service.js";
 
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required"
+      });
+    }
 
     const existing = await User.findOne({ email });
 
@@ -13,11 +19,10 @@ exports.register = async (req, res) => {
       });
     }
 
-    const hashed = await AuthService.hashPassword(password);
-
     const user = new User({
+      name: name?.trim() || email.split("@")[0],
       email,
-      password: hashed
+      password
     });
 
     await user.save();
@@ -32,11 +37,11 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(404).json({
@@ -55,9 +60,15 @@ exports.login = async (req, res) => {
       });
     }
 
-    if (user.status !== "APPROVED") {
+    if (!user.isActive) {
       return res.status(403).json({
-        status: user.status,
+        message: "Account is inactive"
+      });
+    }
+
+    if (!user.isApproved) {
+      return res.status(403).json({
+        approved: false,
         message: "Account awaiting approval"
       });
     }

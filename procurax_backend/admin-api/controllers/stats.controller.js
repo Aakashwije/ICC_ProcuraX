@@ -3,7 +3,7 @@ import Project from "../../models/Project.js";
 
 export const getStats = async (req, res) => {
   const totalManagers = await User.countDocuments({
-    role: "USER"
+    role: "project_manager"
   });
 
   const activeProjects = await Project.countDocuments({
@@ -11,7 +11,8 @@ export const getStats = async (req, res) => {
   });
 
   const pendingApprovals = await User.countDocuments({
-    status: "PENDING"
+    role: "project_manager",
+    isApproved: false
   });
 
   res.json({

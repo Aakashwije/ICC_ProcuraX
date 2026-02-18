@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/services/api_service.dart';
+import 'package:procurax_frontend/services/auth_service.dart';
 import '../../routes/app_routes.dart';
 
 class LoginPage extends StatefulWidget {
@@ -19,6 +21,9 @@ class _LoginPageState extends State<LoginPage> {
   final _passC = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscure = true;
+  bool _loading = false;
+  bool _rememberMe = true;
+  final AuthService _authService = AuthService();
 
   @override
   void dispose() {
@@ -32,6 +37,10 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (ApiService.hasToken) {
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        return;
+      }
       setState(() => _animateIn = true);
     });
   }
@@ -221,6 +230,32 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 8),
 
+                  // Remember me toggle
+                  _animatedSection(
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (value) {
+                            setState(() => _rememberMe = value ?? true);
+                          },
+                          activeColor: primaryColor,
+                        ),
+                        Text(
+                          "Remember me",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: neutralColor.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                    duration: const Duration(milliseconds: 840),
+                  ),
+
+                  const SizedBox(height: 4),
+
                   // Forgot password (right aligned)
                   _animatedSection(
                     Row(
@@ -256,14 +291,7 @@ class _LoginPageState extends State<LoginPage> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState?.validate() ?? false) {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                AppRoutes.dashboard,
-                              );
-                            }
-                          },
+                          onPressed: _loading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,
                             elevation: 8,
@@ -272,15 +300,24 @@ class _LoginPageState extends State<LoginPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            "Log in",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  "Log in",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                       duration: const Duration(milliseconds: 920),
@@ -344,5 +381,27 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleLogin() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _loading = true);
+    try {
+      await _authService.login(
+        email: _emailC.text,
+        password: _passC.text,
+        rememberMe: _rememberMe,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 }
