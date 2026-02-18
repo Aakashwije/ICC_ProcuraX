@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/services/api_service.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentRoute;
@@ -158,11 +159,35 @@ class AppDrawer extends StatelessWidget {
               icon: Icons.logout,
               color: Colors.red,
               selected: false,
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context); // close drawer
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text("Confirm logout"),
+                    content: const Text("Are you sure you want to sign out?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text("Cancel"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text("Logout"),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                await ApiService.clearAuthToken();
+                if (!context.mounted) return;
                 Navigator.pushNamedAndRemoveUntil(
                   context,
-                  AppRoutes.getStarted,
+                  AppRoutes.login,
                   (route) => false,
                 );
               },
