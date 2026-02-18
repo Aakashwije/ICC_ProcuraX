@@ -11,6 +11,7 @@ import tasksRoutes from "./tasks/tasks.routes.js";
 import settingsRoutes from "./settings/routes/settings.routes.js";
 import settingsUserRoutes from "./settings/routes/user.routes.js";
 import meetingRoutes from "./meetings/routes/meetingRoutes.js";
+import authRoutes from "./auth/routes/auth.routes.js";
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
@@ -25,6 +26,7 @@ import adminAuthRoutes from "./admin-api/routes/adminAuth.routes.js";
 import adminManagerRoutes from "./admin-api/routes/manager.routes.js";
 import adminProjectRoutes from "./admin-api/routes/project.routes.js";
 import adminStatsRoutes from "./admin-api/routes/stats.routes.js";
+import adminUserRoutes from "./admin-api/routes/user.routes.js";
 // =================================
 const app = express();
 
@@ -62,6 +64,7 @@ app.use("/api/tasks", tasksRoutes);
 app.use("/api/meetings", meetingRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/settings/users", settingsUserRoutes);
+app.use("/auth", authRoutes);
 
 // ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);
@@ -76,6 +79,7 @@ app.use("/admin-auth", adminAuthRoutes);
 app.use("/admin-managers", adminManagerRoutes);
 app.use("/admin-projects", adminProjectRoutes);
 app.use("/admin-stats", adminStatsRoutes);
+app.use("/admin-users", adminUserRoutes);
 // =======================================
 
 // ===== CHATBOT MODULE ROUTES =====

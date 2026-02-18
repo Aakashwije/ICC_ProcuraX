@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/services/auth_service.dart';
 import '../../routes/app_routes.dart';
 
 class CreateAccountPage extends StatefulWidget {
@@ -15,6 +16,14 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   static const Color neutralColor = Color(0xFF1B1E29);
   static const Color inputBg = Color(0xFFF4F6FF);
 
+  final _emailC = TextEditingController();
+  final _passC = TextEditingController();
+  final _confirmC = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _loading = false;
+  bool _acceptTerms = false;
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
@@ -22,6 +31,14 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       if (!mounted) return;
       setState(() => _animateIn = true);
     });
+  }
+
+  @override
+  void dispose() {
+    _emailC.dispose();
+    _passC.dispose();
+    _confirmC.dispose();
+    super.dispose();
   }
 
   Widget _animatedSection(
@@ -51,201 +68,244 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                /// Title
-                _animatedSection(
-                  Transform.translate(
-                    offset: const Offset(0, -28),
-                    child: Text(
-                      "Create Account",
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  /// Title
+                  _animatedSection(
+                    Transform.translate(
+                      offset: const Offset(0, -28),
+                      child: Text(
+                        "Create Account",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 40,
+                          fontWeight: FontWeight.w700,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
+                    duration: const Duration(milliseconds: 650),
+                    offset: const Offset(0, 0.08),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  /// Subtitle
+                  _animatedSection(
+                    Text(
+                      "Join the platform that build smarter",
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 40,
-                        fontWeight: FontWeight.w700,
-                        color: primaryColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: neutralColor.withValues(alpha: 0.7),
                       ),
                     ),
+                    duration: const Duration(milliseconds: 700),
                   ),
-                  duration: const Duration(milliseconds: 650),
-                  offset: const Offset(0, 0.08),
-                ),
 
-                const SizedBox(height: 2),
+                  const SizedBox(height: 36),
 
-                /// Subtitle
-                _animatedSection(
-                  Text(
-                    "Join the platform that build smarter",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: neutralColor.withValues(alpha: 0.7),
+                  /// Email
+                  _animatedSection(
+                    _inputField(
+                      hint: "Email",
+                      icon: Icons.email_outlined,
+                      controller: _emailC,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Email is required";
+                        }
+                        if (!value.contains("@")) {
+                          return "Enter a valid email";
+                        }
+                        return null;
+                      },
                     ),
+                    duration: const Duration(milliseconds: 760),
                   ),
-                  duration: const Duration(milliseconds: 700),
-                ),
 
-                const SizedBox(height: 36),
+                  const SizedBox(height: 16),
 
-                /// Email
-                _animatedSection(
-                  _inputField(hint: "Email", icon: Icons.email_outlined),
-                  duration: const Duration(milliseconds: 760),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// Password
-                _animatedSection(
-                  _inputField(
-                    hint: "Password",
-                    icon: Icons.lock_outline,
-                    isPassword: true,
+                  /// Password
+                  _animatedSection(
+                    _inputField(
+                      hint: "Password",
+                      icon: Icons.lock_outline,
+                      isPassword: true,
+                      controller: _passC,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Password is required";
+                        }
+                        if (value.trim().length < 6) {
+                          return "Password too short";
+                        }
+                        return null;
+                      },
+                    ),
+                    duration: const Duration(milliseconds: 820),
                   ),
-                  duration: const Duration(milliseconds: 820),
-                ),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                /// Confirm Password
-                _animatedSection(
-                  _inputField(
-                    hint: "Confirm Password",
-                    icon: Icons.lock_outline,
-                    isPassword: true,
+                  /// Confirm Password
+                  _animatedSection(
+                    _inputField(
+                      hint: "Confirm Password",
+                      icon: Icons.lock_outline,
+                      isPassword: true,
+                      controller: _confirmC,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Confirm your password";
+                        }
+                        if (value.trim() != _passC.text.trim()) {
+                          return "Passwords do not match";
+                        }
+                        return null;
+                      },
+                    ),
+                    duration: const Duration(milliseconds: 880),
                   ),
-                  duration: const Duration(milliseconds: 880),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                /// Checkbox
-                _animatedSection(
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Checkbox(
-                        value: false,
-                        onChanged: (value) {},
-                        activeColor: primaryColor,
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            "I confirm that I am an authorized employee and agree to comply with all IT security policies",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              color: neutralColor.withValues(alpha: 0.8),
+                  /// Checkbox
+                  _animatedSection(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: _acceptTerms,
+                          onChanged: (value) {
+                            setState(() => _acceptTerms = value ?? false);
+                          },
+                          activeColor: primaryColor,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Text(
+                              "I confirm that I am an authorized employee and agree to comply with all IT security policies",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: neutralColor.withValues(alpha: 0.8),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  duration: const Duration(milliseconds: 940),
-                ),
-
-                const SizedBox(height: 28),
-
-                /// Sign up Button
-                AnimatedScale(
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutBack,
-                  scale: _animateIn ? 1 : 0.96,
-                  child: _animatedSection(
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.dashboard,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          elevation: 6,
-                          shadowColor: primaryColor.withValues(alpha: 0.25),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          "Sign up",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-                    duration: const Duration(milliseconds: 980),
-                    offset: const Offset(0, 0.1),
+                    duration: const Duration(milliseconds: 940),
                   ),
-                ),
 
-                const SizedBox(height: 22),
+                  const SizedBox(height: 28),
 
-                /// Login
-                _animatedSection(
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Already have an account? ",
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: neutralColor.withValues(alpha: 0.7),
+                  /// Sign up Button
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 900),
+                    curve: Curves.easeOutBack,
+                    scale: _animateIn ? 1 : 0.96,
+                    child: _animatedSection(
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : _handleRegister,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            elevation: 6,
+                            shadowColor: primaryColor.withValues(alpha: 0.25),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  "Sign up",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
-                      InkWell(
-                        onTap: () {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.login,
-                          );
-                        },
-                        child: Text(
-                          "Log in",
+                      duration: const Duration(milliseconds: 980),
+                      offset: const Offset(0, 0.1),
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  /// Login
+                  _animatedSection(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account? ",
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: primaryColor,
+                            color: neutralColor.withValues(alpha: 0.7),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  duration: const Duration(milliseconds: 1020),
-                ),
-
-                const SizedBox(height: 40),
-
-                /// Footer
-                _animatedSection(
-                  Text(
-                    "Secure Access Portal – Managed by the IT Division\nNeed help? Contact: it-support@ICC.com",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
-                      color: primaryColor.withValues(alpha: 0.85),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.login,
+                            );
+                          },
+                          child: Text(
+                            "Log in",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    duration: const Duration(milliseconds: 1020),
                   ),
-                  duration: const Duration(milliseconds: 1100),
-                  offset: const Offset(0, 0.08),
-                ),
-              ],
+
+                  const SizedBox(height: 40),
+
+                  /// Footer
+                  _animatedSection(
+                    Text(
+                      "Secure Access Portal – Managed by the IT Division\nNeed help? Contact: it-support@ICC.com",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        color: primaryColor.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    duration: const Duration(milliseconds: 1100),
+                    offset: const Offset(0, 0.08),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -257,7 +317,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   Widget _inputField({
     required String hint,
     required IconData icon,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
     bool isPassword = false,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -271,9 +334,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           ),
         ],
       ),
-      child: TextField(
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
         obscureText: isPassword,
         style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
+        validator: validator,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
@@ -306,5 +372,32 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleRegister() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please accept the policy to continue")),
+      );
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await _authService.register(email: _emailC.text, password: _passC.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account created. Await approval.")),
+      );
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 }
