@@ -28,11 +28,21 @@ import adminProjectRoutes from "./admin-api/routes/project.routes.js";
 import adminStatsRoutes from "./admin-api/routes/stats.routes.js";
 import adminUserRoutes from "./admin-api/routes/user.routes.js";
 // =================================
+
+// ===== DOCUMENTS MODULE =====
+import documentRoutes from "./media/routes/document.routes.js";
+
+// ===========================
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Static file serving for uploaded documents
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
 const mongoUri =
@@ -80,6 +90,10 @@ app.use("/admin-managers", adminManagerRoutes);
 app.use("/admin-projects", adminProjectRoutes);
 app.use("/admin-stats", adminStatsRoutes);
 app.use("/admin-users", adminUserRoutes);
+
+// ===== DOCUMENTS MODULE ROUTES =====
+app.use("/api/documents", documentRoutes);
+
 // =======================================
 
 // ===== CHATBOT MODULE ROUTES =====

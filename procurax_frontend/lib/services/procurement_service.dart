@@ -18,7 +18,8 @@ class ProcurementService {
   /*
     Base endpoint for procurement data, composed from the API base URL.
   */
-  static String get _endpoint => "${ApiService.baseUrl}/api/procurement";
+  static String get _endpoint =>
+      "${ApiService.baseUrl}/api/procurement/procurement";
 
   /*
     Fetch the procurement view JSON from the backend, apply a timeout, and
