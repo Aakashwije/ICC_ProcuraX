@@ -18,8 +18,23 @@ class ProcurementService {
   /*
     Base endpoint for procurement data, composed from the API base URL.
   */
+  static String get _profileEndpoint =>
+      "${ApiService.baseUrl}/api/user/profile";
+
   static String get _endpoint =>
       "${ApiService.baseUrl}/api/procurement/procurement";
+
+  static Future<String?> fetchUserSheetUrl() async {
+    final response = await http
+        .get(Uri.parse(_profileEndpoint), headers: ApiService.authHeaders)
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return data['user']?['googleSheetUrl'] as String?;
+    }
+    return null;
+  }
 
   /*
     Fetch the procurement view JSON from the backend, apply a timeout, and
@@ -27,11 +42,17 @@ class ProcurementService {
   */
   static Future<ProcurementView> fetchView() async {
     try {
+      final sheetUrl = await fetchUserSheetUrl();
+
       /*
         Perform GET with auth headers and a 10s timeout.
       */
+      final finalEndpoint = sheetUrl != null && sheetUrl.isNotEmpty 
+          ? "$_endpoint?sheetUrl=${Uri.encodeComponent(sheetUrl)}"
+          : _endpoint;
+          
       final response = await http
-          .get(Uri.parse(_endpoint), headers: ApiService.authHeaders)
+          .get(Uri.parse(finalEndpoint), headers: ApiService.authHeaders)
           .timeout(const Duration(seconds: 10));
 
       /*
