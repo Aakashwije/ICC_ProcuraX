@@ -19,10 +19,16 @@ const router = express.Router();
 router.get("/procurement", authenticate, async (req, res) => {
   try {
     /*
+      The sheetUrl is passed as a query parameter from the Flutter frontend.
+      If missing, the service falls back to the default environment variable.
+    */
+    const { sheetUrl } = req.query;
+
+    /*
       The service handles caching + formatting.
       We just send the response as JSON.
     */
-    const data = await getProcurementView();
+    const data = await getProcurementView(sheetUrl);
     res.json(data);
   } catch (err) {
     console.error("🔥 PROCUREMENT ERROR:", err);
