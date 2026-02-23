@@ -22,7 +22,7 @@ class ProcurementService {
       "${ApiService.baseUrl}/api/user/profile";
 
   static String get _endpoint =>
-      "${ApiService.baseUrl}/api/procurement/procurement";
+      "${ApiService.baseUrl}/api/procurement";
 
   static Future<String?> fetchUserSheetUrl() async {
     final response = await http
