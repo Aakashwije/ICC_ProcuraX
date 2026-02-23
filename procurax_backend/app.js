@@ -1,6 +1,10 @@
 // procurax_backend/app.js
 import "./config/env.js";
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import cors from "cors";
 import mongoose from "mongoose";
 
@@ -27,6 +31,7 @@ import adminManagerRoutes from "./admin-api/routes/manager.routes.js";
 import adminProjectRoutes from "./admin-api/routes/project.routes.js";
 import adminStatsRoutes from "./admin-api/routes/stats.routes.js";
 import adminUserRoutes from "./admin-api/routes/user.routes.js";
+import userProfileRoutes from "./user/routes/user.routes.js";
 // =================================
 
 // ===== DOCUMENTS MODULE =====
@@ -90,6 +95,9 @@ app.use("/admin-managers", adminManagerRoutes);
 app.use("/admin-projects", adminProjectRoutes);
 app.use("/admin-stats", adminStatsRoutes);
 app.use("/admin-users", adminUserRoutes);
+
+/* User self-service profile route — GET /api/user/profile */
+app.use("/api/user", userProfileRoutes);
 
 // ===== DOCUMENTS MODULE ROUTES =====
 app.use("/api/documents", documentRoutes);
