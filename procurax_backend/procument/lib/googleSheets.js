@@ -38,12 +38,26 @@ const sheets = google.sheets({
 });
 
 /*
+  Extract the Sheet ID from a full Google Sheets URL.
+  Example: https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit -> 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+*/
+export function extractSheetId(url) {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : url; // fallback to the raw string if it's already an ID
+}
+
+/*
   Fetch raw procurement rows from Google Sheets.
   We convert each row into a clean object with named fields.
+  Accepts an optional sheetUrl. If not provided, falls back to GOOGLE_SHEET_ID env var.
 */
-export async function fetchProcurementData() {
-  if (!process.env.GOOGLE_SHEET_ID) {
-    throw new Error("Missing GOOGLE_SHEET_ID env var");
+export async function fetchProcurementData(sheetUrl) {
+  const extractedId = extractSheetId(sheetUrl);
+  const spreadsheetId = extractedId || process.env.GOOGLE_SHEET_ID;
+
+  if (!spreadsheetId) {
+    throw new Error("Missing Google Sheet ID (No URL provided and no GOOGLE_SHEET_ID env var)");
   }
 
   /*
@@ -51,7 +65,7 @@ export async function fetchProcurementData() {
     That matches the expected spreadsheet layout.
   */
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    spreadsheetId,
     range: "A2:D",
   });
 

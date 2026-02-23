@@ -7,11 +7,9 @@ import { fetchProcurementData } from "../lib/googleSheets.js";
 
 /*
   Simple in-memory cache so we do not call Google Sheets on every request.
-  - cachedData holds the last computed response.
-  - lastFetch tracks when we last updated the cache.
+  - cache holds objects with { data, lastFetch } keyed by sheetUrl/ID.
 */
-let cachedData = null;
-let lastFetch = 0;
+const cache = new Map();
 const CACHE_TTL = Number(process.env.CACHE_TTL_MS || 60000);
 
 /*
@@ -36,28 +34,31 @@ function calculateStatus(cmsDate, goodsDate) {
 /*
   Returns a cached view of procurement items and upcoming deliveries.
   Flow:
-  1) Check cache
-  2) Fetch raw sheet rows
+  1) Check cache specific to the sheetUrl
+  2) Fetch raw sheet rows based on sheetUrl
   3) Enrich each row with a status
   4) Filter invalid dates
   5) Sort by goods date
   6) Slice into main list + upcoming list
 */
-export async function getProcurementView() {
+export async function getProcurementView(sheetUrl) {
   const now = Date.now();
+  const cacheKey = sheetUrl || 'default';
+
   /*
     If we still have fresh data in memory (within CACHE_TTL),
     return it immediately to keep the API fast.
   */
-  if (cachedData && now - lastFetch < CACHE_TTL) {
-    return cachedData;
+  const cached = cache.get(cacheKey);
+  if (cached && now - cached.lastFetch < CACHE_TTL) {
+    return cached.data;
   }
 
   /*
-    Fetch raw data from Google Sheets.
+    Fetch raw data from Google Sheets using the user's specific URL.
     Each row is a procurement record coming from the spreadsheet.
   */
-  const raw = await fetchProcurementData();
+  const raw = await fetchProcurementData(sheetUrl);
 
   /*
     Add a computed status field to each row, but keep
@@ -111,9 +112,10 @@ export async function getProcurementView() {
   }));
 
   /*
-    Save results to cache so we can reuse for the next request.
+    Save results to cache so we can reuse for the next request from this user.
   */
-  cachedData = { procurementItems, upcomingDeliveries };
-  lastFetch = Date.now();
-  return cachedData;
+  const viewData = { procurementItems, upcomingDeliveries };
+  cache.set(cacheKey, { data: viewData, lastFetch: Date.now() });
+
+  return viewData;
 }

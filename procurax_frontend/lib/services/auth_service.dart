@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:procurax_frontend/services/api_service.dart';
+import 'package:procurax_frontend/services/firebase_service.dart';
 
 class AuthService {
   static String get _loginEndpoint => "${ApiService.baseUrl}/auth/login";
@@ -20,19 +21,37 @@ class AuthService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final token = body["token"] as String?;
+      final userData = body["user"] as Map<String, dynamic>?;
+
       if (token == null || token.isEmpty) {
         throw Exception("Login succeeded but token missing");
       }
       await ApiService.setAuthToken(token, persist: rememberMe);
+
+      // Sync the user to Firestore after a successful login
+      if (userData != null && userData["id"] != null) {
+        await FirebaseService.syncUserOnLogin(userData["id"].toString(), userData);
+      }
+
       return;
     }
 
+    // Handle authentication / approval errors
     try {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final message = body["message"] ?? body["error"] ?? "Login failed";
+      
+      // If we got a 403 and 'approved' is false, it's the approval gate
+      if (response.statusCode == 403 && body["approved"] == false) {
+        throw Exception(message.toString());
+      }
+      
       throw Exception(message.toString());
-    } catch (_) {
-      throw Exception("Login failed (${response.statusCode})");
+    } catch (e) {
+      if (e is FormatException) {
+        throw Exception("Login failed (${response.statusCode})");
+      }
+      rethrow;
     }
   }
 

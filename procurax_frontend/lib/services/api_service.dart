@@ -10,10 +10,10 @@ class ApiService {
       return override;
     }
     if (kIsWeb) {
-      return "http://localhost:3000";
+      return "http://localhost:5002";
     }
     if (Platform.isAndroid) {
-      return "http://10.0.2.2:3000"; // Android emulator -> host machine
+      return "http://10.0.2.2:5002"; // Android emulator -> host machine
     }
     return "http://localhost:5002"; // iOS simulator / desktop
   }

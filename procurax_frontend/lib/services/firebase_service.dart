@@ -20,4 +20,18 @@ class FirebaseService {
         .get();
     return doc.exists ? doc.data() : null;
   }
+
+  static Future<void> syncUserOnLogin(String uid, Map<String, dynamic> userData) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {
+          ...userData,
+          'lastLogin': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      print('Firebase Sync Error: $e');
+    }
+  }
 }
