@@ -33,6 +33,26 @@ class CalendarWidget extends StatelessWidget {
         final count = meetingCounts[key] ?? 0;
         return List.filled(count, 'event');
       },
+      calendarBuilders: CalendarBuilders(
+        defaultBuilder: (context, day, focusedDay) {
+          final key = DateTime(day.year, day.month, day.day);
+          final hasMeeting = (meetingCounts[key] ?? 0) > 0;
+          if (!hasMeeting) return null;
+
+          return Container(
+            margin: const EdgeInsets.all(6),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: lightBlue, shape: BoxShape.circle),
+            child: Text(
+              '${day.day}',
+              style: const TextStyle(
+                color: primaryBlue,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          );
+        },
+      ),
       onDaySelected: (selected, focused) {
         onDaySelected(selected);
       },

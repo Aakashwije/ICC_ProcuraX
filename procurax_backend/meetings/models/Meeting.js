@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const meetingSchema = new mongoose.Schema(
   {
@@ -38,11 +38,10 @@ const meetingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
-    },
+  },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("Meeting", meetingSchema);
+export default mongoose.model("Meeting", meetingSchema);

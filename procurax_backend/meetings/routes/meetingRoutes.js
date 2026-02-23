@@ -1,14 +1,14 @@
-const express = require("express");
-const router = express.Router();
-
-const {
+import { Router } from "express";
+import {
   createMeeting,
   getMeetings,
   getMeetingById,
   updateMeeting,
   markMeetingDone,
   deleteMeeting,
-} = require("../controllers/meetingController");
+} from "../controllers/meetingController.js";
+
+const router = Router();
 
 // CREATE meeting
 router.post("/", createMeeting);
@@ -28,4 +28,4 @@ router.patch("/:id/done", markMeetingDone);
 // DELETE meeting
 router.delete("/:id", deleteMeeting);
 
-module.exports = router;
+export default router;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'routes/app_routes.dart';
+import 'services/api_service.dart';
 
 import 'pages/get_started/get_started_page.dart';
 import 'pages/procurement/procurement_page.dart';
@@ -16,8 +17,11 @@ import 'pages/log_in/login_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/settings/theme_notifier.dart';
 import 'pages/notifications/notifications_page.dart';
+import 'widgets/auth_gate.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.initialize();
   runApp(const MyApp());
 }
 
@@ -37,23 +41,32 @@ class MyApp extends StatelessWidget {
             darkTheme: ThemeData.dark(),
 
             // ✅ Correct initial route
-            initialRoute: AppRoutes.getStarted,
+            initialRoute: ApiService.hasToken
+                ? AppRoutes.dashboard
+                : AppRoutes.getStarted,
 
             routes: {
               AppRoutes.getStarted: (context) => const GetStartedPage(),
               AppRoutes.login: (context) => const LoginPage(),
               AppRoutes.createAccount: (context) => const CreateAccountPage(),
               AppRoutes.procurement: (context) =>
-                  const ProcurementSchedulePage(),
-              AppRoutes.dashboard: (context) => const DashboardPage(),
-              AppRoutes.settings: (context) => const SettingsPage(),
-              AppRoutes.notifications: (context) => const NotificationsPage(),
-              AppRoutes.tasks: (context) => const TasksPage(),
-              AppRoutes.buildAssist: (context) => const BuildAssistPage(),
-              AppRoutes.notes: (context) => const NotesPage(),
-              AppRoutes.communication: (context) => const CommunicationPage(),
-              AppRoutes.meetings: (context) => const MeetingsPage(),
-              AppRoutes.documents: (context) => const DocumentsPage(),
+                  const AuthGate(child: ProcurementSchedulePage()),
+              AppRoutes.dashboard: (context) =>
+                  const AuthGate(child: DashboardPage()),
+              AppRoutes.settings: (context) =>
+                  const AuthGate(child: SettingsPage()),
+              AppRoutes.notifications: (context) =>
+                  const AuthGate(child: NotificationsPage()),
+              AppRoutes.tasks: (context) => const AuthGate(child: TasksPage()),
+              AppRoutes.buildAssist: (context) =>
+                  const AuthGate(child: BuildAssistPage()),
+              AppRoutes.notes: (context) => const AuthGate(child: NotesPage()),
+              AppRoutes.communication: (context) =>
+                  const AuthGate(child: CommunicationPage()),
+              AppRoutes.meetings: (context) =>
+                  const AuthGate(child: MeetingsPage()),
+              AppRoutes.documents: (context) =>
+                  const AuthGate(child: DocumentsPage()),
             },
           );
         },

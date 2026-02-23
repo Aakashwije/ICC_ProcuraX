@@ -10,6 +10,8 @@ import notesRoutes from "./notes/notes.routes.js";
 import tasksRoutes from "./tasks/tasks.routes.js";
 import settingsRoutes from "./settings/routes/settings.routes.js";
 import settingsUserRoutes from "./settings/routes/user.routes.js";
+import meetingRoutes from "./meetings/routes/meetingRoutes.js";
+import authRoutes from "./auth/routes/auth.routes.js";
 
 // ===== COMMUNICATION MODULES =====
 import userRoutes from "./communication/routes/userRoutes.js";
@@ -24,12 +26,23 @@ import adminAuthRoutes from "./admin-api/routes/adminAuth.routes.js";
 import adminManagerRoutes from "./admin-api/routes/manager.routes.js";
 import adminProjectRoutes from "./admin-api/routes/project.routes.js";
 import adminStatsRoutes from "./admin-api/routes/stats.routes.js";
+import adminUserRoutes from "./admin-api/routes/user.routes.js";
 // =================================
+
+// ===== DOCUMENTS MODULE =====
+import documentRoutes from "./media/routes/document.routes.js";
+
+// ===========================
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Static file serving for uploaded documents
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
 const mongoUri =
@@ -58,8 +71,10 @@ process.on("uncaughtException", (err) => {
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/tasks", tasksRoutes);
+app.use("/api/meetings", meetingRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/settings/users", settingsUserRoutes);
+app.use("/auth", authRoutes);
 
 // ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);
@@ -74,6 +89,11 @@ app.use("/admin-auth", adminAuthRoutes);
 app.use("/admin-managers", adminManagerRoutes);
 app.use("/admin-projects", adminProjectRoutes);
 app.use("/admin-stats", adminStatsRoutes);
+app.use("/admin-users", adminUserRoutes);
+
+// ===== DOCUMENTS MODULE ROUTES =====
+app.use("/api/documents", documentRoutes);
+
 // =======================================
 
 // ===== CHATBOT MODULE ROUTES =====
