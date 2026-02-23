@@ -20,6 +20,4 @@ router.get('/:id', getChatById);
 // PATCH /api/chats/:id/read
 router.patch('/:id/read', markChatRead);
 
-
-
 export default router;
