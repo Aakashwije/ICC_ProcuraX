@@ -21,8 +21,7 @@ class ProcurementService {
   static String get _profileEndpoint =>
       "${ApiService.baseUrl}/api/user/profile";
 
-  static String get _endpoint =>
-      "${ApiService.baseUrl}/api/procurement";
+  static String get _endpoint => "${ApiService.baseUrl}/api/procurement";
 
   static Future<String?> fetchUserSheetUrl() async {
     final response = await http
@@ -47,10 +46,10 @@ class ProcurementService {
       /*
         Perform GET with auth headers and a 10s timeout.
       */
-      final finalEndpoint = sheetUrl != null && sheetUrl.isNotEmpty 
+      final finalEndpoint = sheetUrl != null && sheetUrl.isNotEmpty
           ? "$_endpoint?sheetUrl=${Uri.encodeComponent(sheetUrl)}"
           : _endpoint;
-          
+
       final response = await http
           .get(Uri.parse(finalEndpoint), headers: ApiService.authHeaders)
           .timeout(const Duration(seconds: 10));
