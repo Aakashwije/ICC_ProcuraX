@@ -1,6 +1,6 @@
 import express from 'express';
-import { createChat, getUserChats, getChatById, markChatRead, deleteChat } from '../controllers/chatController.js';
 
+import { createChat, getUserChats, getChatById, markChatRead } from '../controllers/chatController.js';
 
 const router = express.Router();
 
@@ -19,7 +19,5 @@ router.get('/:id', getChatById);
 // Mark chat as read for a user
 // PATCH /api/chats/:id/read
 router.patch('/:id/read', markChatRead);
-
-
 
 export default router;
