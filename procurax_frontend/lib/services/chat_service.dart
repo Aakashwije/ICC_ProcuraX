@@ -232,4 +232,26 @@ class ChatService {
     final data = jsonDecode(response.body);
     return (data is List) ? data : [];
   }
+
+  //Delete chat
+  Future<Map<String, dynamic>> deleteMessage({
+    required String messageId,
+    required String userId,
+  }) async {
+    final response = await http
+        .delete(
+          Uri.parse('$_baseUrl/api/messages/$messageId'),
+          headers: _headers,
+          body: jsonEncode({'userId': userId}),
+        )
+        .timeout(const Duration(seconds: 8));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    throw Exception(
+      'Failed to delete message (${response.statusCode}): ${response.body}',
+    );
+  }
 }

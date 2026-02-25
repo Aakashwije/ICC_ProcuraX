@@ -1,10 +1,9 @@
-
-
-
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
-
+import 'package:procurax_frontend/services/api_service.dart';
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key});
@@ -17,37 +16,146 @@ class DocumentsPage extends StatefulWidget {
 
 class _DocumentsPageState extends State<DocumentsPage> {
   final TextEditingController _searchController = TextEditingController();
-
-  final List<_CategoryItem> _allCategories = const [
-    _CategoryItem(
-      icon: Icons.image_outlined,
-      title: 'Site Photos',
-      files: '3 files',
-    ),
-    _CategoryItem(
-      icon: Icons.description_outlined,
-      title: 'Blueprints',
-      files: '3 files',
-    ),
-    _CategoryItem(
-      icon: Icons.assignment_outlined,
-      title: 'Progress Reports',
-      files: '2 files',
-    ),
-    _CategoryItem(
-      icon: Icons.videocam_outlined,
-      title: 'Videos',
-      files: '2 files',
-    ),
-  ];
-
-  late List<_CategoryItem> _filteredCategories;
+  List<CategoryItem> _categories = [];
+  List<CategoryItem> _filteredCategories = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _filteredCategories = List.from(_allCategories);
+    _loadDocuments();
     _searchController.addListener(_applyFilter);
+  }
+
+  Future<void> _loadDocuments() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Use your existing ApiService
+      final response = await ApiService.getDocuments();
+
+      setState(() {
+        // Parse categories from API response
+        _categories = (response['categories'] as List).map((cat) {
+          return CategoryItem(
+            icon: _getCategoryIcon(cat['name']),
+            title: cat['name'],
+            files: '${cat['count']} ${cat['count'] == 1 ? 'file' : 'files'}',
+            documents: cat['files'],
+          );
+        }).toList();
+
+        _filteredCategories = List.from(_categories);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  IconData _getCategoryIcon(String categoryName) {
+    switch (categoryName) {
+      case 'Site Photos':
+        return Icons.image_outlined;
+      case 'Blueprints':
+        return Icons.description_outlined;
+      case 'Progress Reports':
+        return Icons.assignment_outlined;
+      case 'Videos':
+        return Icons.videocam_outlined;
+      default:
+        return Icons.folder_outlined;
+    }
+  }
+
+  void _applyFilter() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredCategories = _categories
+          .where((category) => category.title.toLowerCase().contains(query))
+          .toList();
+    });
+  }
+
+  Future<void> _uploadFile() async {
+    try {
+      // Pick category first
+      String? selectedCategory = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Site Photos'),
+                onTap: () => Navigator.pop(context, 'Site Photos'),
+              ),
+              ListTile(
+                title: const Text('Blueprints'),
+                onTap: () => Navigator.pop(context, 'Blueprints'),
+              ),
+              ListTile(
+                title: const Text('Progress Reports'),
+                onTap: () => Navigator.pop(context, 'Progress Reports'),
+              ),
+              ListTile(
+                title: const Text('Videos'),
+                onTap: () => Navigator.pop(context, 'Videos'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (selectedCategory == null) return;
+
+      // Pick file
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null) {
+        File file = File(result.files.single.path!);
+
+        // Show loading
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
+        );
+
+        // Use ApiService to upload
+        await ApiService.uploadDocument(file, selectedCategory);
+
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          _showSnackBar('File uploaded successfully');
+          _loadDocuments(); // Refresh list
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog if open
+        _showSnackBar('Error: $e', isError: true);
+      }
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -55,16 +163,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
     _searchController.removeListener(_applyFilter);
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _applyFilter() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredCategories = _allCategories
-          .where((category) =>
-              category.title.toLowerCase().contains(query))
-          .toList();
-    });
   }
 
   @override
@@ -78,7 +176,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              //  Top row (Menu + Title)
+              // Top row (Menu + Title)
               Row(
                 children: [
                   Builder(
@@ -104,10 +202,8 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   const SizedBox(width: 48),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              //  Search bar
+              // Search bar
               Container(
                 height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -124,9 +220,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 28),
-
               const Text(
                 'Categories',
                 style: TextStyle(
@@ -135,24 +229,56 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   color: DocumentsPage.primaryBlue,
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              //  Categories list
+              // Categories list
               Expanded(
-                child: _filteredCategories.isEmpty
-                    ? const Center(
-                        child: Text('No matching categories.'),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadDocuments,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
                       )
+                    : _filteredCategories.isEmpty
+                    ? const Center(child: Text('No categories found.'))
                     : ListView.builder(
                         itemCount: _filteredCategories.length,
                         itemBuilder: (context, index) {
                           final category = _filteredCategories[index];
-                          return _categoryCard(
-                            context,
+                          return CategoryCard(
                             icon: category.icon,
                             title: category.title,
                             files: category.files,
+                            documents: category.documents,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CategoryFilesPage(
+                                    categoryTitle: category.title,
+                                    documents: category.documents,
+                                  ),
+                                ),
+                              ).then((_) => _loadDocuments());
+                            },
                           );
                         },
                       ),
@@ -161,37 +287,44 @@ class _DocumentsPageState extends State<DocumentsPage> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: DocumentsPage.primaryBlue,
+        onPressed: _uploadFile,
+        child: const Icon(Icons.upload, color: Colors.white),
+      ),
     );
   }
+}
 
-  //  Category Card
-  Widget _categoryCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String files,
-  }) {
+class CategoryCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String files;
+  final List<dynamic> documents;
+  final VoidCallback onTap;
+
+  const CategoryCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.files,
+    required this.documents,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _CategoryFilesPage(categoryTitle: title),
-          ),
-        );
-      },
+      onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        height: 120, // Fixed height for category cards
+        height: 120,
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Colors.blue.shade300,
-            width: 1.5,
-          )
+          border: Border.all(color: Colors.blue.shade300, width: 1.5),
         ),
         child: Row(
           children: [
@@ -202,7 +335,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 color: const Color(0xFFEAF1FB),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: DocumentsPage.primaryBlue , size: 38, ),
+              child: Icon(icon, color: DocumentsPage.primaryBlue, size: 38),
             ),
             const SizedBox(width: 30),
             Expanded(
@@ -234,110 +367,97 @@ class _DocumentsPageState extends State<DocumentsPage> {
   }
 }
 
-class _CategoryFilesPage extends StatefulWidget {
-  const _CategoryFilesPage({required this.categoryTitle});
-
+class CategoryFilesPage extends StatefulWidget {
   final String categoryTitle;
+  final List<dynamic> documents;
+
+  const CategoryFilesPage({
+    super.key,
+    required this.categoryTitle,
+    required this.documents,
+  });
 
   @override
-  State<_CategoryFilesPage> createState() => _CategoryFilesPageState();
+  State<CategoryFilesPage> createState() => _CategoryFilesPageState();
 }
 
-class _CategoryFilesPageState extends State<_CategoryFilesPage> {
+class _CategoryFilesPageState extends State<CategoryFilesPage> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _files = [];
-  List<String> _filteredFiles = [];
+  List<dynamic> _filteredDocuments = [];
 
   @override
   void initState() {
     super.initState();
-    _filteredFiles = List.from(_files);
+    _filteredDocuments = List.from(widget.documents);
     _searchController.addListener(_applyFilter);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_applyFilter);
-    _searchController.dispose();
-    super.dispose();
   }
 
   void _applyFilter() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredFiles = _files
-          .where((file) => file.toLowerCase().contains(query))
+      _filteredDocuments = widget.documents
+          .where((doc) => doc['filename'].toLowerCase().contains(query))
           .toList();
     });
   }
 
-  void _addFile() {
-    setState(() {
-      _files.add('New File ${_files.length + 1}');
-      _filteredFiles = List.from(_files);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File uploaded successfully'),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _confirmDelete(int index) {
-    final fileName = _filteredFiles[index];
-    final parentContext = context;
-    showDialog<void>(
+  Future<void> _deleteDocument(String documentId, String fileName) async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Delete File'),
         content: Text('Are you sure you want to delete "$fileName"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('No'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _files.remove(fileName);
-                _filteredFiles = List.from(_files);
-              });
-              Navigator.pop(dialogContext);
-              if (!mounted) {
-                return;
-              }
-              ScaffoldMessenger.of(parentContext).showSnackBar(
-                const SnackBar(
-                  content: Text('File deleted successfully'),
-                  behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Yes'),
           ),
         ],
       ),
     );
+
+    if (confirm != true) return;
+
+    try {
+      // Use ApiService to delete
+      await ApiService.deleteDocument(documentId);
+
+      setState(() {
+        _filteredDocuments.removeWhere((doc) => doc['id'] == documentId);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('File deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true); // Refresh parent
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
-  String _emptyMessage() {
-    final title = widget.categoryTitle.toLowerCase();
-    if (title.contains('video')) {
-      return 'No videos added yet.';
-    }
-    if (title.contains('photo')) {
-      return 'No photos added yet.';
-    }
-    if (title.contains('blueprint')) {
-      return 'No blueprints added yet.';
-    }
-    if (title.contains('report')) {
-      return 'No reports added yet.';
-    }
-    return 'No files yet. Tap + to upload.';
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -376,14 +496,31 @@ class _CategoryFilesPageState extends State<_CategoryFilesPage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: _filteredFiles.isEmpty
+              child: _filteredDocuments.isEmpty
                   ? Center(
-                      child: Text(_emptyMessage()),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.folder_open,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No files in ${widget.categoryTitle}',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
                     )
                   : ListView.builder(
-                      itemCount: _filteredFiles.length,
+                      itemCount: _filteredDocuments.length,
                       itemBuilder: (context, index) {
-                        final file = _filteredFiles[index];
+                        final doc = _filteredDocuments[index];
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
@@ -394,14 +531,38 @@ class _CategoryFilesPageState extends State<_CategoryFilesPage> {
                             ),
                           ),
                           child: ListTile(
-                            title: Text(file),
+                            leading: Icon(
+                              doc['fileType'] == 'image'
+                                  ? Icons.image
+                                  : doc['fileType'] == 'video'
+                                  ? Icons.videocam
+                                  : doc['fileType'] == 'blueprint'
+                                  ? Icons.description
+                                  : Icons.insert_drive_file,
+                              color: DocumentsPage.primaryBlue,
+                              size: 32,
+                            ),
+                            title: Text(
+                              doc['filename'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${_formatFileSize(doc['size'])} • ${doc['fileType']}',
+                            ),
                             trailing: IconButton(
                               icon: const Icon(
                                 Icons.delete_outline,
                                 color: Colors.redAccent,
                               ),
-                              onPressed: () => _confirmDelete(index),
+                              onPressed: () =>
+                                  _deleteDocument(doc['id'], doc['filename']),
                             ),
+                            onTap: () {
+                              // Optional: Open/view file
+                              // You can add file viewer functionality here
+                            },
                           ),
                         );
                       },
@@ -410,26 +571,20 @@ class _CategoryFilesPageState extends State<_CategoryFilesPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: DocumentsPage.primaryBlue,
-        onPressed: _addFile,
-        child: const Icon(
-          Icons.upload,
-          color: Colors.white,
-        ),
-      ),
     );
   }
 }
 
-class _CategoryItem {
-  const _CategoryItem({
-    required this.icon,
-    required this.title,
-    required this.files,
-  });
-
+class CategoryItem {
   final IconData icon;
   final String title;
   final String files;
+  final List<dynamic> documents;
+
+  CategoryItem({
+    required this.icon,
+    required this.title,
+    required this.files,
+    required this.documents,
+  });
 }

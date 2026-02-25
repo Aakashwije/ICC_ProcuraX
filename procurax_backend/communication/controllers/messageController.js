@@ -138,6 +138,39 @@ async function sendMessage(req, res) {
   
   }
  }
+//Delete  a meesage by ID 
+async function deleteMessage(req, res) {
+  try{
+    const {id} = req.params; // message ID is required
+    const {userId} = req.body; // userId is required to check if the sender is deleting their own message
 
+    if(!id ) return res.status(400).json({error: 'Message ID is required'});
+    if(!userId) return res.status(400).json({error: 'User ID is required'});
+    
+    // Fetch the message to check if it exists and if the user is the sender
+    const msgRef = db.collection('messages').doc(id);
+    const msgDoc = await msgRef.get();
 
-export { sendMessage, getMessagesByChat };
+    if(!msgDoc.exists) {
+      return res.status(404).json({error: 'Message not found'});
+    }
+
+    const msgData = msgDoc.data() || {};
+
+    //only the sender can delete their message
+    if((msgData.senderId || '').trim() !== userId.trim()) {
+      return res.status(403).json({error: 'You can only delete your own messages'});
+    }
+
+    //Delete the message
+    await msgRef.delete();
+
+    // Optionally, you could also delete related alerts or update chat metadata here
+    return res.status(200).json({success: true,id});
+  } catch (err){
+    console.error('ERROR IN deleteMessage:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+export { sendMessage, getMessagesByChat, deleteMessage };
