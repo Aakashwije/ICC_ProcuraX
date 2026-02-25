@@ -1,6 +1,8 @@
-import 'dart:io' show Platform;
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class ApiService {
   // Update this base URL if the backend host changes.
@@ -10,12 +12,12 @@ class ApiService {
       return override;
     }
     if (kIsWeb) {
-      return "http://localhost:5002";
+      return "http://localhost:3000"; // Web development -> backend proxy
     }
     if (Platform.isAndroid) {
-      return "http://10.0.2.2:5002"; // Android emulator -> host machine
+      return "http://10.0.2.2:3000"; // Android emulator -> host machine
     }
-    return "http://localhost:5002"; // iOS simulator / desktop
+    return "http://localhost:3000"; // iOS simulator / desktop
   }
 
   // TODO: Replace with a secure storage/token flow for production.
@@ -50,4 +52,44 @@ class ApiService {
     "Authorization": "Bearer ${_token ?? appToken}",
     "Content-Type": "application/json",
   };
+
+  static Future<String> getToken() async {
+    return _token!;
+  }
+
+  static Future<Map<String, dynamic>> getDocuments() async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/documents'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<void> uploadDocument(File file, String category) async {
+    final token = await getToken();
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/documents/upload'),
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['category'] = category;
+    request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    var response = await request.send();
+    if (response.statusCode != 201) {
+      throw Exception('Failed to upload document');
+    }
+  }
+
+  static Future<void> deleteDocument(String documentId) async {
+    final token = await getToken();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/documents/$documentId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete document');
+    }
+  }
 }
