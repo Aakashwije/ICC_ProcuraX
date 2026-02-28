@@ -1,4 +1,5 @@
 import { Router } from "express";
+import authMiddleware from "../../auth/auth.middleware.js";
 import {
   createMeeting,
   getMeetings,
@@ -10,22 +11,12 @@ import {
 
 const router = Router();
 
-// CREATE meeting
-router.post("/", createMeeting);
-
-// GET all meetings
-router.get("/", getMeetings);
-
-// GET single meeting
-router.get("/:id", getMeetingById);
-
-// UPDATE / reschedule meeting
-router.put("/:id", updateMeeting);
-
-// MARK meeting as done
-router.patch("/:id/done", markMeetingDone);
-
-// DELETE meeting
-router.delete("/:id", deleteMeeting);
+// All routes require a valid JWT — only the owner can CRUD their meetings
+router.post("/", authMiddleware, createMeeting);
+router.get("/", authMiddleware, getMeetings);
+router.get("/:id", authMiddleware, getMeetingById);
+router.put("/:id", authMiddleware, updateMeeting);
+router.patch("/:id/done", authMiddleware, markMeetingDone);
+router.delete("/:id", authMiddleware, deleteMeeting);
 
 export default router;

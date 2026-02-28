@@ -1,19 +1,19 @@
-// src/routes/settings.routes.js - NO AUTH
+// src/routes/settings.routes.js
 import express from "express";
+import authMiddleware from "../../auth/auth.middleware.js";
 import { 
   getSettings, 
   updateSettings,
   updateMultipleSettings,
   getSettingByKey 
 } from "../controllers/settings.controller.js";
-// NO authMiddleware import!
 
 const router = express.Router();
 
-// Public routes - no authentication required
-router.get("/", getSettings);
-router.put("/bulk", updateMultipleSettings);
-router.put("/:id", updateSettings);
-router.get("/key/:key", getSettingByKey);
+// All settings routes require a valid JWT
+router.get("/", authMiddleware, getSettings);
+router.put("/bulk", authMiddleware, updateMultipleSettings);
+router.put("/:id", authMiddleware, updateSettings);
+router.get("/key/:key", authMiddleware, getSettingByKey);
 
 export default router;

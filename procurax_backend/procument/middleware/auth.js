@@ -1,20 +1,19 @@
 /*
   Procurement API auth middleware.
-  This checks the Authorization header and only allows
-  requests that match ADMIN_TOKEN or APP_TOKEN.
+  Accepts:
+  1. A valid JWT token (signed with JWT_SECRET) — used by the Flutter app.
+  2. ADMIN_TOKEN or APP_TOKEN — for legacy/admin access.
 */
+import jwt from "jsonwebtoken";
+
 export function authenticate(req, res, next) {
-  /*
-    Expected header format: "Bearer <token>".
-    We split on space and take the second item.
-  */
   const header = req.headers.authorization || "";
-  const token = header.split(" ")[1] || "";
+  const token = header.startsWith("Bearer ") ? header.split(" ")[1] : header.split(" ")[1] || "";
+
   if (!token) return res.status(401).json({ error: "No token provided" });
 
   /*
-    If token matches admin/app tokens from env,
-    allow request and set req.isAdmin for later use.
+    First check legacy static tokens (ADMIN_TOKEN / APP_TOKEN).
   */
   if (token === process.env.ADMIN_TOKEN || token === process.env.APP_TOKEN) {
     req.isAdmin = token === process.env.ADMIN_TOKEN;
@@ -22,7 +21,16 @@ export function authenticate(req, res, next) {
   }
 
   /*
-    If token is wrong, block the request.
+    Otherwise try to verify as a JWT issued by the auth service.
   */
-  return res.status(403).json({ error: "Invalid token" });
+  try {
+    const secret = process.env.JWT_SECRET || "change_me";
+    const decoded = jwt.verify(token, secret);
+    req.userId = decoded.id;
+    req.user = decoded;
+    req.isAdmin = decoded.role === "admin";
+    return next();
+  } catch {
+    return res.status(403).json({ error: "Invalid or expired token" });
+  }
 }

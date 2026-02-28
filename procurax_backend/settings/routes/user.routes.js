@@ -1,5 +1,6 @@
-// src/routes/user.routes.js - SIMPLIFIED
+// src/routes/user.routes.js
 import express from "express";
+import authMiddleware from "../../auth/auth.middleware.js";
 import { 
   getAllUsers, 
   addUser, 
@@ -7,17 +8,16 @@ import {
   loginUser,
   getCurrentUser 
 } from "../controllers/user.controller.js";
-// NO authMiddleware!
 
 const router = express.Router();
 
-// Public routes only
-router.post("/", addUser);              // Register
-router.post("/login", loginUser);       // Login (optional)
-router.get("/", getAllUsers);           // Get all users
+// Public routes (no auth needed)
+router.post("/", addUser);           // Register
+router.post("/login", loginUser);    // Login
 
-// If you need these, keep them simple
-// router.get("/me", getCurrentUser);    // Remove or modify
-// router.put("/:id", updateUserProfile); // Remove or modify
+// Protected routes (require JWT)
+router.get("/", authMiddleware, getAllUsers);
+router.get("/me", authMiddleware, getCurrentUser);
+router.put("/:id", authMiddleware, updateUserProfile);
 
 export default router;

@@ -38,6 +38,16 @@ const meetingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    /*
+      Owner links the meeting to the user who created it.
+      All CRUD operations are scoped to this user.
+    */
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   {
     timestamps: true,
