@@ -1,6 +1,10 @@
 import Meeting from "../models/Meeting.js";
 
-export const findConflicts = async (startTime, endTime, excludeId = null) => {
+/*
+  Find conflicting meetings for a specific user (owner).
+  Optionally exclude a meeting ID (used during update/reschedule).
+*/
+export const findConflicts = async (startTime, endTime, excludeId = null, ownerId = null) => {
   const query = {
     done: false,
     startTime: { $lt: endTime },
@@ -11,11 +15,22 @@ export const findConflicts = async (startTime, endTime, excludeId = null) => {
     query._id = { $ne: excludeId };
   }
 
+  // Only check conflicts for this user's meetings
+  if (ownerId) {
+    query.owner = ownerId;
+  }
+
   return await Meeting.find(query);
 };
 
-export const suggestNextSlot = async (startTime, durationMinutes = 60) => {
-  const meetings = await Meeting.find({ done: false }).sort({ startTime: 1 });
+/*
+  Suggest the next available slot after conflicting meetings for the given user.
+*/
+export const suggestNextSlot = async (startTime, durationMinutes = 60, ownerId = null) => {
+  const query = { done: false };
+  if (ownerId) query.owner = ownerId;
+
+  const meetings = await Meeting.find(query).sort({ startTime: 1 });
 
   let proposedStart = new Date(startTime);
 
