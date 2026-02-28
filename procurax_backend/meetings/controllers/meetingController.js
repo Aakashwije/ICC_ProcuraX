@@ -38,8 +38,8 @@ export const createMeeting = async (req, res) => {
       });
     }
 
-    // Check overlapping meetings
-    const conflicts = await findConflicts(parsedStart, parsedEnd);
+    // Check overlapping meetings for this user only
+    const conflicts = await findConflicts(parsedStart, parsedEnd, null, req.userId);
 
     if (conflicts.length > 0) {
       const suggestion = await suggestNextSlot(startTime);
@@ -58,6 +58,7 @@ export const createMeeting = async (req, res) => {
       endTime: parsedEnd,
       location,
       done,
+      owner: req.userId,
     });
 
     res.status(201).json(meeting);
@@ -69,13 +70,13 @@ export const createMeeting = async (req, res) => {
 /**
  * ===========================
  * GET ALL MEETINGS
- * (search, filter, sort)
+ * (search, filter, sort — scoped to logged-in user)
  * ===========================
  */
 export const getMeetings = async (req, res) => {
   try {
     const { title, from, to, done } = req.query;
-    const query = {};
+    const query = { owner: req.userId };
 
     if (title) {
       query.title = new RegExp(title, "i");
@@ -104,7 +105,7 @@ export const getMeetings = async (req, res) => {
  */
 export const getMeetingById = async (req, res) => {
   try {
-    const meeting = await Meeting.findById(req.params.id);
+    const meeting = await Meeting.findOne({ _id: req.params.id, owner: req.userId });
 
     if (!meeting) {
       return res.status(404).json({ message: "Meeting not found" });
@@ -125,7 +126,8 @@ export const updateMeeting = async (req, res) => {
   try {
     const { startTime, endTime } = req.body;
 
-    const existingMeeting = await Meeting.findById(req.params.id);
+    // Only allow owner to update their meeting
+    const existingMeeting = await Meeting.findOne({ _id: req.params.id, owner: req.userId });
 
     if (!existingMeeting) {
       return res.status(404).json({ message: "Meeting not found" });
@@ -146,11 +148,7 @@ export const updateMeeting = async (req, res) => {
       });
     }
 
-    const conflicts = await findConflicts(
-      parsedStart,
-      parsedEnd,
-      req.params.id
-    );
+    const conflicts = await findConflicts(parsedStart, parsedEnd, req.params.id, req.userId);
 
     if (conflicts.length > 0) {
       return res.status(409).json({
@@ -159,8 +157,8 @@ export const updateMeeting = async (req, res) => {
       });
     }
 
-    const updatedMeeting = await Meeting.findByIdAndUpdate(
-      req.params.id,
+    const updatedMeeting = await Meeting.findOneAndUpdate(
+      { _id: req.params.id, owner: req.userId },
       {
         ...req.body,
         startTime: parsedStart,
@@ -182,8 +180,8 @@ export const updateMeeting = async (req, res) => {
  */
 export const markMeetingDone = async (req, res) => {
   try {
-    const meeting = await Meeting.findByIdAndUpdate(
-      req.params.id,
+    const meeting = await Meeting.findOneAndUpdate(
+      { _id: req.params.id, owner: req.userId },
       { done: true },
       { new: true }
     );
@@ -205,7 +203,7 @@ export const markMeetingDone = async (req, res) => {
  */
 export const deleteMeeting = async (req, res) => {
   try {
-    const meeting = await Meeting.findByIdAndDelete(req.params.id);
+    const meeting = await Meeting.findOneAndDelete({ _id: req.params.id, owner: req.userId });
 
     if (!meeting) {
       return res.status(404).json({ message: "Meeting not found" });

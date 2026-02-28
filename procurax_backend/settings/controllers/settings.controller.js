@@ -1,13 +1,11 @@
-// src/controllers/settings.controller.js - SIMPLIFIED
-import mongoose from 'mongoose';
+// src/controllers/settings.controller.js
 import Setting from '../models/setting.js';
 
-const DEFAULT_USER_ID = new mongoose.Types.ObjectId('000000000000000000000000');
-
-const resolveUserId = (req) => {
-  const userId = req?.query?.userId || req?.body?.userId;
-  return userId || DEFAULT_USER_ID;
-};
+/*
+  Resolve userId from the JWT-authenticated request.
+  req.userId is set by authMiddleware after verifying JWT.
+*/
+const resolveUserId = (req) => req.userId;
 
 // Get all settings (for current user or default)
 export const getSettings = async (req, res) => {
