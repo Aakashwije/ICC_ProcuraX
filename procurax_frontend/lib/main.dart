@@ -9,7 +9,7 @@ import 'pages/dashboard/dashboard_page.dart';
 import 'pages/tasks/tasks_page.dart';
 import 'pages/notes/notes_page.dart';
 import 'pages/documents/documents_page.dart';
-import 'pages/build_assist/screens/build_assist_page.dart';
+import 'pages/build_assist/build_assist_page.dart';
 import 'pages/communication/communication_page.dart';
 import 'pages/meetings/features/smart_calendar/screens/meetings_page.dart';
 import 'pages/sign_in/create_account_page.dart';
