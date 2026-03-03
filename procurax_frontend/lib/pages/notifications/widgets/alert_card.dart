@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 import '../utils/constants.dart';
-import '../screens/alert_detail_screen.dart';
 
 class AlertCard extends StatelessWidget {
   final AlertModel alert;

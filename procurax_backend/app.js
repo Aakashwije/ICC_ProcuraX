@@ -39,6 +39,11 @@ import documentRoutes from "./media/routes/document.routes.js";
 
 // ===========================
 
+// ===== NOTIFICATIONS MODULE =====
+import notificationRoutes from "./notifications/notification.routes.js";
+
+// ================================
+
 const app = express();
 
 // Middleware
@@ -103,6 +108,11 @@ app.use("/api/user", userProfileRoutes);
 app.use("/api/documents", documentRoutes);
 
 // =======================================
+
+// ===== NOTIFICATIONS MODULE ROUTES =====
+app.use("/api/notifications", notificationRoutes);
+
+// ========================================
 
 // ===== CHATBOT MODULE ROUTES =====
 
