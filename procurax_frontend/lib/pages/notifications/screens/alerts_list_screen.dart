@@ -43,8 +43,9 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                     )
                     .toList();
 
-                if (alerts.isEmpty)
+                if (alerts.isEmpty) {
                   return const Center(child: Text("No alerts"));
+                }
 
                 return ListView.builder(
                   itemCount: alerts.length,
