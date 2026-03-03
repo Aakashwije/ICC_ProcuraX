@@ -17,6 +17,7 @@ import 'pages/log_in/login_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/settings/theme_notifier.dart';
 import 'pages/notifications/notifications_page.dart';
+import 'pages/notifications/providers/alert_provider.dart';
 import 'widgets/auth_gate.dart';
 
 // Global navigator key for notifications
@@ -33,8 +34,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
+        ChangeNotifierProvider(create: (_) => AlertProvider()..initialize()),
+      ],
       child: Consumer<ThemeNotifier>(
         builder: (context, themeNotifier, _) {
           return MaterialApp(
