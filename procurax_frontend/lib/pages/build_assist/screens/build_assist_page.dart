@@ -4,6 +4,8 @@ import '../widgets/ai_message.dart';
 import '../widgets/user_message.dart';
 import '../widgets/delivery_card.dart';
 import '../widgets/bottom_input.dart';
+import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/routes/app_routes.dart';
 
 /// ===============================================================
 /// Main Chat Screen
@@ -15,7 +17,7 @@ class BuildAssistPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
+      drawer: AppDrawer(currentRoute: AppRoutes.buildAssist),
       body: SafeArea(
         child: Column(
           children: [
@@ -30,7 +32,12 @@ class BuildAssistPage extends StatelessWidget {
                   /// Left Menu Icon
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Icon(Icons.menu, color: Colors.grey.shade700),
+                    child: Builder(
+                      builder: (context) => IconButton(
+                        icon: Icon(Icons.menu, color: Colors.grey.shade700),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    ),
                   ),
 
                   /// Centered Title + AI Badge
