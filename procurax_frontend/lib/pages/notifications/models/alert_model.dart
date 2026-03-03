@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 enum AlertType { projects, tasks, procurement, meetings, general }
 
 enum AlertPriority { critical, high, medium, low }
