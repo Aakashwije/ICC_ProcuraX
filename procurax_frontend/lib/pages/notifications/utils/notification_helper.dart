@@ -2,6 +2,7 @@ import '../models/alert_model.dart';
 import '../providers/alert_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:procurax_frontend/main.dart' show navigatorKey;
 
 class NotificationHelper {
   static Future<void> custom({

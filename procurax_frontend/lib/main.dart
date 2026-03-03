@@ -19,6 +19,9 @@ import 'pages/settings/theme_notifier.dart';
 import 'pages/notifications/notifications_page.dart';
 import 'widgets/auth_gate.dart';
 
+// Global navigator key for notifications
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ApiService.initialize();
@@ -36,6 +39,7 @@ class MyApp extends StatelessWidget {
         builder: (context, themeNotifier, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
             themeMode: themeNotifier.themeMode,
             theme: ThemeData.light(),
             darkTheme: ThemeData.dark(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/alert_model.dart';
 
 class AppSpacing {
   static const double xs = 4;
@@ -53,4 +54,34 @@ class AppColors {
 class AppIcons {
   static IconData getIconForType(type) => Icons.notifications;
   static IconData getIconForPriority(priority) => Icons.priority_high;
+}
+
+class AlertConstants {
+  static Color getTypeColor(AlertType type) {
+    switch (type) {
+      case AlertType.projects:
+        return Colors.blue;
+      case AlertType.tasks:
+        return Colors.orange;
+      case AlertType.procurement:
+        return Colors.green;
+      case AlertType.meetings:
+        return Colors.purple;
+      case AlertType.general:
+        return Colors.grey;
+    }
+  }
+
+  static Color getPriorityColor(AlertPriority priority) {
+    switch (priority) {
+      case AlertPriority.critical:
+        return Colors.red;
+      case AlertPriority.high:
+        return Colors.orange;
+      case AlertPriority.medium:
+        return Colors.yellow;
+      case AlertPriority.low:
+        return Colors.green;
+    }
+  }
 }
