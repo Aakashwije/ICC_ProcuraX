@@ -48,6 +48,8 @@ class ApiService {
 
   static bool get hasToken => (_token ?? "").isNotEmpty;
 
+  static String? get token => _token;
+
   static Map<String, String> get authHeaders => {
     "Authorization": "Bearer ${_token ?? appToken}",
     "Content-Type": "application/json",

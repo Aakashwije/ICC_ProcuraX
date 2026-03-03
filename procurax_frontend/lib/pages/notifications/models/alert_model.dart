@@ -54,4 +54,67 @@ class AlertModel {
       timestamp: timestamp ?? this.timestamp,
     );
   }
+
+  // fromJson factory constructor
+  factory AlertModel.fromJson(Map<String, dynamic> json) {
+    return AlertModel(
+      id: json['_id'] ?? json['id'],
+      title: json['title'],
+      message: json['message'],
+      type: _parseAlertType(json['type']),
+      priority: _parseAlertPriority(json['priority']),
+      isRead: json['isRead'] ?? false,
+      projectName: json['projectName'],
+      projectStatus: json['projectStatus'] != null
+          ? _parseProjectStatus(json['projectStatus'])
+          : null,
+      projectId: json['projectId'],
+      timestamp: DateTime.parse(
+        json['createdAt'] ??
+            json['timestamp'] ??
+            DateTime.now().toIso8601String(),
+      ),
+    );
+  }
+
+  // toJson method
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'type': type.name,
+      'priority': priority.name,
+      'isRead': isRead,
+      'projectName': projectName,
+      'projectStatus': projectStatus?.name,
+      'projectId': projectId,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+
+  // Helper methods to parse enums
+  static AlertType _parseAlertType(String? value) {
+    if (value == null) return AlertType.general;
+    return AlertType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => AlertType.general,
+    );
+  }
+
+  static AlertPriority _parseAlertPriority(String? value) {
+    if (value == null) return AlertPriority.medium;
+    return AlertPriority.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => AlertPriority.medium,
+    );
+  }
+
+  static ProjectStatus? _parseProjectStatus(String? value) {
+    if (value == null) return null;
+    return ProjectStatus.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => ProjectStatus.active,
+    );
+  }
 }
