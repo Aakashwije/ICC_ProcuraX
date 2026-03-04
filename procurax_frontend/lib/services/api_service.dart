@@ -24,10 +24,13 @@ class ApiService {
   static const String appToken = "procura_app_9f3a7c2d";
   static const String _tokenKey = "auth_token";
   static String? _token;
+  static const String _userIdKey = "user_id";
+  static String? _userId;
 
   static Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_tokenKey);
+    _userId = prefs.getString(_userIdKey);
   }
 
   static Future<void> setAuthToken(String token, {bool persist = true}) async {
@@ -43,8 +46,19 @@ class ApiService {
   static Future<void> clearAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = null;
+    _userId = null; 
     await prefs.remove(_tokenKey);
+    await prefs.remove(_userIdKey);   
   }
+
+  static Future<void> setUserId(String userId, {bool persist = true}) async {
+    final prefs = await SharedPreferences.getInstance();
+    _userId = userId;
+    if (persist) await prefs.setString(_userIdKey, userId);
+  }
+  static String? get currentUserId => _userId;
+
+
 
   static bool get hasToken => (_token ?? "").isNotEmpty;
 
