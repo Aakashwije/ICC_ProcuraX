@@ -2,23 +2,30 @@ import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import 'suggestion_chip.dart';
 
-/// AI Message Bubble
 class AIMessage extends StatelessWidget {
-  const AIMessage({super.key});
+  final String message;
+  final String timestamp;
+  final bool showSuggestions;
+  final Function(String)? onSuggestionTap;
+
+  const AIMessage({
+    super.key,
+    required this.message,
+    required this.timestamp,
+    this.showSuggestions = false,
+    this.onSuggestionTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        /// AI Avatar
         CircleAvatar(
           backgroundColor: AppColors.primaryBlue,
           child: const Text("AI", style: TextStyle(color: Colors.white)),
         ),
         const SizedBox(width: 10),
-
-        /// Message Content
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,32 +46,39 @@ class AIMessage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Hello! I'm your BuildAssist AI.\nHow can I help you with your construction project today?",
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 14),
-
-                    /// Suggestion Chips
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 8,
-                      children: const [
-                        SuggestionChip(label: "Schedule"),
-                        SuggestionChip(label: "Materials"),
-                        SuggestionChip(label: "Progress"),
-                        SuggestionChip(label: "Team"),
-                      ],
-                    ),
+                    Text(message, style: const TextStyle(fontSize: 14)),
+                    if (showSuggestions) ...[
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          SuggestionChip(
+                            label: "Schedule",
+                            onTap: () => onSuggestionTap?.call("Schedule"),
+                          ),
+                          SuggestionChip(
+                            label: "Materials",
+                            onTap: () => onSuggestionTap?.call("Materials"),
+                          ),
+                          SuggestionChip(
+                            label: "Progress",
+                            onTap: () => onSuggestionTap?.call("Progress"),
+                          ),
+                          SuggestionChip(
+                            label: "Team",
+                            onTap: () => onSuggestionTap?.call("Team"),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(height: 6),
-
-              /// Timestamp
-              const Text(
-                "09:30 AM",
-                style: TextStyle(fontSize: 11, color: Colors.grey),
+              Text(
+                timestamp,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
             ],
           ),

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 
-/// User Message Bubble
 class UserMessage extends StatelessWidget {
-  const UserMessage({super.key});
+  final String message;
+  final String timestamp;
+
+  const UserMessage({
+    super.key,
+    required this.message,
+    required this.timestamp,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,15 +25,15 @@ class UserMessage extends StatelessWidget {
               color: AppColors.primaryBlue,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Text(
-              "What's the status of the concrete delivery for Building A?",
-              style: TextStyle(color: Colors.white, fontSize: 14),
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            "09:32 AM",
-            style: TextStyle(fontSize: 11, color: Colors.grey),
+          Text(
+            timestamp,
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
           ),
         ],
       ),
