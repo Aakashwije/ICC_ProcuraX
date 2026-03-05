@@ -42,6 +42,10 @@ import documentRoutes from "./media/routes/document.routes.js";
 // ===== NOTIFICATIONS MODULE =====
 import notificationRoutes from "./notifications/notification.routes.js";
 
+
+// ===== CHATBOT MODULE =====
+import chatbotRoutes from "./buildassist/src/routes/chatbot.routes.js";
+
 // ================================
 
 const app = express();
@@ -115,6 +119,9 @@ app.use("/api/notifications", notificationRoutes);
 // ========================================
 
 // ===== CHATBOT MODULE ROUTES =====
+app.use("/api/buildassist", chatbotRoutes);
+
+// =================================
 
 // Basic health route
 app.get("/", (req, res) => res.send("ProcuraX backend running"));

@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 
-/// Bottom Chat Input Area
 class BottomInput extends StatelessWidget {
-  const BottomInput({super.key});
+  final TextEditingController controller;
+  final Function(String) onSend;
+  final bool isLoading;
+
+  const BottomInput({
+    super.key,
+    required this.controller,
+    required this.onSend,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,12 +29,14 @@ class BottomInput extends StatelessWidget {
       ),
       child: Row(
         children: [
-          /// Plus Button
-          IconButton(icon: const Icon(Icons.add), onPressed: () {}),
-
-          /// Text Field
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: isLoading ? null : () {},
+          ),
           Expanded(
             child: TextField(
+              controller: controller,
+              enabled: !isLoading,
               decoration: InputDecoration(
                 hintText: "Type a message...",
                 filled: true,
@@ -40,21 +50,42 @@ class BottomInput extends StatelessWidget {
                   borderSide: BorderSide.none,
                 ),
               ),
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty && !isLoading) {
+                  onSend(value);
+                  controller.clear();
+                }
+              },
             ),
           ),
-
-          /// Mic Button
-          IconButton(icon: const Icon(Icons.mic), onPressed: () {}),
-
-          /// Send Button
+          IconButton(
+            icon: const Icon(Icons.mic),
+            onPressed: isLoading ? null : () {},
+          ),
           Container(
             decoration: const BoxDecoration(
               color: AppColors.primaryBlue,
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: () {},
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.send, color: Colors.white),
+              onPressed: isLoading
+                  ? null
+                  : () {
+                      if (controller.text.trim().isNotEmpty) {
+                        onSend(controller.text);
+                        controller.clear();
+                      }
+                    },
             ),
           ),
         ],
