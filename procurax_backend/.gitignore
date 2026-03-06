@@ -4,3 +4,4 @@ package-lock.json
 credentials.json
 config/credentials.json
 *.key.json
+config/google-credentials.json

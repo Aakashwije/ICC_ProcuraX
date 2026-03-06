@@ -39,11 +39,15 @@ export const chatWithAI = async (req, res) => {
       });
     }
 
-    // Fetch data from Google Sheets
+    console.log("Fetching sheet data...");
+    
+    // Fetch data from Google Sheets - start from row 4
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "with equance!A1:R1000", // Use the actual sheet name from your Excel
+      range: "with equance!A4:R1000", // Skip the first 3 rows
     });
+
+    console.log(`Sheet returned ${response.data.values?.length || 0} rows`);
 
     const rows = response.data.values;
 
@@ -56,45 +60,36 @@ export const chatWithAI = async (req, res) => {
     // Parse the procurement data
     const procurementItems = parseProcurementSheet(rows);
     
+    console.log(`Parsed ${procurementItems.length} items`);
+
+    // If no items parsed, return error
+    if (procurementItems.length === 0) {
+      return res.json({
+        reply: "Could not parse procurement data from the sheet. The sheet might have an unexpected format.",
+        error: true
+      });
+    }
+
     // Handle different types of queries
     const query = message.toLowerCase();
     
     // Check for specific material queries
-    if (query.includes('concrete') || query.includes('building a')) {
+    if (query.includes('concrete')) {
       const concreteItems = procurementItems.filter(item => 
-        item.material.toLowerCase().includes('concrete') || 
-        item.remarks.toLowerCase().includes('building a')
+        item.material.toLowerCase().includes('concrete')
       );
       
       if (concreteItems.length > 0) {
         return res.json({
           reply: "Here's the concrete delivery information:",
-          data: concreteItems[0], // Return the first matching item
+          data: concreteItems[0],
           type: "procurement_data"
         });
       }
     }
     
-    // Check for category queries
-    const categories = ['electrical', 'plumbing', 'hvac', 'fire protection', 'civil'];
-    for (const category of categories) {
-      if (query.includes(category)) {
-        const categoryItems = procurementItems.filter(item => 
-          item.category.toLowerCase().includes(category)
-        );
-        
-        if (categoryItems.length > 0) {
-          return res.json({
-            reply: `Here are the ${category} materials:`,
-            data: categoryItems.slice(0, 5), // Return first 5 items
-            type: "procurement_list"
-          });
-        }
-      }
-    }
-    
-    // Check for date/delivery queries
-    if (query.includes('delivery') || query.includes('schedule') || query.includes('when')) {
+    // Check for delivery queries
+    if (query.includes('delivery') || query.includes('schedule')) {
       const upcomingItems = procurementItems
         .filter(item => item.revisedDelivery && item.revisedDelivery !== '')
         .slice(0, 5);
@@ -108,32 +103,26 @@ export const chatWithAI = async (req, res) => {
       }
     }
     
-    // General search across all items
-    const keywords = query.split(' ');
-    const matched = procurementItems.filter(item => {
-      const searchText = `${item.material} ${item.category} ${item.remarks}`.toLowerCase();
-      return keywords.some(keyword => keyword.length > 2 && searchText.includes(keyword));
-    });
-    
-    if (matched.length > 0) {
-      return res.json({
-        reply: `Found ${matched.length} matching items:`,
-        data: matched.slice(0, 3),
-        type: "search_results"
-      });
-    }
-
-    // Default response
+    // Default response with sample data
     return res.json({
-      reply: "I can help you with procurement information. Try asking about:\n• Specific materials (concrete, cables, etc.)\n• Categories (electrical, plumbing, HVAC)\n• Delivery schedules\n• Material status",
-      type: "general"
+      reply: `Found ${procurementItems.length} items in the procurement schedule. Try asking about specific materials like "concrete" or "cables".`,
+      data: procurementItems.slice(0, 3), // Show first 3 as sample
+      type: "sample_data"
     });
 
   } catch (error) {
-    console.error("Chat controller error:", error);
+    console.error("===== FULL ERROR DETAILS =====");
+    console.error("Error message:", error.message);
+    console.error("Error code:", error.code);
+    console.error("Error status:", error.status);
+    console.error("Error details:", error.errors);
+    console.error("==============================");
+    
     return res.status(500).json({ 
       reply: "I'm having trouble accessing the procurement data right now. Please try again later.",
       error: true 
     });
   }
 };
+
+
