@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../theme.dart';
 import '../models/meeting.dart';
+import '../../../../../../widgets/custom_toast.dart';
 
 class EditMeetingPage extends StatefulWidget {
   final Meeting meeting;
@@ -55,16 +56,16 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
     if (_titleController.text.trim().isEmpty ||
         _startDateTime == null ||
         _endDateTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
+      CustomToast.warning(
+        context,
+        'Please fill in all required fields including title, start time, and end time.',
+        title: 'Missing Information',
       );
       return;
     }
 
     if (_startDateTime!.isAfter(_endDateTime!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('End time must be after start time.')),
-      );
+      CustomAlertDialog.showTimeValidationError(context);
       return;
     }
 

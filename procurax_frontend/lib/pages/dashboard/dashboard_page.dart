@@ -7,6 +7,7 @@ import 'package:procurax_frontend/services/meetings_service.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 enum ProjectStatus { active, pending, completed }
 
@@ -79,9 +80,11 @@ class _DashboardPageState extends State<DashboardPage> {
         _recentMeetingsFuture,
       ]);
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      CustomToast.success(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Dashboard refreshed")));
+        'All data has been updated successfully',
+        title: 'Dashboard Refreshed',
+      );
     } finally {
       if (mounted) {
         setState(() => _isRefreshing = false);

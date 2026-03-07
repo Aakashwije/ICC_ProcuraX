@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/services/auth_service.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import '../../routes/app_routes.dart';
 
 class LoginPage extends StatefulWidget {
@@ -397,9 +398,11 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      CustomToast.error(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+        error.toString().replaceFirst('Exception: ', ''),
+        title: 'Login Failed',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
