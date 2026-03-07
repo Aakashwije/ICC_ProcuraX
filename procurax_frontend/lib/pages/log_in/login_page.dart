@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/services/auth_service.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import '../../routes/app_routes.dart';
 
 class LoginPage extends StatefulWidget {
@@ -219,9 +220,6 @@ class _LoginPageState extends State<LoginPage> {
                         if (v == null || v.trim().isEmpty) {
                           return 'Enter password';
                         }
-                        if (v.trim().length < 6) {
-                          return 'Password too short';
-                        }
                         return null;
                       },
                     ),
@@ -263,7 +261,10 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         TextButton(
                           onPressed: () {
-                            // TODO: forgot password action
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.forgotPassword,
+                            );
                           },
                           child: Text(
                             "Forgot your password?",
@@ -384,12 +385,20 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Validate form fields
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      CustomToast.warning(
+        context,
+        'Please fill in all required fields correctly.',
+        title: 'Validation Error',
+      );
+      return;
+    }
 
     setState(() => _loading = true);
     try {
       await _authService.login(
-        email: _emailC.text,
+        email: _emailC.text.trim(),
         password: _passC.text,
         rememberMe: _rememberMe,
       );
@@ -397,9 +406,47 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+
+      final errorMessage = error.toString().replaceFirst('Exception: ', '');
+
+      // Show user-friendly error messages based on the error type
+      if (errorMessage.toLowerCase().contains('email') ||
+          errorMessage.toLowerCase().contains('not found')) {
+        CustomAlertDialog.show(
+          context,
+          title: 'Email Not Found',
+          message:
+              'The email address you entered is not registered. Please check and try again or create a new account.',
+          type: ToastType.warning,
+          confirmText: 'Understood',
+          showCancel: false,
+        );
+      } else if (errorMessage.toLowerCase().contains('password') ||
+          errorMessage.toLowerCase().contains('incorrect') ||
+          errorMessage.toLowerCase().contains('invalid')) {
+        CustomAlertDialog.show(
+          context,
+          title: 'Incorrect Password',
+          message:
+              'The password you entered is incorrect. Please try again or reset your password.',
+          type: ToastType.error,
+          confirmText: 'Try Again',
+          showCancel: false,
+        );
+      } else if (errorMessage.toLowerCase().contains('approved') ||
+          errorMessage.toLowerCase().contains('approval')) {
+        CustomAlertDialog.show(
+          context,
+          title: 'Account Pending Approval',
+          message:
+              'Your account has not been approved yet. Please contact your admin officer for approval.',
+          type: ToastType.warning,
+          confirmText: 'Understood',
+          showCancel: false,
+        );
+      } else {
+        CustomToast.error(context, errorMessage, title: 'Login Failed');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

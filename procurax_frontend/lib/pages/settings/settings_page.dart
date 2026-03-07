@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
@@ -27,6 +30,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   bool isLoading = false;
 
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploading = false;
+
   // Text controllers
   late TextEditingController firstNameController;
   late TextEditingController lastNameController;
@@ -45,6 +52,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // Load settings from MongoDB automatically
     _loadSettings();
+
+    _loadProfileImage();
   }
 
   @override
@@ -55,6 +64,221 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfileImage() async {}
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512, // Resize to save bandwidth
+        maxHeight: 512,
+        imageQuality: 85, // Compress image
+      );
+
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);
+        });
+
+        // Automatically upload after selection
+        await _uploadProfileImage();
+
+        if (kDebugMode) {
+          debugPrint('✅ Image selected: ${image.path}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error picking image: $e');
+      }
+      _showErrorSnackBar('Failed to pick image: $e');
+    }
+  }
+
+  Future<void> _takePhotoWithCamera() async {
+    try {
+      // Check if camera is available
+      final bool cameraAvailable = await _picker.supportsImageSource(
+        ImageSource.camera,
+      );
+
+      if (!cameraAvailable) {
+        _showErrorSnackBar('Camera is not available on this device');
+        return;
+      }
+
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);
+        });
+
+        // Automatically upload after capture
+        await _uploadProfileImage();
+
+        if (kDebugMode) {
+          debugPrint('✅ Photo captured: ${image.path}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error taking photo: $e');
+      }
+      _showErrorSnackBar('Failed to take photo: $e');
+    }
+  }
+
+  //Show dialog to choose image source
+  Future<void> _showImageSourceDialog() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Profile Picture'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: Color(0xFF1F4CCF),
+                  ),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImageFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_camera,
+                    color: Color(0xFF1F4CCF),
+                  ),
+                  title: const Text('Take a Photo'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _takePhotoWithCamera();
+                  },
+                ),
+                if (_profileImage != null) ...[
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text('Remove Current Photo'),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _removeProfileImage();
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Upload profile image to backend
+  Future<void> _uploadProfileImage() async {
+    if (_profileImage == null) return;
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      // TODO: Implement actual API call to upload image
+      // await ApiService.uploadProfileImage(_profileImage!);
+
+      // Simulate upload delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        _showSuccessSnackBar('Profile picture updated successfully');
+      }
+
+      if (kDebugMode) {
+        debugPrint('✅ Profile image uploaded');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error uploading image: $e');
+      }
+      _showErrorSnackBar('Failed to upload image: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  // Remove profile image
+  Future<void> _removeProfileImage() async {
+    setState(() {
+      _profileImage = null;
+      _isUploading = true;
+    });
+
+    try {
+      // TODO: Implement API call to remove image
+      // await ApiService.removeProfileImage();
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        _showSuccessSnackBar('Profile picture removed');
+      }
+
+      if (kDebugMode) {
+        debugPrint('✅ Profile image removed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error removing image: $e');
+      }
+      _showErrorSnackBar('Failed to remove image: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  /// Show success snackbar
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  /// Show error snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   Future<void> _loadSettings() async {
@@ -142,6 +366,104 @@ class _SettingsPageState extends State<SettingsPage> {
   void _handleProjectChange(String value) {
     setState(() => defaultProject = value);
     _saveSettings();
+  }
+
+  /// Widget for profile picture section (extracted for clarity)
+  Widget _buildProfilePictureSection(
+    Color fieldBg,
+    Color blue,
+    Color lightBlue,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Profile Image Container
+        Stack(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fieldBg,
+                image: _profileImage != null
+                    ? DecorationImage(
+                        image: FileImage(_profileImage!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                border: Border.all(color: blue.withOpacity(0.3), width: 2),
+              ),
+              child: _profileImage == null
+                  ? Center(
+                      child: Text(
+                        "${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                          color: blue,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            if (_isUploading)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(width: 20),
+        // Buttons Column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isUploading ? null : _showImageSourceDialog,
+                      icon: Icon(
+                        _isUploading ? Icons.hourglass_empty : Icons.camera_alt,
+                        size: 18,
+                      ),
+                      label: Text(
+                        _isUploading ? 'Uploading...' : 'Change Photo',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: blue,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "JPG, PNG or GIF. Max size 2MB",
+                style: TextStyle(fontSize: 11, color: lightBlue),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override

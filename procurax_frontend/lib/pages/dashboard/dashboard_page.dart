@@ -7,6 +7,7 @@ import 'package:procurax_frontend/services/meetings_service.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 enum ProjectStatus { active, pending, completed }
 
@@ -22,7 +23,7 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color lightBlue = Color(0xFFE6EEF8);
   static const Color neutralText = Color(0xFF6B7280);
 
-  // 🔴 Simulated real-time status
+  // Simulated real-time status
   final ProjectStatus projectStatus = ProjectStatus.active;
   late Future<ProcurementView> _procurementFuture;
   late Future<List<Task>> _recentTasksFuture;
@@ -79,9 +80,11 @@ class _DashboardPageState extends State<DashboardPage> {
         _recentMeetingsFuture,
       ]);
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      CustomToast.success(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Dashboard refreshed")));
+        'All data has been updated successfully',
+        title: 'Dashboard Refreshed',
+      );
     } finally {
       if (mounted) {
         setState(() => _isRefreshing = false);
@@ -556,9 +559,9 @@ class _DashboardPageState extends State<DashboardPage> {
             for (var i = 0; i < updates.length; i++) ...[
               _infoRow(
                 icon: Icons.local_shipping_outlined,
-                title: updates[i].materialDescription.isEmpty
+                title: updates[i].materialList.isEmpty
                     ? "Procurement Update"
-                    : updates[i].materialDescription,
+                    : updates[i].materialList,
                 subtitle: _procurementSubtitle(updates[i]),
               ),
               if (i != updates.length - 1) const SizedBox(height: 12),
@@ -571,13 +574,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String _procurementSubtitle(ProcurementItemView item) {
     final status = item.status?.trim();
-    final date = item.goodsAtLocationDate.isNotEmpty
-        ? item.goodsAtLocationDate
-        : item.cmsRequiredDate;
+    final date = item.revisedDeliveryToSite.isNotEmpty
+        ? item.revisedDeliveryToSite
+        : item.requiredDateCMS;
     final statusLabel = (status != null && status.isNotEmpty)
         ? "Status: $status"
         : "Status: —";
-    final dateLabel = date.isNotEmpty ? "Goods at: $date" : "Date TBD";
+    final dateLabel = date.isNotEmpty ? "Delivery: $date" : "Date TBD";
     return "$statusLabel • $dateLabel";
   }
 
@@ -677,7 +680,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final q = _searchQuery.toLowerCase();
     return items.where((item) {
       final haystack =
-          "${item.materialDescription} ${item.status ?? ''} ${item.goodsAtLocationDate} ${item.cmsRequiredDate}";
+          "${item.materialList} ${item.status ?? ''} ${item.revisedDeliveryToSite} ${item.requiredDateCMS}";
       return haystack.toLowerCase().contains(q);
     }).toList();
   }

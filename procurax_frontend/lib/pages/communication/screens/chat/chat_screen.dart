@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import '../../core/colors.dart';
 import '../chat/message_bubble.dart';
 import '../chat/typing_indicator.dart';
@@ -300,8 +301,10 @@ class _ChatScreenState extends State<ChatScreen> {
           ..addAll(old);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e')),
+      CustomToast.error(
+        context,
+        'Unable to delete message. Please try again.',
+        title: 'Delete Failed',
       );
     }
   }
@@ -574,8 +577,10 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Failed to send message: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send message')),
+        CustomToast.error(
+          context,
+          'Your message could not be sent. Please check your connection.',
+          title: 'Message Not Sent',
         );
       }
     }
@@ -603,7 +608,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
       final fileName = file.name;
       final mimeType =
-          lookupMimeType(fileName, headerBytes: bytes) ?? 'application/octet-stream';
+          lookupMimeType(fileName, headerBytes: bytes) ??
+          'application/octet-stream';
 
       final upload = await _chatService.uploadFile(
         bytes: bytes,
@@ -673,9 +679,9 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Failed to send file: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send file')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to send file')));
     }
   }
 
@@ -685,9 +691,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (uri == null) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to open file')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to open file')));
     }
   }
 
@@ -737,10 +743,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 Text(
                   widget.userRole,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
               ],
             ),
@@ -783,54 +786,52 @@ class _ChatScreenState extends State<ChatScreen> {
             child: loading
                 ? const Center(child: CircularProgressIndicator())
                 : loadError != null
-                    ? Center(child: Text(loadError!))
-                    : messages.isEmpty
-                        ? const Center(child: Text('No messages yet'))
-                        : Builder(
-                            builder: (context) {
-                              final items = _buildMessageItems();
-                              final listView =
-                                  NotificationListener<ScrollNotification>(
-                                onNotification: (notification) {
-                                  final shouldShow = !_isNearBottom();
-                                  if (shouldShow != _showScrollToBottom) {
-                                    setState(() {
-                                      _showScrollToBottom = shouldShow;
-                                    });
-                                  }
-                                  return false;
-                                },
-                                child: ListView.builder(
-                                  controller: _scrollController,
-                                  reverse: true,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  itemCount: items.length,
-                                  itemBuilder: (context, index) => items[index],
-                                ),
-                              );
+                ? Center(child: Text(loadError!))
+                : messages.isEmpty
+                ? const Center(child: Text('No messages yet'))
+                : Builder(
+                    builder: (context) {
+                      final items = _buildMessageItems();
+                      final listView = NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          final shouldShow = !_isNearBottom();
+                          if (shouldShow != _showScrollToBottom) {
+                            setState(() {
+                              _showScrollToBottom = shouldShow;
+                            });
+                          }
+                          return false;
+                        },
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          reverse: true,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) => items[index],
+                        ),
+                      );
 
-                              return Stack(
-                                children: [
-                                  listView,
-                                  if (_showScrollToBottom)
-                                    Positioned(
-                                      right: 16,
-                                      bottom: 16,
-                                      child: FloatingActionButton.small(
-                                        onPressed: () =>
-                                            _scrollToBottom(force: true),
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: AppColours.primary,
-                                        child: const Icon(
-                                          Icons.arrow_downward,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
+                      return Stack(
+                        children: [
+                          listView,
+                          if (_showScrollToBottom)
+                            Positioned(
+                              right: 16,
+                              bottom: 16,
+                              child: FloatingActionButton.small(
+                                onPressed: () => _scrollToBottom(force: true),
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppColours.primary,
+                                child: const Icon(
+                                  Icons.arrow_downward,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
           ),
           if (isOtherTyping) const TypingIndicator(),
           Container(
@@ -847,9 +848,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildMessageInput(),
-              ],
+              children: [_buildMessageInput()],
             ),
           ),
         ],
