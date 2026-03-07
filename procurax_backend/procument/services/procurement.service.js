@@ -78,11 +78,20 @@ export async function getProcurementView(sheetUrl) {
   /*
     Filter out entries without a valid revisedDeliveryToSite date.
     We need a real date to sort and to show upcoming deliveries.
+    Also filter out past dates - only show today and future deliveries.
   */
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+
   const withDates = parsed.filter((p) => {
     if (!p.revisedDeliveryToSite) return false;
-    const time = new Date(p.revisedDeliveryToSite).getTime();
-    return Number.isFinite(time);
+    const deliveryDate = new Date(p.revisedDeliveryToSite);
+    const time = deliveryDate.getTime();
+    if (!Number.isFinite(time)) return false;
+    
+    // Only include deliveries that are today or in the future
+    deliveryDate.setHours(0, 0, 0, 0);
+    return deliveryDate >= today;
   });
 
   /*
