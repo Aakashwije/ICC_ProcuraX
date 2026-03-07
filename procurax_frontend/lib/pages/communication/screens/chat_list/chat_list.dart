@@ -1,10 +1,9 @@
-
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import 'package:procurax_frontend/services/chat_service.dart';
 import '../../core/colors.dart';
 import '../../widgets/bottom_nav.dart';
@@ -23,16 +22,13 @@ class ChatListScreen extends StatefulWidget {
   State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
-
-
 class _ChatListScreenState extends State<ChatListScreen>
     with WidgetsBindingObserver {
   int currentIndex = 0;
   final ChatService _chatService = ChatService();
   String currentUserId = ApiService.currentUserId ?? '';
   final TextEditingController _searchController = TextEditingController();
-    final TextEditingController _userSearchController =
-      TextEditingController();
+  final TextEditingController _userSearchController = TextEditingController();
   Timer? _searchDebounce;
   String searchQuery = '';
 
@@ -45,7 +41,6 @@ class _ChatListScreenState extends State<ChatListScreen>
   int messageUnreadCount = 0;
   Map<String, bool> onlineMap = {};
   Timer? _presenceTimer;
-  
 
   @override
   void initState() {
@@ -116,9 +111,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       final role = (chat['otherUserRole'] ?? chat['role'] ?? '')
           .toString()
           .toLowerCase();
-      final lastMessage = (chat['lastMessage'] ?? '')
-          .toString()
-          .toLowerCase();
+      final lastMessage = (chat['lastMessage'] ?? '').toString().toLowerCase();
 
       return name.contains(q) || role.contains(q) || lastMessage.contains(q);
     }).toList();
@@ -136,7 +129,6 @@ class _ChatListScreenState extends State<ChatListScreen>
   Future<void> _sendPresenceHeartbeat() async {
     try {
       await _chatService.sendPresenceHeartbeat(currentUserId);
-      
     } catch (e) {
       debugPrint('Failed to send presence heartbeat: $e');
     }
@@ -155,8 +147,10 @@ class _ChatListScreenState extends State<ChatListScreen>
     } catch (e) {
       debugPrint('Failed to load users: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load users')),
+      CustomToast.error(
+        context,
+        'Unable to load user list. Please try again.',
+        title: 'Connection Error',
       );
     } finally {
       if (mounted) setState(() => usersLoading = false);
@@ -220,59 +214,59 @@ class _ChatListScreenState extends State<ChatListScreen>
                       child: usersLoading
                           ? const Center(child: CircularProgressIndicator())
                           : filtered.isEmpty
-                              ? const Center(child: Text('No users found'))
-                              : ListView.separated(
-                                  itemCount: filtered.length,
-                                  separatorBuilder: (_, __) =>
-                                      const Divider(height: 1),
-                                  itemBuilder: (context, index) {
-                                    final user = filtered[index];
-                                    final userId = _getUserId(user);
-                                    final name = _getUserName(user);
-                                    final phone = _getUserPhone(user);
+                          ? const Center(child: Text('No users found'))
+                          : ListView.separated(
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final user = filtered[index];
+                                final userId = _getUserId(user);
+                                final name = _getUserName(user);
+                                final phone = _getUserPhone(user);
 
-                                    return ListTile(
-                                      leading: CircleAvatar(
-                                        child: Text(
-                                          name.isNotEmpty
-                                              ? name[0].toUpperCase()
-                                              : '?',
-                                        ),
-                                      ),
-                                      title: Text(
-                                        name.isNotEmpty
-                                            ? name
-                                            : (phone.isNotEmpty
-                                                ? phone
-                                                : userId),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      subtitle: Text(
-                                        phone.isNotEmpty ? phone : userId,
-                                      ),
-                                      trailing: userId == currentUserId
-                                          ? const Icon(Icons.check,
-                                              color: AppColours.primary)
-                                          : null,
-                                      onTap: () async {
-                                        Navigator.of(context).pop();
-                                        if (userId.isEmpty) return;
-                                        _userSearchController.clear();
-                                        setState(() {
-                                          currentUserId = userId;
-                                          chats = [];
-                                          loading = true;
-                                          alertCount = 0;
-                                          messageUnreadCount = 0;
-                                          onlineMap = {};
-                                        });
-                                        await _sendPresenceHeartbeat();
-                                        await fetchChats();
-                                        await fetchAlerts();
-                                      },
-                                    );
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    child: Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : '?',
+                                    ),
+                                  ),
+                                  title: Text(
+                                    name.isNotEmpty
+                                        ? name
+                                        : (phone.isNotEmpty ? phone : userId),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    phone.isNotEmpty ? phone : userId,
+                                  ),
+                                  trailing: userId == currentUserId
+                                      ? const Icon(
+                                          Icons.check,
+                                          color: AppColours.primary,
+                                        )
+                                      : null,
+                                  onTap: () async {
+                                    Navigator.of(context).pop();
+                                    if (userId.isEmpty) return;
+                                    _userSearchController.clear();
+                                    setState(() {
+                                      currentUserId = userId;
+                                      chats = [];
+                                      loading = true;
+                                      alertCount = 0;
+                                      messageUnreadCount = 0;
+                                      onlineMap = {};
+                                    });
+                                    await _sendPresenceHeartbeat();
+                                    await fetchChats();
+                                    await fetchAlerts();
                                   },
-                                ),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
@@ -322,9 +316,9 @@ class _ChatListScreenState extends State<ChatListScreen>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final filtered = _filterUsers(_userSearchController.text)
-                .where((u) => _getUserId(u) != currentUserId)
-                .toList();
+            final filtered = _filterUsers(
+              _userSearchController.text,
+            ).where((u) => _getUserId(u) != currentUserId).toList();
 
             return Padding(
               padding: EdgeInsets.only(
@@ -368,55 +362,50 @@ class _ChatListScreenState extends State<ChatListScreen>
                       child: usersLoading
                           ? const Center(child: CircularProgressIndicator())
                           : filtered.isEmpty
-                              ? const Center(child: Text('No users found'))
-                              : ListView.separated(
-                                  itemCount: filtered.length,
-                                  separatorBuilder: (_, __) =>
-                                      const Divider(height: 1),
-                                  itemBuilder: (context, index) {
-                                    final user = filtered[index];
-                                    final userId = _getUserId(user);
-                                    final name = _getUserName(user);
-                                    
+                          ? const Center(child: Text('No users found'))
+                          : ListView.separated(
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final user = filtered[index];
+                                final userId = _getUserId(user);
+                                final name = _getUserName(user);
 
-                                    return ListTile(
-                                      leading: CircleAvatar(
-                                        child: Text(
-                                          name.isNotEmpty
-                                              ? name[0].toUpperCase()
-                                              : '?',
-                                        ),
-                                      ),
-                                      title: Text(
-                                        name.isNotEmpty ? name : userId,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      onTap: () async {
-                                        Navigator.of(context).pop();
-                                        if (userId.isEmpty) return;
-                                        try {
-                                          await _chatService.createChat(
-                                            members: [currentUserId, userId],
-                                            isGroup: false,
-                                          );
-                                          await fetchChats();
-                                        } catch (e) {
-                                          debugPrint(
-                                            'Failed to create chat: $e',
-                                          );
-                                          if (!mounted) return;
-                                          ScaffoldMessenger.of(this.context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content:
-                                                  Text('Failed to create chat'),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    );
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    child: Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : '?',
+                                    ),
+                                  ),
+                                  title: Text(
+                                    name.isNotEmpty ? name : userId,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () async {
+                                    Navigator.of(context).pop();
+                                    if (userId.isEmpty) return;
+                                    try {
+                                      await _chatService.createChat(
+                                        members: [currentUserId, userId],
+                                        isGroup: false,
+                                      );
+                                      await fetchChats();
+                                    } catch (e) {
+                                      debugPrint('Failed to create chat: $e');
+                                      if (!mounted) return;
+                                      CustomToast.error(
+                                        this.context,
+                                        'Unable to start a new conversation. Please try again.',
+                                        title: 'Chat Creation Failed',
+                                      );
+                                    }
                                   },
-                                ),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
@@ -534,10 +523,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,
-        actions: [
-          
-          
-        ],
+        actions: [],
       ),
 
       body: currentIndex == 0
@@ -552,8 +538,8 @@ class _ChatListScreenState extends State<ChatListScreen>
               onSearchChanged: _onSearchChanged,
             )
           : currentIndex == 1
-              ? const CallsScreen()
-              : AlertsScreen(userId: currentUserId),
+          ? const CallsScreen()
+          : AlertsScreen(userId: currentUserId),
 
       floatingActionButton: currentIndex == 0
           ? FloatingActionButton(
@@ -626,10 +612,7 @@ class MessagesPage extends StatelessWidget {
     if (updatedAt is Map) {
       final seconds = updatedAt['_seconds'] ?? updatedAt['seconds'];
       if (seconds is int) {
-        return DateTime.fromMillisecondsSinceEpoch(
-          seconds * 1000,
-          isUtc: true,
-        );
+        return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
       }
     }
 
@@ -655,7 +638,7 @@ class MessagesPage extends StatelessWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -669,25 +652,29 @@ class MessagesPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: 1, thickness: 1, color: Colors.grey,indent: 16, endIndent: 16),
-        
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: Colors.grey,
+          indent: 16,
+          endIndent: 16,
+        ),
+
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Align(
             alignment: Alignment.center,
-          
-          child: Text(
-            'Messages',
-            style: TextStyle(
-              
-              fontSize: 18,
-              color: AppColours.primary,
-              fontWeight: FontWeight.bold,
+
+            child: Text(
+              'Messages',
+              style: TextStyle(
+                fontSize: 18,
+                color: AppColours.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
-        ),
-    
 
         // 🔍 Search bar
         Padding(
@@ -698,20 +685,24 @@ class MessagesPage extends StatelessWidget {
               color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(30),
             ),
-            child:  TextField(
+            child: TextField(
               controller: searchController,
               decoration: InputDecoration(
                 prefixIcon: Icon(Icons.search),
                 hintText: 'Search Conversations',
                 filled: true,
-                fillColor: const Color.fromARGB(255, 211, 209, 209), //light gray 
+                fillColor: const Color.fromARGB(
+                  255,
+                  211,
+                  209,
+                  209,
+                ), //light gray
                 contentPadding: EdgeInsets.symmetric(vertical: 12),
-                
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30), // pill shape
-                    borderSide: BorderSide.none, // no outline
-                ),
 
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30), // pill shape
+                  borderSide: BorderSide.none, // no outline
+                ),
               ),
               onChanged: onSearchChanged,
             ),
@@ -738,11 +729,12 @@ class MessagesPage extends StatelessWidget {
                       orElse: () => 'Unknown',
                     );
 
-                    final otherUserName =
-                        (chat['otherUserName'] ?? otherUserId).toString();
+                    final otherUserName = (chat['otherUserName'] ?? otherUserId)
+                        .toString();
                     final otherUserRole =
                         (chat['otherUserRole'] ?? 'Private Chat').toString();
-                    final chatId = (chat['id'] ?? chat['chatId'] ?? '').toString();
+                    final chatId = (chat['id'] ?? chat['chatId'] ?? '')
+                        .toString();
 
                     final unreadCounts = chat['unreadCounts'];
                     int unreadCount = 0;
@@ -843,10 +835,7 @@ class ChatTile extends StatelessWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            role,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(role, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 2),
           Text(
             message.isEmpty ? 'No messages yet' : message,

@@ -5,6 +5,7 @@ import '../../../theme.dart';
 import '../models/meeting.dart';
 import 'meeting_added_page.dart';
 import '../../../../../../services/meetings_service.dart';
+import '../../../../../../widgets/custom_toast.dart';
 
 class AddMeetingPage extends StatefulWidget {
   const AddMeetingPage({super.key});
@@ -35,16 +36,16 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
     if (_titleController.text.trim().isEmpty ||
         _startDateTime == null ||
         _endDateTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
+      CustomToast.warning(
+        context,
+        'Please fill in all required fields including title, start time, and end time.',
+        title: 'Missing Information',
       );
       return;
     }
 
     if (_startDateTime!.isAfter(_endDateTime!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('End time must be after start time.')),
-      );
+      CustomAlertDialog.showTimeValidationError(context);
       return;
     }
 
@@ -68,9 +69,20 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to add meeting: $e')));
+      // Check if it's a conflict error
+      final errorMessage = e.toString();
+      if (errorMessage.toLowerCase().contains('conflict')) {
+        CustomAlertDialog.showMeetingConflict(
+          context,
+          conflictMessage: errorMessage.replaceFirst('Exception: ', ''),
+        );
+      } else {
+        CustomToast.error(
+          context,
+          errorMessage.replaceFirst('Exception: ', ''),
+          title: 'Failed to Add Meeting',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

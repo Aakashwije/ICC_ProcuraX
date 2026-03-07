@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/services/api_service.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key});
@@ -896,18 +897,19 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('File deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
+        CustomToast.success(
+          context,
+          'The file has been removed from your documents',
+          title: 'File Deleted',
         );
         Navigator.pop(context, true); // Refresh parent
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        CustomToast.error(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+          title: 'Delete Failed',
         );
       }
     }
