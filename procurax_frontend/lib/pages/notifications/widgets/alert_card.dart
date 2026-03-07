@@ -18,6 +18,7 @@ class AlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typeColor = AlertConstants.getTypeColor(alert.type);
     return Dismissible(
       key: Key(alert.id),
       background: _buildSwipeBackground(
@@ -39,32 +40,75 @@ class AlertCard extends StatelessWidget {
         }
       },
       child: Card(
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
+        shadowColor: Colors.black12,
+        elevation: 1,
         margin: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusMD),
         child: InkWell(
           onTap: onTap,
           borderRadius: AppRadius.radiusMD,
           child: Padding(
             padding: AppSpacing.paddingMD,
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  alert.title,
-                  style: TextStyle(
-                    fontWeight: alert.isRead
-                        ? FontWeight.w500
-                        : FontWeight.w700,
+                Container(
+                  width: 6,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: typeColor,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  alert.message,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            AppIcons.getIconForType(alert.type),
+                            size: 18,
+                            color: typeColor,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              alert.title,
+                              style: TextStyle(
+                                fontWeight: alert.isRead
+                                    ? FontWeight.w500
+                                    : FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        alert.message,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
                 ),
+                if (!alert.isRead)
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.unreadIndicator,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
               ],
             ),
           ),
