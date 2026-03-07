@@ -35,22 +35,40 @@ class ProcurementView {
 /*
   UI-facing procurement item. All fields are strings so the UI can display
   them directly without additional formatting.
+
+  Enterprise logistics fields:
+  - materialList: Item name (Column B)
+  - responsibility: Contractor/Supplier (Column D)
+  - openingLC: Letter of Credit opening date (Column J)
+  - etd: Estimated Time of Departure (Column K)
+  - eta: Estimated Time of Arrival (Column L)
+  - boiApproval: Board of Investment approval (Column M)
+  - revisedDeliveryToSite: Final delivery date (Column O)
+  - requiredDateCMS: Required date as CMS/Site Programme (Column P)
 */
 class ProcurementItemView {
-  final String materialDescription;
-  final String tdsQty;
-  final String cmsRequiredDate;
-  final String goodsAtLocationDate;
+  final String materialList;
+  final String responsibility;
+  final String openingLC;
+  final String etd;
+  final String eta;
+  final String boiApproval;
+  final String revisedDeliveryToSite;
+  final String requiredDateCMS;
   final String? status;
 
   /*
     Creates a single procurement item row for the UI list.
   */
   const ProcurementItemView({
-    required this.materialDescription,
-    required this.tdsQty,
-    required this.cmsRequiredDate,
-    required this.goodsAtLocationDate,
+    required this.materialList,
+    required this.responsibility,
+    required this.openingLC,
+    required this.etd,
+    required this.eta,
+    required this.boiApproval,
+    required this.revisedDeliveryToSite,
+    required this.requiredDateCMS,
     this.status,
   });
 
@@ -59,10 +77,14 @@ class ProcurementItemView {
   */
   factory ProcurementItemView.fromJson(Map<String, dynamic> json) {
     return ProcurementItemView(
-      materialDescription: (json['materialDescription'] ?? '').toString(),
-      tdsQty: (json['tdsQty'] ?? '').toString(),
-      cmsRequiredDate: (json['cmsRequiredDate'] ?? '').toString(),
-      goodsAtLocationDate: (json['goodsAtLocationDate'] ?? '').toString(),
+      materialList: (json['materialList'] ?? '').toString(),
+      responsibility: (json['responsibility'] ?? '').toString(),
+      openingLC: (json['openingLC'] ?? '').toString(),
+      etd: (json['etd'] ?? '').toString(),
+      eta: (json['eta'] ?? '').toString(),
+      boiApproval: (json['boiApproval'] ?? '').toString(),
+      revisedDeliveryToSite: (json['revisedDeliveryToSite'] ?? '').toString(),
+      requiredDateCMS: (json['requiredDateCMS'] ?? '').toString(),
       status: json['status']?.toString(),
     );
   }
@@ -72,16 +94,16 @@ class ProcurementItemView {
   Compact delivery view used by the upcoming deliveries section.
 */
 class DeliverySimpleView {
-  final String materialDescription;
-  final String goodsAtLocationDate;
+  final String materialList;
+  final String revisedDeliveryToSite;
   final String? status;
 
   /*
     Creates a simplified delivery record for quick display.
   */
   const DeliverySimpleView({
-    required this.materialDescription,
-    required this.goodsAtLocationDate,
+    required this.materialList,
+    required this.revisedDeliveryToSite,
     this.status,
   });
 
@@ -90,8 +112,8 @@ class DeliverySimpleView {
   */
   factory DeliverySimpleView.fromJson(Map<String, dynamic> json) {
     return DeliverySimpleView(
-      materialDescription: (json['materialDescription'] ?? '').toString(),
-      goodsAtLocationDate: (json['goodsAtLocationDate'] ?? '').toString(),
+      materialList: (json['materialList'] ?? '').toString(),
+      revisedDeliveryToSite: (json['revisedDeliveryToSite'] ?? '').toString(),
       status: json['status']?.toString(),
     );
   }
