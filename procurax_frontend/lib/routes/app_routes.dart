@@ -9,6 +9,7 @@ class AppRoutes {
   static const getStarted = "/";
   static const login = "/login";
   static const createAccount = "/create-account";
+  static const forgotPassword = "/forgot-password";
   static const dashboard = "/dashboard";
   static const settings = "/settings";
   static const notifications = "/notifications";

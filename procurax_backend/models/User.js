@@ -53,6 +53,43 @@ const UserSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
       default: null
+    },
+
+    resetPasswordOTP: {
+      type: String,
+      default: null,
+      select: false
+    },
+
+    resetPasswordExpiry: {
+      type: Date,
+      default: null,
+      select: false
+    },
+
+    // ── Production security fields ──
+    resetPasswordAttempts: {
+      type: Number,
+      default: 0,
+      select: false
+    },
+
+    resetPasswordLockedUntil: {
+      type: Date,
+      default: null,
+      select: false
+    },
+
+    lastResetRequestAt: {
+      type: Date,
+      default: null,
+      select: false
+    },
+
+    resetRequestCount: {
+      type: Number,
+      default: 0,
+      select: false
     }
   },
   {

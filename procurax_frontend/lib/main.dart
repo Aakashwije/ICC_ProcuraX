@@ -14,6 +14,7 @@ import 'pages/communication/communication_page.dart';
 import 'pages/meetings/features/smart_calendar/screens/meetings_page.dart';
 import 'pages/sign_in/create_account_page.dart';
 import 'pages/log_in/login_page.dart';
+import 'pages/log_in/forgot_password_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/settings/theme_notifier.dart';
 import 'pages/notifications/notifications_page.dart';
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
               AppRoutes.getStarted: (context) => const GetStartedPage(),
               AppRoutes.login: (context) => const LoginPage(),
               AppRoutes.createAccount: (context) => const CreateAccountPage(),
+              AppRoutes.forgotPassword: (context) => const ForgotPasswordPage(),
               AppRoutes.procurement: (context) =>
                   const AuthGate(child: ProcurementSchedulePage()),
               AppRoutes.dashboard: (context) =>
