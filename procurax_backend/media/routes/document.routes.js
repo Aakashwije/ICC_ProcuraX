@@ -219,7 +219,11 @@ router.get('/', authenticateToken, async (req, res) => {
     console.error('Error fetching documents:', error);
     res.status(500).json({ 
       success: false,
-      message: error.message 
+      message: error.message,
+      categories: [],
+      documents: [],
+      totalDocuments: 0,
+      totalSize: 0
     });
   }
 });
