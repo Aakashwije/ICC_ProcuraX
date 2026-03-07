@@ -26,3 +26,9 @@ build/
 node_modules/
 package-lock.json
 .env
+
+
+# =====================
+# .env.local
+# =====================
+GOOGLE_SHEET_ID=14kAnO_KMpBtVUB3NmZ3crSxxb19fDVvm

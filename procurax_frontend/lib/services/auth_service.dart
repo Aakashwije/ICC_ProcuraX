@@ -28,6 +28,15 @@ class AuthService {
       }
       await ApiService.setAuthToken(token, persist: rememberMe);
 
+      // Save the logged in user's ID locally so the communication
+      // page knows which user is authenticated across the app.
+      if (userData != null && userData["id"] != null) {
+        await ApiService.setUserId(
+          userData["id"].toString(),
+          persist: rememberMe,
+        );
+      }
+
       // Sync the user to Firestore after a successful login
       if (userData != null && userData["id"] != null) {
         await FirebaseService.syncUserOnLogin(userData["id"].toString(), userData);

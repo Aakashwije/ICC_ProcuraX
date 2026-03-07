@@ -12,6 +12,7 @@ import '../chat/chat_screen.dart';
 //import '../files/files_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../calls/calls_screen.dart';
+import 'package:procurax_frontend/services/api_service.dart';
 
 class ChatListScreen extends StatefulWidget {
   final bool showDrawer;
@@ -28,7 +29,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     with WidgetsBindingObserver {
   int currentIndex = 0;
   final ChatService _chatService = ChatService();
-  String currentUserId = 'user_1';
+  String currentUserId = ApiService.currentUserId ?? '';
   final TextEditingController _searchController = TextEditingController();
     final TextEditingController _userSearchController =
       TextEditingController();
@@ -44,7 +45,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   int messageUnreadCount = 0;
   Map<String, bool> onlineMap = {};
   Timer? _presenceTimer;
-  bool debugSimulatePresence = false;
+  
 
   @override
   void initState() {
@@ -135,13 +136,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   Future<void> _sendPresenceHeartbeat() async {
     try {
       await _chatService.sendPresenceHeartbeat(currentUserId);
-      if (kDebugMode && debugSimulatePresence) {
-        final otherUserId =
-            currentUserId == 'user_1' ? 'user_2' : 'user_1';
-        if (otherUserId != currentUserId) {
-          await _chatService.sendPresenceHeartbeat(otherUserId);
-        }
-      }
+      
     } catch (e) {
       debugPrint('Failed to send presence heartbeat: $e');
     }
@@ -540,36 +535,8 @@ class _ChatListScreenState extends State<ChatListScreen>
         backgroundColor: Colors.white,
         elevation: 1,
         actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: debugSimulatePresence
-                  ? 'Disable simulate presence'
-                  : 'Simulate presence',
-              icon: Icon(
-                debugSimulatePresence ? Icons.wifi : Icons.wifi_off,
-                color: AppColours.primary,
-              ),
-              onPressed: () async {
-                setState(() {
-                  debugSimulatePresence = !debugSimulatePresence;
-                });
-                await _sendPresenceHeartbeat();
-                await _refreshPresence();
-              },
-            ),
-          if (kDebugMode)
-            TextButton.icon(
-              onPressed: _showCurrentUserPicker,
-              icon: const Icon(Icons.person, color: AppColours.primary),
-              label: Text(
-                currentUserId,
-                style: const TextStyle(
-                  color: AppColours.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+          
+          
         ],
       ),
 
