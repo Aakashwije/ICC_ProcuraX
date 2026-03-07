@@ -16,15 +16,18 @@ const CACHE_TTL = Number(process.env.CACHE_TTL_MS || 60000);
   Compute delivery status using required date vs actual goods arrival date.
   Possible outputs: "Delayed", "Early", "On Time", "Unknown".
 */
-function calculateStatus(cmsDate, goodsDate) {
+function calculateStatus(requiredDate, deliveryDate) {
   try {
-    const cms = new Date(cmsDate);
-    const goods = new Date(goodsDate);
-    if (!Number.isFinite(cms.getTime()) || !Number.isFinite(goods.getTime())) {
+    const required = new Date(requiredDate);
+    const delivery = new Date(deliveryDate);
+
+    if (!Number.isFinite(required.getTime()) || !Number.isFinite(delivery.getTime())) {
       return "Unknown";
     }
-    if (goods > cms) return "Delayed";
-    if (goods < cms) return "Early";
+
+    if (delivery > required) return "Delayed";
+    if (delivery < required) return "Early";
+
     return "On Time";
   } catch {
     return "Unknown";
@@ -65,34 +68,31 @@ export async function getProcurementView(sheetUrl) {
     the original date strings (we only parse for comparison).
   */
   const parsed = raw.map((r) => ({
-    ...r,
-    /*
-      Keep original strings but use them to compute status.
-      This makes the API response easy for the frontend to show.
-    */
-    cmsRequiredDate: r.cmsRequiredDate,
-    goodsAtLocationDate: r.goodsAtLocationDate,
-    status: calculateStatus(r.cmsRequiredDate, r.goodsAtLocationDate),
-  }));
+  ...r,
+  status: calculateStatus(
+    r.requiredDateCMS,
+    r.revisedDeliveryToSite
+  ),
+}));
 
   /*
-    Filter out entries without a valid goodsAtLocationDate.
+    Filter out entries without a valid revisedDeliveryToSite date.
     We need a real date to sort and to show upcoming deliveries.
   */
   const withDates = parsed.filter((p) => {
-    if (!p.goodsAtLocationDate) return false;
-    const time = new Date(p.goodsAtLocationDate).getTime();
+    if (!p.revisedDeliveryToSite) return false;
+    const time = new Date(p.revisedDeliveryToSite).getTime();
     return Number.isFinite(time);
   });
 
   /*
-    Sort by goodsAtLocationDate ascending (earliest first).
+    Sort by revisedDeliveryToSite ascending (earliest first).
     This helps us show the soonest deliveries at the top.
   */
   withDates.sort(
     (a, b) =>
-      new Date(a.goodsAtLocationDate).getTime() -
-      new Date(b.goodsAtLocationDate).getTime()
+      new Date(a.revisedDeliveryToSite).getTime() -
+      new Date(b.revisedDeliveryToSite).getTime()
   );
 
   /*
@@ -106,8 +106,8 @@ export async function getProcurementView(sheetUrl) {
     Only return the small summary fields required by the UI.
   */
   const upcomingDeliveries = withDates.slice(5, 7).map((d) => ({
-    materialDescription: d.materialDescription,
-    goodsAtLocationDate: d.goodsAtLocationDate,
+    materialList: d.materialList,
+    revisedDeliveryToSite: d.revisedDeliveryToSite,
     status: d.status,
   }));
 

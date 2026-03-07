@@ -366,8 +366,9 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
 }
 
 /*
-  Full procurement card (shows all four fields; goodsAtLocation is shown as a date).
-  This widget is reusable for each procurement item row in the list.
+  Full procurement card showing enterprise logistics fields.
+  Displays: Material, Responsibility, LC Opening, ETD, ETA, BOI Approval,
+  Delivery to Site, Required Date, and Status.
 */
 class _ProcurementCard extends StatelessWidget {
   final ProcurementItemView item;
@@ -395,19 +396,20 @@ class _ProcurementCard extends StatelessWidget {
     String label,
     String value, {
     Color? valueColor,
+    bool compact = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // circular icon
         Container(
-          height: 36,
-          width: 36,
+          height: compact ? 28 : 36,
+          width: compact ? 28 : 36,
           decoration: BoxDecoration(
             color: iconBg,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 18, color: lightBlue),
+          child: Icon(icon, size: compact ? 14 : 18, color: lightBlue),
         ),
         const SizedBox(width: 10),
         // label + value
@@ -418,16 +420,16 @@ class _ProcurementCard extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: compact ? 10 : 12,
                   color: primaryBlue,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                value,
+                value.isEmpty ? "—" : value,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: compact ? 13 : 15,
                   fontWeight: FontWeight.w600,
                   color: valueColor ?? const Color(0xFF1A1A1A),
                 ),
@@ -479,27 +481,35 @@ class _ProcurementCard extends StatelessWidget {
   }
 
   /*
-    Card layout with top row (description + status), middle row (qty + date),
-    and a final row for goods-at-location date.
+    Enterprise procurement card layout with full logistics tracking fields.
   */
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header: Material + Status Badge
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _fieldRow(
                   Icons.inventory_2_outlined,
-                  "Material Description",
-                  item.materialDescription,
+                  "Material",
+                  item.materialList,
                 ),
               ),
               if ((item.status ?? '').isNotEmpty) ...[
@@ -508,33 +518,133 @@ class _ProcurementCard extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+
+          // Responsibility row
+          _fieldRow(
+            Icons.business_outlined,
+            "Responsibility",
+            item.responsibility,
+          ),
+          const SizedBox(height: 16),
+
+          // Divider with section label
+          Row(
+            children: [
+              Icon(Icons.timeline_outlined, size: 16, color: primaryBlue),
+              const SizedBox(width: 6),
+              Text(
+                "Logistics Timeline",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: primaryBlue,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                height: 1,
+                width: 100,
+                color: primaryBlue.withValues(alpha: 0.2),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Timeline row 1: LC Opening + ETD
           Row(
             children: [
               Expanded(
                 child: _fieldRow(
-                  Icons.production_quantity_limits_outlined,
-                  "TDS Qty",
-                  item.tdsQty,
+                  Icons.account_balance_outlined,
+                  "LC Opening",
+                  item.openingLC,
+                  compact: true,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _fieldRow(
+                  Icons.flight_takeoff_outlined,
+                  "ETD",
+                  item.etd,
+                  compact: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Timeline row 2: ETA + BOI Approval
+          Row(
+            children: [
+              Expanded(
+                child: _fieldRow(
+                  Icons.flight_land_outlined,
+                  "ETA",
+                  item.eta,
+                  compact: true,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _fieldRow(
+                  Icons.verified_outlined,
+                  "BOI Approval",
+                  item.boiApproval,
+                  compact: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Divider with section label
+          Row(
+            children: [
+              Icon(Icons.local_shipping_outlined, size: 16, color: primaryBlue),
+              const SizedBox(width: 6),
+              Text(
+                "Delivery Schedule",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: primaryBlue,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                height: 1,
+                width: 100,
+                color: primaryBlue.withValues(alpha: 0.2),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Delivery row: Delivery to Site + Required Date
+          Row(
+            children: [
+              Expanded(
+                child: _fieldRow(
+                  Icons.event_available_outlined,
+                  "Delivery to Site",
+                  item.revisedDeliveryToSite,
+                  valueColor: Colors.orange.shade700,
+                  compact: true,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _fieldRow(
                   Icons.calendar_today_outlined,
-                  "CMS Required Date",
-                  item.cmsRequiredDate,
+                  "Required Date",
+                  item.requiredDateCMS,
+                  valueColor: Colors.red.shade700,
+                  compact: true,
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          // goodsAtLocationDate shown as a date
-          _fieldRow(
-            Icons.event_available_outlined,
-            "Goods at Location Date",
-            item.goodsAtLocationDate.isEmpty ? "—" : item.goodsAtLocationDate,
-            valueColor: Colors.red,
           ),
         ],
       ),
@@ -614,7 +724,7 @@ class _DeliverySimpleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  delivery.materialDescription,
+                  delivery.materialList,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -627,9 +737,9 @@ class _DeliverySimpleCard extends StatelessWidget {
                     const Icon(Icons.calendar_month_outlined, size: 14),
                     const SizedBox(width: 6),
                     Text(
-                      delivery.goodsAtLocationDate.isEmpty
+                      delivery.revisedDeliveryToSite.isEmpty
                           ? "—"
-                          : delivery.goodsAtLocationDate,
+                          : delivery.revisedDeliveryToSite,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
