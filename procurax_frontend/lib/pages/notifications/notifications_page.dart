@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/services/api_service.dart';
 import 'providers/alert_provider.dart';
+import 'services/notification_api_service.dart';
 import 'widgets/alert_card.dart';
 import 'widgets/alert_filter_chip.dart';
 import 'models/alert_model.dart';
@@ -17,6 +19,16 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   AlertType? selectedType;
   AlertPriority? selectedPriority;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ApiService.hasToken) {
+      Future.microtask(
+        () => context.read<AlertProvider>().fetchNotifications(),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,11 +158,96 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          // Debug info
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 32),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Debug Info:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'API: ${ApiService.baseUrl}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                Text(
+                                  'Token: ${ApiService.hasToken ? "Present" : "Missing"}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: ApiService.hasToken
+                                        ? Colors.green.shade600
+                                        : Colors.red.shade600,
+                                  ),
+                                ),
+                                Text(
+                                  'User ID: ${ApiService.currentUserId ?? "Not set"}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                if (provider.error != null)
+                                  Text(
+                                    'Last Error: ${provider.error}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.red.shade600,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: () => provider.refresh(),
                             icon: const Icon(Icons.refresh),
                             label: const Text('Refresh'),
+                          ),
+                          const SizedBox(height: 8),
+                          // Manual test button
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Testing API...')),
+                              );
+                              try {
+                                final alerts =
+                                    await NotificationApiService.fetchNotifications();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Success! Got ${alerts.length} notifications',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                                provider.refresh();
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.bug_report),
+                            label: const Text('Test API'),
                           ),
                         ],
                       ),

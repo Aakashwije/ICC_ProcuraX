@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Notification from './notification.model.js';
 
 // Get all notifications for the authenticated user
@@ -6,12 +7,25 @@ export const getUserNotifications = async (req, res) => {
     const userId = req.userId;
     const { type, priority, isRead, limit = 50, skip = 0 } = req.query;
 
+    console.log('[Notifications] Fetching for user:', userId);
+
+    // Convert string userId to ObjectId for MongoDB query
+    let ownerObjectId;
+    try {
+      ownerObjectId = new mongoose.Types.ObjectId(userId);
+    } catch (e) {
+      console.error('[Notifications] Invalid userId format:', userId);
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
+
     // Build query
-    const query = { owner: userId };
+    const query = { owner: ownerObjectId };
     
     if (type) query.type = type;
     if (priority) query.priority = priority;
     if (isRead !== undefined) query.isRead = isRead === 'true';
+
+    console.log('[Notifications] Query:', JSON.stringify(query));
 
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
@@ -22,8 +36,10 @@ export const getUserNotifications = async (req, res) => {
       .populate('meetingId', 'title startTime')
       .lean();
 
+    console.log('[Notifications] Found:', notifications.length);
+
     const total = await Notification.countDocuments(query);
-    const unreadCount = await Notification.countDocuments({ owner: userId, isRead: false });
+    const unreadCount = await Notification.countDocuments({ owner: ownerObjectId, isRead: false });
 
     res.json({
       notifications,

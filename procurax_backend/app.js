@@ -48,6 +48,12 @@ import chatbotRoutes from "./buildassist/src/routes/chatbot.routes.js";
 
 // ================================
 
+// ===== UPLOAD ROUTES =====
+import uploadRoutes from "./settings/routes/upload.routes.js";
+app.use("/api/upload", uploadRoutes);	
+
+// =========================
+
 const app = express();
 
 // Middleware
@@ -107,6 +113,11 @@ app.use("/admin-users", adminUserRoutes);
 
 /* User self-service profile route — GET /api/user/profile */
 app.use("/api/user", userProfileRoutes);
+
+// ===== UPLOAD ROUTES =====
+app.use("/api/upload", uploadRoutes);
+
+// =================================
 
 // ===== DOCUMENTS MODULE ROUTES =====
 app.use("/api/documents", documentRoutes);

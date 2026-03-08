@@ -29,8 +29,8 @@ async function createChat(req, res) {
         const chatMembers = Array.isArray(data.members)
           ? data.members
           : Array.isArray(data.userIds)
-              ? data.userIds
-              : [];
+            ? data.userIds
+            : [];
 
         if (data.isGroup === true) return false;
         if (chatMembers.length !== 2) return false;
@@ -127,8 +127,8 @@ async function getUserChats(req, res) {
         const members = Array.isArray(data.members)
           ? data.members
           : Array.isArray(data.userIds)
-              ? data.userIds
-              : [];
+            ? data.userIds
+            : [];
         //Find the other user in the chat
         const otherUserId = members.find(m => m !== userId) || null;
 
@@ -163,6 +163,10 @@ async function getUserChats(req, res) {
               }
             }
           }
+          // If user does not exist anymore, skip this chat
+          if (!userData) {
+            return null;
+          }
 
           // if User name found
           if (userData) {
@@ -181,6 +185,7 @@ async function getUserChats(req, res) {
         };
       })
     );
+    chats = chats.filter(chat => chat !== null); // Remove chats where user does not exist
 
     // De-duplicate 1:1 chats by otherUserId (keep most recent)
     const toMillis = value => {
@@ -217,7 +222,7 @@ async function getUserChats(req, res) {
 
     chats = Array.from(deduped.values());
 
-    
+
     res.json(chats);
   } catch (error) {
     console.error('Error fetching user chats:', error);
@@ -230,7 +235,7 @@ async function getChatById(req, res) {
   try {
     let chatId = req.params.id;
     chatId = chatId.trim();
-  
+
     // Fetch chat document by ID
     const chatDoc = await db.collection('chats').doc(chatId).get();
 
