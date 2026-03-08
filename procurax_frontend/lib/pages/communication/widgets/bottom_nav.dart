@@ -17,52 +17,51 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Divider(
-          height: 1,
-          thickness: 1,
-          color: Colors.grey,
-          indent: 16,
-          endIndent: 16,
-        ),
-        Container(
-          color: Colors.white,
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(
-                    icon: Icons.chat_bubble_outline,
-                    activeIcon: Icons.chat_bubble,
-                    label: 'Messages',
-                    index: 0,
-                    badgeCount: messageBadgeCount,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.call_outlined,
-                    activeIcon: Icons.call,
-                    label: 'Calls',
-                    index: 1,
-                    badgeCount: 0,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.notifications_none,
-                    activeIcon: Icons.notifications,
-                    label: 'Alerts',
-                    index: 2,
-                    badgeCount: alertBadgeCount,
-                  ),
-                ],
+    return Container(
+      margin: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(
+                icon: Icons.chat_bubble_outline,
+                activeIcon: Icons.chat_bubble,
+                label: 'Messages',
+                index: 0,
+                badgeCount: messageBadgeCount,
               ),
-            ),
+              _buildNavItem(
+                icon: Icons.call_outlined,
+                activeIcon: Icons.call,
+                label: 'Calls',
+                index: 1,
+                badgeCount: 0,
+              ),
+              _buildNavItem(
+                icon: Icons.notifications_none,
+                activeIcon: Icons.notifications,
+                label: 'Alerts',
+                index: 2,
+                badgeCount: alertBadgeCount,
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
