@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:io' show Platform;
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'theme_notifier.dart';
@@ -27,7 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String lastName = "Doe";
   String email = "john.doe@company.com";
   String phone = "+1 (555) 123-4567";
-  String? profileImageUrl; // FIXED: Added to store image URL from backend
+  String? profileImageUrl; //store image URL from backend
 
   bool isLoading = false;
 
@@ -53,7 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // Load all data
     _loadSettings();
-    _loadUserProfile(); // FIXED: Added this line to load user profile
+    _loadUserProfile(); // load user profile
   }
 
   @override
@@ -63,6 +65,42 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  // TODO 1: Contact Support Button Method
+  Future<void> _launchContactSupport() async {
+    final String supportEmail = 'support@procurax.com';
+    final String subject = Uri.encodeComponent(
+      'Support Request from ProcuraX App',
+    );
+    final String body = Uri.encodeComponent('''
+App Version: 2.4.1
+Device: ${Platform.operatingSystem}
+User: $firstName $lastName
+Email: $email
+
+Issue Description:
+(Please describe your issue here)
+''');
+
+    final Uri emailUri = Uri.parse(
+      'mailto:$supportEmail?subject=$subject&body=$body',
+    );
+
+    try {
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+        _showSuccessSnackBar('Opening email client...');
+      } else {
+        // Fallback - copy email to clipboard
+        await Clipboard.setData(
+          const ClipboardData(text: 'support@procurax.com'),
+        );
+        _showSuccessSnackBar('Email address copied to clipboard');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Could not open email client');
+    }
   }
 
   // User profile loading
@@ -210,7 +248,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // FIXED: Uncommented actual API call
   Future<void> _uploadProfileImage() async {
     if (_profileImage == null) return;
 
@@ -219,7 +256,6 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      // FIXED: Using actual API call instead of simulation
       final response = await ApiService.uploadProfileImage(_profileImage!);
 
       if (response['success'] == true) {
