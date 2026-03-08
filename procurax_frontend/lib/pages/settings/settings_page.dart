@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/services.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'theme_notifier.dart';
@@ -23,11 +26,11 @@ class _SettingsPageState extends State<SettingsPage> {
   String department = "Construction";
   String defaultProject = "Tower A - Downtown";
 
-  String firstName = "John";
-  String lastName = "Doe";
-  String email = "john.doe@company.com";
-  String phone = "+1 (555) 123-4567";
-  String? profileImageUrl; // FIXED: Added to store image URL from backend
+  String firstName = "Dhasun";
+  String lastName = "Jayarathna";
+  String email = "dhasun.jayarathna@company.com";
+  String phone = "+94 77 123 4567";
+  String? profileImageUrl; //store image URL from backend
 
   bool isLoading = false;
 
@@ -53,7 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // Load all data
     _loadSettings();
-    _loadUserProfile(); // FIXED: Added this line to load user profile
+    _loadUserProfile(); // load user profile
   }
 
   @override
@@ -63,6 +66,164 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  // Contact Support Button Method
+  Future<void> _launchContactSupport() async {
+    final String supportEmail = 'support@procurax.com';
+    final String subject = Uri.encodeComponent(
+      'Support Request from ProcuraX App',
+    );
+    final String body = Uri.encodeComponent('''
+App Version: 2.4.1
+Device: ${Platform.operatingSystem}
+User: $firstName $lastName
+Email: $email
+
+Issue Description:
+(Please describe your issue here)
+''');
+
+    final Uri emailUri = Uri.parse(
+      'mailto:$supportEmail?subject=$subject&body=$body',
+    );
+
+    try {
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+        _showSuccessSnackBar('Opening email client...');
+      } else {
+        // Fallback - copy email to clipboard
+        await Clipboard.setData(
+          const ClipboardData(text: 'support@procurax.com'),
+        );
+        _showSuccessSnackBar('Email address copied to clipboard');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Could not open email client');
+    }
+  }
+
+  // Privacy Policy Button Method
+  Future<void> _launchPrivacyPolicy() async {
+    const String url = 'https://www.procurax.com/privacy';
+    final Uri uri = Uri.parse(url);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _showSuccessSnackBar('Opening Privacy Policy...');
+      } else {
+        _showPrivacyPolicyDialog();
+      }
+    } catch (e) {
+      _showPrivacyPolicyDialog();
+    }
+  }
+
+  void _showPrivacyPolicyDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Privacy Policy'),
+          content: const Text(
+            'We value your privacy. Your data is encrypted and securely stored. '
+            'We never share your personal information with third parties without your consent.\n\n'
+            'For the full privacy policy, please visit:\n'
+            'www.procurax.com/privacy',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(
+                  const ClipboardData(text: 'https://www.procurax.com/privacy'),
+                );
+                Navigator.pop(context);
+                _showSuccessSnackBar('URL copied to clipboard');
+              },
+              child: const Text('Copy URL'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Terms of Service Button Method
+  Future<void> _launchTermsOfService() async {
+    const String url = 'https://www.procurax.com/terms';
+    final Uri uri = Uri.parse(url);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _showSuccessSnackBar('Opening Terms of Service...');
+      } else {
+        _showTermsDialog();
+      }
+    } catch (e) {
+      _showTermsDialog();
+    }
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Terms of Service'),
+          content: const Text(
+            'By using ProcuraX, you agree to:\n\n'
+            '• Version 2.4.1\n'
+            '• Last updated: November 2, 2025\n'
+            '• Your data is handled securely\n'
+            '• You must be 18+ to use this service\n\n'
+            'For the complete terms, visit:\n'
+            'www.procurax.com/terms',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(
+                  const ClipboardData(text: 'https://www.procurax.com/terms'),
+                );
+                Navigator.pop(context);
+                _showSuccessSnackBar('URL copied to clipboard');
+              },
+              child: const Text('Copy URL'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method for default button behavior
+  void _showInfoDialog(String buttonText) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(buttonText),
+          content: const Text('This feature is coming soon!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // User profile loading
@@ -210,7 +371,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // FIXED: Uncommented actual API call
   Future<void> _uploadProfileImage() async {
     if (_profileImage == null) return;
 
@@ -219,7 +379,6 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      // FIXED: Using actual API call instead of simulation
       final response = await ApiService.uploadProfileImage(_profileImage!);
 
       if (response['success'] == true) {
@@ -754,14 +913,22 @@ class _SettingsPageState extends State<SettingsPage> {
                                     "Contact Support",
                                     fieldBg,
                                     blue,
+                                    onPressed: _launchContactSupport,
                                   ),
                                   const SizedBox(height: 8),
-                                  _aboutButton("Privacy Policy", fieldBg, blue),
+                                  _aboutButton(
+                                    "Privacy Policy",
+                                    fieldBg,
+                                    blue,
+                                    onPressed: _launchPrivacyPolicy,
+                                  ),
+
                                   const SizedBox(height: 8),
                                   _aboutButton(
                                     "Terms of Service",
                                     fieldBg,
                                     blue,
+                                    onPressed: _launchTermsOfService,
                                   ),
                                 ],
                               ),
@@ -907,7 +1074,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _aboutButton(String text, Color bg, Color textColor) {
+  Widget _aboutButton(
+    String text,
+    Color bg,
+    Color textColor, {
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
@@ -919,9 +1091,8 @@ class _SettingsPageState extends State<SettingsPage> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        onPressed: () {
-          // TODO: Add action or navigation
-        },
+        onPressed:
+            onPressed ?? () => _showInfoDialog(text), // Use the named parameter
         child: Text(text),
       ),
     );
