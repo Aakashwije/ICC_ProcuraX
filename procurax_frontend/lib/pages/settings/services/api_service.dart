@@ -15,7 +15,7 @@ class ApiService {
     try {
       final url = Uri.parse('$baseUrl/settings');
       if (kDebugMode) {
-        debugPrint('📡 Fetching settings from: $url');
+        debugPrint('Fetching settings from: $url');
       }
 
       final response = await http.get(url).timeout(_timeout);
@@ -29,7 +29,7 @@ class ApiService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error in getSettings: $e');
+        debugPrint('Error in getSettings: $e');
       }
     }
 
@@ -50,7 +50,7 @@ class ApiService {
     try {
       final url = Uri.parse('$baseUrl/settings/bulk');
       if (kDebugMode) {
-        debugPrint('📡 Updating settings at: $url');
+        debugPrint('Updating settings at: $url');
       }
 
       final response = await http
@@ -63,12 +63,12 @@ class ApiService {
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          debugPrint('✅ Settings saved to MongoDB');
+          debugPrint('Settings saved to MongoDB');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error saving settings: $e');
+        debugPrint('Error saving settings: $e');
       }
       rethrow;
     }
@@ -80,7 +80,7 @@ class ApiService {
       final url = Uri.parse('$baseUrl/users/profile-image');
 
       if (kDebugMode) {
-        debugPrint('📡 Uploading profile image to: $url');
+        debugPrint('Uploading profile image to: $url');
       }
 
       // Create multipart request
@@ -102,18 +102,18 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         if (kDebugMode) {
-          debugPrint('✅ Profile image uploaded successfully');
+          debugPrint('Profile image uploaded successfully');
         }
         return data;
       } else {
         if (kDebugMode) {
-          debugPrint('⚠️ Failed to upload image: ${response.statusCode}');
+          debugPrint('Failed to upload image: ${response.statusCode}');
         }
         throw Exception('Failed to upload image: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error uploading image: $e');
+        debugPrint('Error uploading image: $e');
       }
       rethrow;
     }
@@ -125,24 +125,24 @@ class ApiService {
       final url = Uri.parse('$baseUrl/users/profile-image');
 
       if (kDebugMode) {
-        debugPrint('📡 Removing profile image from: $url');
+        debugPrint('Removing profile image from: $url');
       }
 
       final response = await http.delete(url).timeout(_timeout);
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          debugPrint('✅ Profile image removed successfully');
+          debugPrint('Profile image removed successfully');
         }
       } else {
         if (kDebugMode) {
-          debugPrint('⚠️ Failed to remove image: ${response.statusCode}');
+          debugPrint('Failed to remove image: ${response.statusCode}');
         }
         throw Exception('Failed to remove image: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error removing image: $e');
+        debugPrint('Error removing image: $e');
       }
       rethrow;
     }
@@ -154,7 +154,7 @@ class ApiService {
       final url = Uri.parse('$baseUrl/users/me');
 
       if (kDebugMode) {
-        debugPrint('📡 Fetching user profile from: $url');
+        debugPrint('Fetching user profile from: $url');
       }
 
       final response = await http.get(url).timeout(_timeout);
@@ -167,9 +167,47 @@ class ApiService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error fetching user profile: $e');
+        debugPrint('Error fetching user profile: $e');
       }
     }
     return {};
+  }
+
+  /// Update user profile information
+  static Future<Map<String, dynamic>> updateUserProfile(
+    Map<String, dynamic> profileData,
+  ) async {
+    try {
+      // Note: You might need to adjust this endpoint based on your backend
+      final url = Uri.parse('$baseUrl/users/profile');
+
+      if (kDebugMode) {
+        debugPrint('Updating user profile at: $url');
+      }
+
+      final response = await http
+          .put(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(profileData),
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          if (kDebugMode) {
+            debugPrint('User profile updated successfully');
+          }
+          return data;
+        }
+      }
+      throw Exception('Failed to update profile');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error updating user profile: $e');
+      }
+      rethrow;
+    }
   }
 }
