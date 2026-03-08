@@ -310,9 +310,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -324,85 +322,162 @@ class _ChatListScreenState extends State<ChatListScreen>
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: SizedBox(
-                height: 520,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.75,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                ),
                 child: Column(
                   children: [
                     const SizedBox(height: 12),
+                    // Drag Handle
                     Container(
-                      height: 4,
-                      width: 40,
+                      height: 5,
+                      width: 50,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Select contact',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 24),
+                    
+                    // Header
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          Icon(Icons.person_add_alt_1_rounded, color: AppColours.primary, size: 28),
+                          SizedBox(width: 12),
+                          Text(
+                            'New Conversation',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
+
+                    // Search Bar
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _userSearchController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'Search by  name',
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300, width: 1),
                         ),
-                        onChanged: (_) => setSheetState(() {}),
+                        child: TextField(
+                          controller: _userSearchController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                            hintText: 'Search contacts...',
+                            hintStyle: TextStyle(color: Colors.grey.shade500),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onChanged: (_) => setSheetState(() {}),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
+
+                    // User List
                     Expanded(
                       child: usersLoading
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(child: CircularProgressIndicator(color: AppColours.primary))
                           : filtered.isEmpty
-                          ? const Center(child: Text('No users found'))
-                          : ListView.separated(
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade300),
+                                  const SizedBox(height: 16),
+                                  Text('No contacts found', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final user = filtered[index];
                                 final userId = _getUserId(user);
                                 final name = _getUserName(user);
 
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    child: Text(
-                                      name.isNotEmpty
-                                          ? name[0].toUpperCase()
-                                          : '?',
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () async {
+                                        Navigator.of(context).pop();
+                                        if (userId.isEmpty) return;
+                                        try {
+                                          await _chatService.createChat(
+                                            members: [currentUserId, userId],
+                                            isGroup: false,
+                                          );
+                                          await fetchChats();
+                                        } catch (e) {
+                                          debugPrint('Failed to create chat: $e');
+                                          if (!mounted) return;
+                                          CustomToast.error(
+                                            this.context,
+                                            'Unable to start a new conversation. Please try again.',
+                                            title: 'Chat Creation Failed',
+                                          );
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              height: 50,
+                                              width: 50,
+                                              decoration: BoxDecoration(
+                                                color: _getColorForUser(name),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Text(
+                                                name.isNotEmpty ? name : userId,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.black87,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  title: Text(
-                                    name.isNotEmpty ? name : userId,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onTap: () async {
-                                    Navigator.of(context).pop();
-                                    if (userId.isEmpty) return;
-                                    try {
-                                      await _chatService.createChat(
-                                        members: [currentUserId, userId],
-                                        isGroup: false,
-                                      );
-                                      await fetchChats();
-                                    } catch (e) {
-                                      debugPrint('Failed to create chat: $e');
-                                      if (!mounted) return;
-                                      CustomToast.error(
-                                        this.context,
-                                        'Unable to start a new conversation. Please try again.',
-                                        title: 'Chat Creation Failed',
-                                      );
-                                    }
-                                  },
                                 );
                               },
                             ),
@@ -494,6 +569,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       backgroundColor: Colors.white,
       drawer: widget.showDrawer
           ? const AppDrawer(currentRoute: AppRoutes.communication)
@@ -542,10 +618,34 @@ class _ChatListScreenState extends State<ChatListScreen>
           : AlertsScreen(userId: currentUserId),
 
       floatingActionButton: currentIndex == 0
-          ? FloatingActionButton(
-              onPressed: _showUserPicker,
-              backgroundColor: AppColours.primary,
-              child: const Icon(Icons.add, color: Colors.white),
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              height: 60,
+              width: 60,
+              child: FloatingActionButton(
+                onPressed: _showUserPicker,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                backgroundColor: Colors.transparent,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColours.primary.withOpacity(0.8),
+                        AppColours.primary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.add_comment_rounded, color: Colors.white, size: 28),
+                  ),
+                ),
+              ),
             )
           : null,
 
@@ -557,6 +657,27 @@ class _ChatListScreenState extends State<ChatListScreen>
       ),
     );
   }
+}
+
+Color _getColorForUser(String name) {
+  if (name.isEmpty) return AppColours.primary;
+  final int hash = name.hashCode;
+  final List<Color> colors = [
+    const Color(0xFF0D47A1), // Blue 900
+    const Color(0xFF1565C0), // Blue 800
+    const Color(0xFF1976D2), // Blue 700
+    const Color(0xFF1E88E5), // Blue 600
+    const Color(0xFF2196F3), // Blue 500
+    const Color(0xFF42A5F5), // Blue 400
+    const Color(0xFF64B5F6), // Blue 300
+    const Color(0xFF90CAF9), // Blue 200
+    const Color(0xFF01579B), // Light Blue 900
+    const Color(0xFF0277BD), // Light Blue 800
+    const Color(0xFF0288D1), // Light Blue 700
+    const Color(0xFF039BE5), // Light Blue 600
+    const Color(0xFF03A9F4), // Light Blue 500
+  ];
+  return colors[hash.abs() % colors.length];
 }
 
 class MessagesPage extends StatelessWidget {
@@ -680,46 +801,66 @@ class MessagesPage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
-            height: 44,
+            height: 48,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(30),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: TextField(
               controller: searchController,
               decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search Conversations',
-                filled: true,
-                fillColor: const Color.fromARGB(
-                  255,
-                  211,
-                  209,
-                  209,
-                ), //light gray
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
-
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30), // pill shape
-                  borderSide: BorderSide.none, // no outline
-                ),
+                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+                hintText: 'Search conversations',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onChanged: onSearchChanged,
             ),
           ),
         ),
 
-        const SizedBox(height: 10),
-        const Divider(height: 1),
+        const SizedBox(height: 16),
+
+        // "Recent Messages" Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Recent Messages',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
 
         // 💬 Chat list
         Expanded(
           child: chats.isEmpty
-              ? const Center(child: Text('No conversations'))
-              : ListView.separated(
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                      const SizedBox(height: 16),
+                      Text('No conversations yet', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   itemCount: chats.length,
-                  separatorBuilder: (_, __) =>
-                      const Divider(indent: 16, endIndent: 16),
                   itemBuilder: (context, index) {
                     final chat = chats[index];
                     final List members =
@@ -761,6 +902,7 @@ class MessagesPage extends StatelessWidget {
                       ),
                       isOnline: onlineMap[otherUserId] ?? false,
                       unreadCount: unreadCount,
+                      avatarColor: _getColorForUser(otherUserName),
                     );
                   },
                 ),
@@ -782,6 +924,7 @@ class ChatTile extends StatelessWidget {
   final String time;
   final bool isOnline;
   final int unreadCount;
+  final Color avatarColor;
 
   const ChatTile({
     super.key,
@@ -796,93 +939,170 @@ class ChatTile extends StatelessWidget {
     required this.time,
     required this.isOnline,
     required this.unreadCount,
+    required this.avatarColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Stack(
-        children: [
-          CircleAvatar(
-            backgroundColor: Colors.grey.shade200,
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(color: AppColours.primary),
-            ),
-          ),
-          if (isOnline)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: 10,
-                width: 10,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-              ),
-            ),
-        ],
-      ),
-      title: Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(role, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          const SizedBox(height: 2),
-          Text(
-            message.isEmpty ? 'No messages yet' : message,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13),
-          ),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          if (unreadCount > 0) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColours.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                unreadCount.toString(),
-                style: const TextStyle(color: Colors.white, fontSize: 11),
-              ),
+    final bool isUnread = unreadCount > 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isUnread ? AppColours.primary.withOpacity(0.04) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: isUnread ? Border.all(color: AppColours.primary.withOpacity(0.1)) : null,
+          boxShadow: isUnread ? [] : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
-        ],
-      ),
-      onTap: () async {
-        if (chatId.isEmpty) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              chatId: chatId,
-              currentUserId: currentUserId,
-              otherUserId: otherUserId,
-              userName: name,
-              userRole: role,
-              avatarUrl: '',
-              isOnline: isOnline,
-              onChatRead: onChatRead,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () async {
+              if (chatId.isEmpty) return;
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    chatId: chatId,
+                    currentUserId: currentUserId,
+                    otherUserId: otherUserId,
+                    userName: name,
+                    userRole: role,
+                    avatarUrl: '',
+                    isOnline: isOnline,
+                    onChatRead: onChatRead,
+                  ),
+                ),
+              );
+              onChatClosed();
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+              child: Row(
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: avatarColor,
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                      if (isOnline)
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            height: 14,
+                            width: 14,
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade500,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2.5),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                                  fontSize: 16,
+                                  color: isUnread ? Colors.black87 : Colors.black.withOpacity(0.8),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              time,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isUnread ? AppColours.primary : Colors.grey.shade500,
+                                fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          role.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                            fontWeight: FontWeight.bold,
+                            color: AppColours.primary.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                message.isEmpty ? 'No messages yet' : message,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: isUnread ? Colors.black87 : Colors.grey.shade600,
+                                  fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            if (isUnread) ...[
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: const BoxDecoration(
+                                  color: AppColours.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        );
-        onChatClosed();
-      },
+        ),
+      ),
     );
   }
 }
