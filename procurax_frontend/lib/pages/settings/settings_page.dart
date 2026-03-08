@@ -153,6 +153,59 @@ Issue Description:
     );
   }
 
+  // Terms of Service Button Method
+  Future<void> _launchTermsOfService() async {
+    const String url = 'https://www.procurax.com/terms';
+    final Uri uri = Uri.parse(url);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _showSuccessSnackBar('Opening Terms of Service...');
+      } else {
+        _showTermsDialog();
+      }
+    } catch (e) {
+      _showTermsDialog();
+    }
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Terms of Service'),
+          content: const Text(
+            'By using ProcuraX, you agree to:\n\n'
+            '• Version 2.4.1\n'
+            '• Last updated: November 2, 2025\n'
+            '• Your data is handled securely\n'
+            '• You must be 18+ to use this service\n\n'
+            'For the complete terms, visit:\n'
+            'www.procurax.com/terms',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(
+                  const ClipboardData(text: 'https://www.procurax.com/terms'),
+                );
+                Navigator.pop(context);
+                _showSuccessSnackBar('URL copied to clipboard');
+              },
+              child: const Text('Copy URL'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // User profile loading
   Future<void> _loadUserProfile() async {
     try {
