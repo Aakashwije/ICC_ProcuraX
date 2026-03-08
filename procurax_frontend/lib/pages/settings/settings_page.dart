@@ -27,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String lastName = "Doe";
   String email = "john.doe@company.com";
   String phone = "+1 (555) 123-4567";
+  String? profileImageUrl; // FIXED: Added to store image URL from backend
 
   bool isLoading = false;
 
@@ -50,15 +51,13 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController = TextEditingController(text: email);
     phoneController = TextEditingController(text: phone);
 
-    // Load settings from MongoDB automatically
+    // Load all data
     _loadSettings();
-
-    _loadProfileImage();
+    _loadUserProfile(); // FIXED: Added this line to load user profile
   }
 
   @override
   void dispose() {
-    // Clean up controllers
     firstNameController.dispose();
     lastNameController.dispose();
     emailController.dispose();
@@ -66,15 +65,43 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  Future<void> _loadProfileImage() async {}
+  // User profile loading
+  Future<void> _loadUserProfile() async {
+    try {
+      final userProfile = await ApiService.getUserProfile();
+      if (mounted) {
+        setState(() {
+          firstName = userProfile['firstName'] ?? firstName;
+          lastName = userProfile['lastName'] ?? lastName;
+          email = userProfile['email'] ?? email;
+          phone = userProfile['phone'] ?? phone;
+          profileImageUrl = userProfile['profileImageUrl'];
+
+          // Update controllers
+          firstNameController.text = firstName;
+          lastNameController.text = lastName;
+          emailController.text = email;
+          phoneController.text = phone;
+        });
+
+        if (kDebugMode) {
+          debugPrint('📱 User profile loaded: $userProfile');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error loading user profile: $e');
+      }
+    }
+  }
 
   Future<void> _pickImageFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 512, // Resize to save bandwidth
+        maxWidth: 512,
         maxHeight: 512,
-        imageQuality: 85, // Compress image
+        imageQuality: 85,
       );
 
       if (image != null) {
@@ -82,16 +109,15 @@ class _SettingsPageState extends State<SettingsPage> {
           _profileImage = File(image.path);
         });
 
-        // Automatically upload after selection
         await _uploadProfileImage();
 
         if (kDebugMode) {
-          debugPrint('✅ Image selected: ${image.path}');
+          debugPrint('Image selected: ${image.path}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error picking image: $e');
+        debugPrint('Error picking image: $e');
       }
       _showErrorSnackBar('Failed to pick image: $e');
     }
@@ -99,7 +125,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _takePhotoWithCamera() async {
     try {
-      // Check if camera is available
       final bool cameraAvailable = await _picker.supportsImageSource(
         ImageSource.camera,
       );
@@ -121,22 +146,20 @@ class _SettingsPageState extends State<SettingsPage> {
           _profileImage = File(image.path);
         });
 
-        // Automatically upload after capture
         await _uploadProfileImage();
 
         if (kDebugMode) {
-          debugPrint('✅ Photo captured: ${image.path}');
+          debugPrint('Photo captured: ${image.path}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error taking photo: $e');
+        debugPrint('Error taking photo: $e');
       }
       _showErrorSnackBar('Failed to take photo: $e');
     }
   }
 
-  //Show dialog to choose image source
   Future<void> _showImageSourceDialog() async {
     return showDialog(
       context: context,
@@ -168,7 +191,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     _takePhotoWithCamera();
                   },
                 ),
-                if (_profileImage != null) ...[
+                if (_profileImage != null || profileImageUrl != null) ...[
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),
@@ -187,7 +210,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // Upload profile image to backend
+  // FIXED: Uncommented actual API call
   Future<void> _uploadProfileImage() async {
     if (_profileImage == null) return;
 
@@ -196,22 +219,24 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      // TODO: Implement actual API call to upload image
-      // await ApiService.uploadProfileImage(_profileImage!);
+      // FIXED: Using actual API call instead of simulation
+      final response = await ApiService.uploadProfileImage(_profileImage!);
 
-      // Simulate upload delay
-      await Future.delayed(const Duration(seconds: 1));
+      if (response['success'] == true) {
+        if (mounted) {
+          setState(() {
+            profileImageUrl = response['data']?['profileImageUrl'];
+          });
+          _showSuccessSnackBar('Profile picture updated successfully');
+        }
 
-      if (mounted) {
-        _showSuccessSnackBar('Profile picture updated successfully');
-      }
-
-      if (kDebugMode) {
-        debugPrint('✅ Profile image uploaded');
+        if (kDebugMode) {
+          debugPrint('Profile image uploaded: $response');
+        }
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error uploading image: $e');
+        debugPrint('Error uploading image: $e');
       }
       _showErrorSnackBar('Failed to upload image: $e');
     } finally {
@@ -223,7 +248,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // Remove profile image
   Future<void> _removeProfileImage() async {
     setState(() {
       _profileImage = null;
@@ -231,21 +255,21 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      // TODO: Implement API call to remove image
-      // await ApiService.removeProfileImage();
-
-      await Future.delayed(const Duration(milliseconds: 500));
+      await ApiService.removeProfileImage();
 
       if (mounted) {
+        setState(() {
+          profileImageUrl = null;
+        });
         _showSuccessSnackBar('Profile picture removed');
       }
 
       if (kDebugMode) {
-        debugPrint('✅ Profile image removed');
+        debugPrint('Profile image removed');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error removing image: $e');
+        debugPrint('Error removing image: $e');
       }
       _showErrorSnackBar('Failed to remove image: $e');
     } finally {
@@ -257,7 +281,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Show success snackbar
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -269,7 +292,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// Show error snackbar
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -288,7 +310,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final settings = await ApiService.getSettings();
       if (kDebugMode) {
-        debugPrint('📱 Loaded settings from MongoDB: $settings');
+        debugPrint('Loaded settings from MongoDB: $settings');
       }
 
       if (!mounted) return;
@@ -300,16 +322,14 @@ class _SettingsPageState extends State<SettingsPage> {
         defaultProject = settings['defaultProject'] ?? 'Tower A - Downtown';
       });
 
-      // Update app theme immediately
       if (mounted) {
         final themeNotifier = context.read<ThemeNotifier>();
         themeNotifier.setTheme(selectedTheme);
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error loading settings from backend: $e');
+        debugPrint('Error loading settings from backend: $e');
       }
-      // Use default values if API fails
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -328,23 +348,49 @@ class _SettingsPageState extends State<SettingsPage> {
       });
 
       if (kDebugMode) {
-        debugPrint('✅ Settings saved to MongoDB silently');
+        debugPrint('Settings saved to MongoDB silently');
       }
+      _showSuccessSnackBar('Settings saved successfully');
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error saving settings: $e');
+        debugPrint('Error saving settings: $e');
+      }
+      _showErrorSnackBar('Failed to save settings');
+    }
+  }
+
+  // Save profile info
+  Future<void> _saveProfileInfo() async {
+    setState(() => isLoading = true);
+
+    try {
+      final response = await ApiService.updateUserProfile({
+        'firstName': firstNameController.text,
+        'lastName': lastNameController.text,
+        'phone': phoneController.text,
+      });
+
+      if (response['success'] == true) {
+        setState(() {
+          firstName = firstNameController.text;
+          lastName = lastNameController.text;
+          phone = phoneController.text;
+        });
+        _showSuccessSnackBar('Profile updated successfully');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to save profile: $e');
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
       }
     }
   }
 
   void _handleThemeChange(String value) {
     setState(() => selectedTheme = value);
-
-    // Update app theme
     final themeNotifier = context.read<ThemeNotifier>();
     themeNotifier.setTheme(value);
-
-    // Save to MongoDB silently
     _saveSettings();
   }
 
@@ -368,7 +414,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _saveSettings();
   }
 
-  /// Widget for profile picture section (extracted for clarity)
+  // show both local and server images
   Widget _buildProfilePictureSection(
     Color fieldBg,
     Color blue,
@@ -377,7 +423,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Profile Image Container
         Stack(
           children: [
             Container(
@@ -391,10 +436,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         image: FileImage(_profileImage!),
                         fit: BoxFit.cover,
                       )
-                    : null,
+                    : (profileImageUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(profileImageUrl!),
+                              fit: BoxFit.cover,
+                            )
+                          : null),
                 border: Border.all(color: blue.withOpacity(0.3), width: 2),
               ),
-              child: _profileImage == null
+              child: (_profileImage == null && profileImageUrl == null)
                   ? Center(
                       child: Text(
                         "${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}",
@@ -425,7 +475,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
         const SizedBox(width: 20),
-        // Buttons Column
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,7 +536,7 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
           child: Column(
             children: [
-              // ---------- HEADER (your original code) ----------
+              // Header
               Row(
                 children: [
                   Builder(
@@ -522,14 +571,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 24),
 
-              // ---------- SETTINGS CONTENT ----------
+              // Settings Content
               Expanded(
                 child: isLoading
                     ? Center(child: CircularProgressIndicator(color: blue))
                     : SingleChildScrollView(
                         child: Column(
                           children: [
-                            // ---------- Profile Card ----------
+                            // Profile Card - working profile picture section
                             _card(
                               cardBg,
                               blue,
@@ -539,49 +588,13 @@ class _SettingsPageState extends State<SettingsPage> {
                               "Update your personal info",
                               Column(
                                 children: [
-                                  // Profile Picture
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 72,
-                                        height: 72,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: fieldBg,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            "${firstName[0]}${lastName[0]}",
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w600,
-                                              color: blue,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          OutlinedButton(
-                                            onPressed: () {},
-                                            child: const Text("Change Photo"),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            "JPG, PNG or GIF. Max size 2MB",
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: lightBlue,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                  _buildProfilePictureSection(
+                                    fieldBg,
+                                    blue,
+                                    lightBlue,
                                   ),
                                   const SizedBox(height: 20),
+
                                   // Input Fields
                                   _input(
                                     "First Name",
@@ -604,11 +617,34 @@ class _SettingsPageState extends State<SettingsPage> {
                                     phoneController,
                                     fieldBg,
                                   ),
+
+                                  const SizedBox(height: 8),
+
+                                  // Save Profile Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: _saveProfileInfo,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: blue,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Text('Save Profile Changes'),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
 
-                            // ---------- Role & Department Card ----------
+                            // Role & Department Card
                             _card(
                               cardBg,
                               blue,
@@ -660,7 +696,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               ),
                             ),
 
-                            // ---------- Display Preferences Card ----------
+                            // Display Preferences Card
                             _card(
                               cardBg,
                               blue,
@@ -694,7 +730,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               ),
                             ),
 
-                            // ---------- About Card ----------
+                            // About Card
                             _card(
                               cardBg,
                               blue,
@@ -741,7 +777,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // ---------- REUSABLE WIDGETS ----------
+  // Helper widgets
   Widget _card(
     Color bg,
     Color blue,
@@ -796,7 +832,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[400])),
+          Text(label, style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 6),
           TextField(
             controller: controller,
@@ -807,6 +843,10 @@ class _SettingsPageState extends State<SettingsPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 14,
               ),
             ),
           ),
@@ -825,7 +865,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        initialValue: value,
+        value: value,
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
@@ -838,29 +878,43 @@ class _SettingsPageState extends State<SettingsPage> {
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
           ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
         ),
       ),
     );
   }
 
   Widget _aboutRow(String l, String r, Color c) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(l, style: TextStyle(color: c)),
-        Text(r, style: TextStyle(color: c)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(l, style: TextStyle(color: c, fontSize: 14)),
+          Text(
+            r,
+            style: TextStyle(
+              color: c,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _aboutButton(String text, Color bg, Color textColor) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
           foregroundColor: textColor,
-          elevation: 0,
+          side: BorderSide(color: textColor.withOpacity(0.3)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
