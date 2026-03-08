@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import authMiddleware from '../auth/auth.middleware.js';
+import authMiddleware from  "../../auth/auth.middleware.js";
 import User from '../models/User.js';
 
 const router = express.Router();

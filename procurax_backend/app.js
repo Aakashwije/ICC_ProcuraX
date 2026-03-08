@@ -49,8 +49,7 @@ import chatbotRoutes from "./buildassist/src/routes/chatbot.routes.js";
 // ================================
 
 // ===== UPLOAD ROUTES =====
-import uploadRoutes from "./settings/routes/upload.routes.js";
-app.use("/api/upload", uploadRoutes);	
+import uploadRoutes from "./settings/routes/upload.routes.js";	
 
 // =========================
 

@@ -11,7 +11,7 @@ let sheets;
 try {
   const auth = new google.auth.GoogleAuth({
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-             path.join(__dirname, '../../config/google-credentials.json'),
+             path.join(__dirname, '../../config/credentials.json'),
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
   
