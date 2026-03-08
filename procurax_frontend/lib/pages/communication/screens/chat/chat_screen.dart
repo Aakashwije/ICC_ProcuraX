@@ -133,6 +133,31 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) setState(() => loading = false);
     }
   }
+  // to get same colour in the avatar 
+  Color _getColorForUser(String value) {
+  if (value.isEmpty) return AppColours.primary;
+
+  final int hash = value.hashCode;
+
+  const List<Color> colors = [
+    Color(0xFF0D47A1),
+    Color(0xFF1565C0),
+    Color(0xFF1976D2),
+    Color(0xFF1E88E5),
+    Color(0xFF2196F3),
+    Color(0xFF42A5F5),
+    Color(0xFF64B5F6),
+    Color(0xFF90CAF9),
+    Color(0xFF01579B),
+    Color(0xFF0277BD),
+    Color(0xFF0288D1),
+    Color(0xFF039BE5),
+    Color(0xFF03A9F4),
+  ];
+
+  return colors[hash.abs() % colors.length];
+}
+
 
   String _formatMessageTime(dynamic createdAt) {
     if (createdAt == null) return '';
@@ -234,7 +259,7 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             label,
@@ -249,7 +274,19 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ✅ Long-press delete menu (only for my messages)
+  //to make the header role as Project Manager
+  String _formatRole(String role) {
+  if (role.trim().isEmpty) return 'Member';
+  return role
+      .replaceAll('_', ' ')
+      .split(' ')
+      .map((word) {
+        if (word.isEmpty) return word;
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+      })
+      .join(' ');
+}
+  //  Long-press delete menu (only for my messages)
   Future<void> _showDeleteMessageSheet(Message message) async {
     if (!message.isMe) return;
 
@@ -278,7 +315,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // ✅ Calls backend + optimistic UI
+  //  Calls backend + optimistic UI
   Future<void> _deleteMessage(String messageId) async {
     final old = List<Message>.from(messages);
 
@@ -716,7 +753,7 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppColours.primary.withOpacity(0.1),
+                  backgroundColor: _getColorForUser(widget.otherUserId),
                   backgroundImage:
                       widget.avatarUrl.isNotEmpty &&
                           widget.avatarUrl.startsWith('http')
@@ -730,12 +767,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               ? widget.userName[0].toUpperCase()
                               : '?',
                           style: const TextStyle(
-                            color: AppColours.primary,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
                         )
                       : null,
+
                 ),
                 if (isOtherOnline)
                   Positioned(
@@ -769,7 +807,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     maxLines: 1,
                   ),
                   Text(
-                    widget.userRole,
+                   _formatRole(widget.userRole), // to make the header role as Project Manager
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -888,8 +926,8 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class Message {
-  final String id; // ✅ messageId
-  final String senderId; // ✅ sender
+  final String id; //  messageId
+  final String senderId; //  sender
   final String text;
   final bool isMe;
   final String time;
