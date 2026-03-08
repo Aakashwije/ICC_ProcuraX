@@ -801,15 +801,15 @@ class MessagesPage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
-            height: 48,
+            height: 50,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade300),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -817,11 +817,20 @@ class MessagesPage extends StatelessWidget {
             child: TextField(
               controller: searchController,
               decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+                prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade600, size: 22),
                 hintText: 'Search conversations',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 15),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                suffixIcon: searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close,  size: 20),
+                        onPressed: () {
+                          searchController.clear();
+                          onSearchChanged('');
+                        },
+                      )
+                    : null,
               ),
               onChanged: onSearchChanged,
             ),
