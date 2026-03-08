@@ -663,11 +663,19 @@ Color _getColorForUser(String name) {
   if (name.isEmpty) return AppColours.primary;
   final int hash = name.hashCode;
   final List<Color> colors = [
-    const Color(0xFFEF5350), const Color(0xFFEC407A), const Color(0xFFAB47BC),
-    const Color(0xFF7E57C2), const Color(0xFF5C6BC0), const Color(0xFF42A5F5),
-    const Color(0xFF29B6F6), const Color(0xFF26C6DA), const Color(0xFF26A69A),
-    const Color(0xFF66BB6A), const Color(0xFF9CCC65), const Color(0xFFFFA726),
-    const Color(0xFFFF7043),
+    const Color(0xFF0D47A1), // Blue 900
+    const Color(0xFF1565C0), // Blue 800
+    const Color(0xFF1976D2), // Blue 700
+    const Color(0xFF1E88E5), // Blue 600
+    const Color(0xFF2196F3), // Blue 500
+    const Color(0xFF42A5F5), // Blue 400
+    const Color(0xFF64B5F6), // Blue 300
+    const Color(0xFF90CAF9), // Blue 200
+    const Color(0xFF01579B), // Light Blue 900
+    const Color(0xFF0277BD), // Light Blue 800
+    const Color(0xFF0288D1), // Light Blue 700
+    const Color(0xFF039BE5), // Light Blue 600
+    const Color(0xFF03A9F4), // Light Blue 500
   ];
   return colors[hash.abs() % colors.length];
 }
