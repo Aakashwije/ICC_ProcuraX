@@ -30,12 +30,24 @@ class MessageBubble extends StatelessWidget {
     return Align(
       alignment: alignment,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
           color: bubbleColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(isMe ? 18 : 6),
+            bottomRight: Radius.circular(isMe ? 6 : 18),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +78,7 @@ class MessageBubble extends StatelessWidget {
                 ),
               )
             else
-              Text(message, style: TextStyle(color: textColor, fontSize: 14)),
+              Text(message, style: TextStyle(color: textColor, fontSize: 15, height: 1.35)),
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.bottomRight,
@@ -74,7 +86,7 @@ class MessageBubble extends StatelessWidget {
                 time,
                 style: TextStyle(
                   color: isMe ? Colors.white70 : Colors.grey,
-                  fontSize: 10,
+                  fontSize: 11,
                 ),
               ),
             ),

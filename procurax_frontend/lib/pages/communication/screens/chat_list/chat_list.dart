@@ -446,7 +446,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                                               height: 50,
                                               width: 50,
                                               decoration: BoxDecoration(
-                                                color: _getColorForUser(name),
+                                                color: _getColorForUser(userId),
                                                 shape: BoxShape.circle,
                                               ),
                                               child: Center(
@@ -797,19 +797,19 @@ class MessagesPage extends StatelessWidget {
           ),
         ),
 
-        // 🔍 Search bar
+        //  Search bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
-            height: 48,
+            height: 50,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade300),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -817,11 +817,20 @@ class MessagesPage extends StatelessWidget {
             child: TextField(
               controller: searchController,
               decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+                prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade600, size: 22),
                 hintText: 'Search conversations',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 15),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                suffixIcon: searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close,  size: 20),
+                        onPressed: () {
+                          searchController.clear();
+                          onSearchChanged('');
+                        },
+                      )
+                    : null,
               ),
               onChanged: onSearchChanged,
             ),
@@ -845,7 +854,7 @@ class MessagesPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // 💬 Chat list
+        //  Chat list
         Expanded(
           child: chats.isEmpty
               ? Center(
@@ -902,7 +911,7 @@ class MessagesPage extends StatelessWidget {
                       ),
                       isOnline: onlineMap[otherUserId] ?? false,
                       unreadCount: unreadCount,
-                      avatarColor: _getColorForUser(otherUserName),
+                      avatarColor: _getColorForUser(otherUserId),
                     );
                   },
                 ),
