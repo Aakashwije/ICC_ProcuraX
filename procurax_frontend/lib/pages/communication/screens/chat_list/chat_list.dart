@@ -446,7 +446,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                                               height: 50,
                                               width: 50,
                                               decoration: BoxDecoration(
-                                                color: _getColorForUser(name),
+                                                color: _getColorForUser(userId),
                                                 shape: BoxShape.circle,
                                               ),
                                               child: Center(
@@ -797,7 +797,7 @@ class MessagesPage extends StatelessWidget {
           ),
         ),
 
-        // 🔍 Search bar
+        //  Search bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
@@ -845,7 +845,7 @@ class MessagesPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // 💬 Chat list
+        //  Chat list
         Expanded(
           child: chats.isEmpty
               ? Center(
@@ -902,7 +902,7 @@ class MessagesPage extends StatelessWidget {
                       ),
                       isOnline: onlineMap[otherUserId] ?? false,
                       unreadCount: unreadCount,
-                      avatarColor: _getColorForUser(otherUserName),
+                      avatarColor: _getColorForUser(otherUserId),
                     );
                   },
                 ),
