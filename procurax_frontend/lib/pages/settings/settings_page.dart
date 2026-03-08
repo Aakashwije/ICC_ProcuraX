@@ -67,7 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  // TODO 1: Contact Support Button Method
+  // Contact Support Button Method
   Future<void> _launchContactSupport() async {
     final String supportEmail = 'support@procurax.com';
     final String subject = Uri.encodeComponent(
@@ -101,6 +101,56 @@ Issue Description:
     } catch (e) {
       _showErrorSnackBar('Could not open email client');
     }
+  }
+
+  // Privacy Policy Button Method
+  Future<void> _launchPrivacyPolicy() async {
+    const String url = 'https://www.procurax.com/privacy';
+    final Uri uri = Uri.parse(url);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _showSuccessSnackBar('Opening Privacy Policy...');
+      } else {
+        _showPrivacyPolicyDialog();
+      }
+    } catch (e) {
+      _showPrivacyPolicyDialog();
+    }
+  }
+
+  void _showPrivacyPolicyDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Privacy Policy'),
+          content: const Text(
+            'We value your privacy. Your data is encrypted and securely stored. '
+            'We never share your personal information with third parties without your consent.\n\n'
+            'For the full privacy policy, please visit:\n'
+            'www.procurax.com/privacy',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(
+                  const ClipboardData(text: 'https://www.procurax.com/privacy'),
+                );
+                Navigator.pop(context);
+                _showSuccessSnackBar('URL copied to clipboard');
+              },
+              child: const Text('Copy URL'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // User profile loading
