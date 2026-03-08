@@ -37,16 +37,18 @@ function calculateStatus(requiredDate, deliveryDate) {
 /*
   Returns a cached view of procurement items and upcoming deliveries.
   Flow:
-  1) Check cache specific to the sheetUrl
+  1) Check cache specific to the sheetUrl AND userId
   2) Fetch raw sheet rows based on sheetUrl
   3) Enrich each row with a status
   4) Filter invalid dates
   5) Sort by goods date
   6) Slice into main list + upcoming list
 */
-export async function getProcurementView(sheetUrl) {
+export async function getProcurementView(sheetUrl, userId) {
   const now = Date.now();
-  const cacheKey = sheetUrl || 'default';
+  // Create a unique cache key that includes both sheetUrl and userId
+  // This ensures each user gets their own cached data
+  const cacheKey = `${userId || 'anon'}:${sheetUrl || 'default'}`;
 
   /*
     If we still have fresh data in memory (within CACHE_TTL),

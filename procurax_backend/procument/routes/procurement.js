@@ -15,20 +15,23 @@ const router = express.Router();
   GET /procurement
   - protected by authenticate middleware
   - returns cached/processed procurement view
+  - uses userId from auth context to ensure per-user caching
 */
 router.get("/procurement", authenticate, async (req, res) => {
   try {
     /*
       The sheetUrl is passed as a query parameter from the Flutter frontend.
       If missing, the service falls back to the default environment variable.
+      The userId comes from the authenticate middleware (JWT or token).
     */
     const { sheetUrl } = req.query;
+    const userId = req.userId || req.user?.id || "anon";
 
     /*
-      The service handles caching + formatting.
-      We just send the response as JSON.
+      The service handles caching + formatting, using both sheetUrl and userId.
+      This ensures each user has their own cached data.
     */
-    const data = await getProcurementView(sheetUrl);
+    const data = await getProcurementView(sheetUrl, userId);
     res.json(data);
   } catch (err) {
     console.error("🔥 PROCUREMENT ERROR:", err);
