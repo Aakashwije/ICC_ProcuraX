@@ -20,74 +20,124 @@ class BottomNavBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Divider(height: 2, thickness: 1, color: AppColours.divider),
-        SafeArea(
-          top: false,
-          child: BottomNavigationBar(
-            currentIndex: currentIndex,
-            onTap: onTap,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: AppColours.primary,
-            unselectedItemColor: Colors.grey,
-            showUnselectedLabels: true,
-            elevation: 0,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            items: [
-              BottomNavigationBarItem(
-                icon: _buildIconWithBadge(
-                  icon: Icons.chat_bubble_outline,
-                  badgeCount: messageBadgeCount,
-                ),
-                label: 'Messages',
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: Colors.grey,
+          indent: 16,
+          endIndent: 16,
+        ),
+        Container(
+          color: Colors.white,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(
+                    icon: Icons.chat_bubble_outline,
+                    activeIcon: Icons.chat_bubble,
+                    label: 'Messages',
+                    index: 0,
+                    badgeCount: messageBadgeCount,
+                  ),
+                  _buildNavItem(
+                    icon: Icons.call_outlined,
+                    activeIcon: Icons.call,
+                    label: 'Calls',
+                    index: 1,
+                    badgeCount: 0,
+                  ),
+                  _buildNavItem(
+                    icon: Icons.notifications_none,
+                    activeIcon: Icons.notifications,
+                    label: 'Alerts',
+                    index: 2,
+                    badgeCount: alertBadgeCount,
+                  ),
+                ],
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.call_outlined),
-                label: 'Calls',
-              ),
-              BottomNavigationBarItem(
-                icon: _buildIconWithBadge(
-                  icon: Icons.notifications_none,
-                  badgeCount: alertBadgeCount,
-                ),
-                label: 'Alerts',
-              ),
-            ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildIconWithBadge({
+  Widget _buildNavItem({
     required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required int index,
     required int badgeCount,
   }) {
-    if (badgeCount == 0) return Icon(icon);
+    final isSelected = currentIndex == index;
+    final color = isSelected ? AppColours.primary : Colors.grey.shade400;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(icon),
-        Positioned(
-          right: -6,
-          top: -4,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () {
+        if (onTap != null) {
+          onTap!(index);
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColours.primary.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isSelected ? activeIcon : icon,
+                  color: color,
+                  size: 26,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : badgeCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            child: Text(
-              badgeCount.toString(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 12,
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

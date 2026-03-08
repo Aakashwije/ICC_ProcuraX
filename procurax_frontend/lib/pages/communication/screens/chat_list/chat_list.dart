@@ -494,6 +494,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       backgroundColor: Colors.white,
       drawer: widget.showDrawer
           ? const AppDrawer(currentRoute: AppRoutes.communication)
