@@ -4,7 +4,7 @@ import 'package:procurax_frontend/services/api_service.dart';
 import '../models/alert_model.dart';
 
 class NotificationApiService {
-  static const String baseUrl = 'http://localhost:5002/api/notifications';
+  static String get baseUrl => '${ApiService.baseUrl}/api/notifications';
 
   /// Fetch all notifications for the authenticated user
   static Future<List<AlertModel>> fetchNotifications({
@@ -24,24 +24,30 @@ class NotificationApiService {
       if (priority != null) queryParams['priority'] = priority;
       if (isRead != null) queryParams['isRead'] = isRead.toString();
 
-      final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+      final uri = Uri.parse(
+        baseUrl,
+      ).replace(queryParameters: queryParams.isEmpty ? null : queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      print('[NotificationApiService] Fetching from: $uri');
+      print('[NotificationApiService] Headers: ${ApiService.authHeaders}');
+
+      final response = await http.get(uri, headers: ApiService.authHeaders);
+
+      print('[NotificationApiService] Response status: ${response.statusCode}');
+      print('[NotificationApiService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final notifications = data['notifications'] as List;
 
+        print(
+          '[NotificationApiService] Parsed ${notifications.length} notifications',
+        );
+
         return notifications.map((json) => AlertModel.fromJson(json)).toList();
       } else {
         throw Exception(
-          'Failed to fetch notifications: ${response.statusCode}',
+          'Failed to fetch notifications: ${response.statusCode} - ${response.body}',
         );
       }
     } catch (e) {
@@ -60,10 +66,7 @@ class NotificationApiService {
 
       final response = await http.patch(
         Uri.parse('$baseUrl/$notificationId/read'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiService.authHeaders,
       );
 
       if (response.statusCode != 200) {
@@ -92,13 +95,7 @@ class NotificationApiService {
         '$baseUrl/mark-all/read',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      final response = await http.patch(uri, headers: ApiService.authHeaders);
 
       if (response.statusCode != 200) {
         throw Exception('Failed to mark all as read: ${response.statusCode}');
@@ -119,10 +116,7 @@ class NotificationApiService {
 
       final response = await http.delete(
         Uri.parse('$baseUrl/$notificationId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiService.authHeaders,
       );
 
       if (response.statusCode != 200) {
@@ -174,10 +168,7 @@ class NotificationApiService {
 
       final response = await http.post(
         Uri.parse(baseUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiService.authHeaders,
         body: json.encode(body),
       );
 
@@ -205,10 +196,7 @@ class NotificationApiService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/stats'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiService.authHeaders,
       );
 
       if (response.statusCode == 200) {

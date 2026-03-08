@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/services/api_service.dart';
 import '../models/alert_model.dart';
 import '../services/notification_api_service.dart';
 
@@ -15,6 +16,7 @@ class AlertProvider extends ChangeNotifier {
 
   /// Initialize by fetching notifications from backend
   Future<void> initialize() async {
+    if (!ApiService.hasToken) return;
     await fetchNotifications();
   }
 
@@ -29,16 +31,27 @@ class AlertProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('[AlertProvider] Fetching notifications...');
+      debugPrint('[AlertProvider] Token present: ${ApiService.hasToken}');
+      debugPrint('[AlertProvider] Base URL: ${ApiService.baseUrl}');
+
       final notifications = await NotificationApiService.fetchNotifications(
         type: type,
         priority: priority,
         isRead: isRead,
       );
+
+      debugPrint(
+        '[AlertProvider] Fetched ${notifications.length} notifications',
+      );
+
       _alerts.clear();
       _alerts.addAll(notifications);
       _isLoading = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('[AlertProvider] Error fetching notifications: $e');
+      debugPrint('[AlertProvider] Stack trace: $stackTrace');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
