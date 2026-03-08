@@ -4,7 +4,7 @@ import { db } from '../config/firebase.js';
 async function sendMessage(req, res) {
   try {
     //Debugging line
-    console.log('BODY:', req.body); 
+    console.log('BODY:', req.body);
 
     const { chatId, senderId, content, type, fileUrl, fileName } = req.body;
 
@@ -57,8 +57,8 @@ async function sendMessage(req, res) {
     const members = Array.isArray(chatData.members)
       ? chatData.members
       : Array.isArray(chatData.userIds)
-          ? chatData.userIds
-          : [];
+        ? chatData.userIds
+        : [];
     const unreadCounts = { ...(chatData.unreadCounts || {}) };
 
     const alertsBatch = db.batch();
@@ -105,15 +105,15 @@ async function sendMessage(req, res) {
 }
 
 //Get messages by chat ID
- async function getMessagesByChat(req, res) {
-  try{
-    let {chatId} = req.query;
+async function getMessagesByChat(req, res) {
+  try {
+    let { chatId } = req.query;
     //  childId is required
-    if (!chatId){
-      return res.status(400).json({error: 'chatId is required'});
+    if (!chatId) {
+      return res.status(400).json({ error: 'chatId is required' });
     }
     // Trim chatId
-    chatId = chatId.trim(); 
+    chatId = chatId.trim();
 
     //Fetch messages from Firestore
     const snapshot = await db
@@ -122,9 +122,9 @@ async function sendMessage(req, res) {
       .orderBy('createdAt', 'asc')
       .get();
 
-    
+
     // Map documents to message objects
-     const messages = snapshot.docs.map(doc => ({
+    const messages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
@@ -132,42 +132,42 @@ async function sendMessage(req, res) {
     }));
     console.log('Fetched messages:', messages); // 👈 debug line
     res.json(messages);
-  } catch (err){
+  } catch (err) {
     console.error('ERROR IN getMessagesByChat:', err);
     res.status(500).json({ error: 'Internal Server Error' });
-  
+
   }
- }
+}
 //Delete  a meesage by ID 
 async function deleteMessage(req, res) {
-  try{
-    const {id} = req.params; // message ID is required
-    const {userId} = req.body; // userId is required to check if the sender is deleting their own message
+  try {
+    const { id } = req.params; // message ID is required
+    const { userId } = req.body; // userId is required to check if the sender is deleting their own message
 
-    if(!id ) return res.status(400).json({error: 'Message ID is required'});
-    if(!userId) return res.status(400).json({error: 'User ID is required'});
-    
+    if (!id) return res.status(400).json({ error: 'Message ID is required' });
+    if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
     // Fetch the message to check if it exists and if the user is the sender
     const msgRef = db.collection('messages').doc(id);
     const msgDoc = await msgRef.get();
 
-    if(!msgDoc.exists) {
-      return res.status(404).json({error: 'Message not found'});
+    if (!msgDoc.exists) {
+      return res.status(404).json({ error: 'Message not found' });
     }
 
     const msgData = msgDoc.data() || {};
 
     //only the sender can delete their message
-    if((msgData.senderId || '').trim() !== userId.trim()) {
-      return res.status(403).json({error: 'You can only delete your own messages'});
+    if ((msgData.senderId || '').trim() !== userId.trim()) {
+      return res.status(403).json({ error: 'You can only delete your own messages' });
     }
 
     //Delete the message
     await msgRef.delete();
 
     // Optionally, you could also delete related alerts or update chat metadata here
-    return res.status(200).json({success: true,id});
-  } catch (err){
+    return res.status(200).json({ success: true, id });
+  } catch (err) {
     console.error('ERROR IN deleteMessage:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }

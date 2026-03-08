@@ -687,8 +687,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _openAttachment(String? url) async {
     if (url == null || url.isEmpty) return;
+    // Only allow http/https URLs
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      debugPrint('Invalid URL scheme: $url');
+      return;
+    }
     final uri = Uri.tryParse(url);
-    if (uri == null) return;
+    if (uri == null || !uri.hasAuthority) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -711,7 +716,26 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundImage: NetworkImage(widget.avatarUrl),
+                  backgroundColor: AppColours.primary.withOpacity(0.1),
+                  backgroundImage:
+                      widget.avatarUrl.isNotEmpty &&
+                          widget.avatarUrl.startsWith('http')
+                      ? NetworkImage(widget.avatarUrl)
+                      : null,
+                  child:
+                      widget.avatarUrl.isEmpty ||
+                          !widget.avatarUrl.startsWith('http')
+                      ? Text(
+                          widget.userName.isNotEmpty
+                              ? widget.userName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: AppColours.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        )
+                      : null,
                 ),
                 if (isOtherOnline)
                   Positioned(
@@ -730,22 +754,28 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.userName,
-                  style: const TextStyle(
-                    color: AppColours.neutral,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.userName,
+                    style: const TextStyle(
+                      color: AppColours.neutral,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                ),
-                Text(
-                  widget.userRole,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-              ],
+                  Text(
+                    widget.userRole,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
