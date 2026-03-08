@@ -302,6 +302,31 @@ class _ChatListScreenState extends State<ChatListScreen>
     }).toList();
   }
 
+  Color _getColorForUser(String name) {
+    if (name.isEmpty) return AppColours.primary;
+    // Generate a consistent color based on the hash of the name
+    final int hash = name.hashCode;
+    
+    // Define a vibrant palette for user avatars
+    final List<Color> colors = [
+      const Color(0xFFEF5350), // Red
+      const Color(0xFFEC407A), // Pink
+      const Color(0xFFAB47BC), // Purple
+      const Color(0xFF7E57C2), // Deep Purple
+      const Color(0xFF5C6BC0), // Indigo
+      const Color(0xFF42A5F5), // Blue
+      const Color(0xFF29B6F6), // Light Blue
+      const Color(0xFF26C6DA), // Cyan
+      const Color(0xFF26A69A), // Teal
+      const Color(0xFF66BB6A), // Green
+      const Color(0xFF9CCC65), // Light Green
+      const Color(0xFFFFA726), // Orange
+      const Color(0xFFFF7043), // Deep Orange
+    ];
+    
+    return colors[hash.abs() % colors.length];
+  }
+
   Future<void> _showUserPicker() async {
     await _loadUsers();
     if (!mounted) return;
@@ -310,9 +335,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -324,85 +347,162 @@ class _ChatListScreenState extends State<ChatListScreen>
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: SizedBox(
-                height: 520,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.75,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                ),
                 child: Column(
                   children: [
                     const SizedBox(height: 12),
+                    // Drag Handle
                     Container(
-                      height: 4,
-                      width: 40,
+                      height: 5,
+                      width: 50,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Select contact',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 24),
+                    
+                    // Header
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          Icon(Icons.person_add_alt_1_rounded, color: AppColours.primary, size: 28),
+                          SizedBox(width: 12),
+                          Text(
+                            'New Conversation',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
+
+                    // Search Bar
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _userSearchController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'Search by  name',
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300, width: 1),
                         ),
-                        onChanged: (_) => setSheetState(() {}),
+                        child: TextField(
+                          controller: _userSearchController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                            hintText: 'Search contacts...',
+                            hintStyle: TextStyle(color: Colors.grey.shade500),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onChanged: (_) => setSheetState(() {}),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
+
+                    // User List
                     Expanded(
                       child: usersLoading
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(child: CircularProgressIndicator(color: AppColours.primary))
                           : filtered.isEmpty
-                          ? const Center(child: Text('No users found'))
-                          : ListView.separated(
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade300),
+                                  const SizedBox(height: 16),
+                                  Text('No contacts found', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final user = filtered[index];
                                 final userId = _getUserId(user);
                                 final name = _getUserName(user);
 
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    child: Text(
-                                      name.isNotEmpty
-                                          ? name[0].toUpperCase()
-                                          : '?',
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () async {
+                                        Navigator.of(context).pop();
+                                        if (userId.isEmpty) return;
+                                        try {
+                                          await _chatService.createChat(
+                                            members: [currentUserId, userId],
+                                            isGroup: false,
+                                          );
+                                          await fetchChats();
+                                        } catch (e) {
+                                          debugPrint('Failed to create chat: $e');
+                                          if (!mounted) return;
+                                          CustomToast.error(
+                                            this.context,
+                                            'Unable to start a new conversation. Please try again.',
+                                            title: 'Chat Creation Failed',
+                                          );
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              height: 50,
+                                              width: 50,
+                                              decoration: BoxDecoration(
+                                                color: _getColorForUser(name),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Text(
+                                                name.isNotEmpty ? name : userId,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.black87,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  title: Text(
-                                    name.isNotEmpty ? name : userId,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onTap: () async {
-                                    Navigator.of(context).pop();
-                                    if (userId.isEmpty) return;
-                                    try {
-                                      await _chatService.createChat(
-                                        members: [currentUserId, userId],
-                                        isGroup: false,
-                                      );
-                                      await fetchChats();
-                                    } catch (e) {
-                                      debugPrint('Failed to create chat: $e');
-                                      if (!mounted) return;
-                                      CustomToast.error(
-                                        this.context,
-                                        'Unable to start a new conversation. Please try again.',
-                                        title: 'Chat Creation Failed',
-                                      );
-                                    }
-                                  },
                                 );
                               },
                             ),
@@ -543,10 +643,34 @@ class _ChatListScreenState extends State<ChatListScreen>
           : AlertsScreen(userId: currentUserId),
 
       floatingActionButton: currentIndex == 0
-          ? FloatingActionButton(
-              onPressed: _showUserPicker,
-              backgroundColor: AppColours.primary,
-              child: const Icon(Icons.add, color: Colors.white),
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              height: 60,
+              width: 60,
+              child: FloatingActionButton(
+                onPressed: _showUserPicker,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                backgroundColor: Colors.transparent,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColours.primary.withOpacity(0.8),
+                        AppColours.primary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.add_comment_rounded, color: Colors.white, size: 28),
+                  ),
+                ),
+              ),
             )
           : null,
 
