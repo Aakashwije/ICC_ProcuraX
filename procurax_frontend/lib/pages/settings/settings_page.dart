@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
+import 'package:flutter/services.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'theme_notifier.dart';
@@ -25,10 +26,10 @@ class _SettingsPageState extends State<SettingsPage> {
   String department = "Construction";
   String defaultProject = "Tower A - Downtown";
 
-  String firstName = "John";
-  String lastName = "Doe";
-  String email = "john.doe@company.com";
-  String phone = "+1 (555) 123-4567";
+  String firstName = "Dhasun";
+  String lastName = "Jayarathna";
+  String email = "dhasun.jayarathna@company.com";
+  String phone = "+94 77 123 4567";
   String? profileImageUrl; //store image URL from backend
 
   bool isLoading = false;
@@ -199,6 +200,25 @@ Issue Description:
                 _showSuccessSnackBar('URL copied to clipboard');
               },
               child: const Text('Copy URL'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method for default button behavior
+  void _showInfoDialog(String buttonText) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(buttonText),
+          content: const Text('This feature is coming soon!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -893,14 +913,22 @@ Issue Description:
                                     "Contact Support",
                                     fieldBg,
                                     blue,
+                                    onPressed: _launchContactSupport,
                                   ),
                                   const SizedBox(height: 8),
-                                  _aboutButton("Privacy Policy", fieldBg, blue),
+                                  _aboutButton(
+                                    "Privacy Policy",
+                                    fieldBg,
+                                    blue,
+                                    onPressed: _launchPrivacyPolicy,
+                                  ),
+
                                   const SizedBox(height: 8),
                                   _aboutButton(
                                     "Terms of Service",
                                     fieldBg,
                                     blue,
+                                    onPressed: _launchTermsOfService,
                                   ),
                                 ],
                               ),
@@ -1046,7 +1074,12 @@ Issue Description:
     );
   }
 
-  Widget _aboutButton(String text, Color bg, Color textColor) {
+  Widget _aboutButton(
+    String text,
+    Color bg,
+    Color textColor, {
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
@@ -1058,9 +1091,8 @@ Issue Description:
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        onPressed: () {
-          // TODO: Add action or navigation
-        },
+        onPressed:
+            onPressed ?? () => _showInfoDialog(text), // Use the named parameter
         child: Text(text),
       ),
     );
