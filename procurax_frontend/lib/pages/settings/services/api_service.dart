@@ -3,12 +3,58 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:procurax_frontend/services/api_service.dart' as core_api;
 
 class ApiService {
   static String get baseUrl => '${core_api.ApiService.baseUrl}/api';
-
   static const Duration _timeout = Duration(seconds: 8);
+
+  // Token management
+  static String? _authToken;
+
+  // Call this after login to store the token
+  static Future<void> setAuthToken(String token) async {
+    _authToken = token;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+    if (kDebugMode) {
+      debugPrint('Auth token saved');
+    }
+  }
+
+  // Call this at app startup to load the token
+  static Future<void> loadAuthToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _authToken = prefs.getString('auth_token');
+      if (kDebugMode) {
+        debugPrint('Auth token loaded: ${_authToken != null}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error loading auth token: $e');
+      }
+    }
+  }
+
+  // Clear token on logout
+  static Future<void> clearAuthToken() async {
+    _authToken = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    if (kDebugMode) {
+      debugPrint('Auth token cleared');
+    }
+  }
+
+  // Get headers with auth token
+  static Map<String, String> _getHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+    };
+  }
 
   /// Fetch settings from MongoDB backend
   static Future<Map<String, dynamic>> getSettings() async {
@@ -18,7 +64,9 @@ class ApiService {
         debugPrint('Fetching settings from: $url');
       }
 
-      final response = await http.get(url).timeout(_timeout);
+      final response = await http
+          .get(url, headers: _getHeaders())
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -54,17 +102,15 @@ class ApiService {
       }
 
       final response = await http
-          .put(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(settings),
-          )
+          .put(url, headers: _getHeaders(), body: jsonEncode(settings))
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
           debugPrint('Settings saved to MongoDB');
         }
+      } else {
+        throw Exception('Failed to save settings: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -81,10 +127,16 @@ class ApiService {
 
       if (kDebugMode) {
         debugPrint('Uploading profile image to: $url');
+        debugPrint('Token present: ${_authToken != null}');
       }
 
       // Create multipart request
       var request = http.MultipartRequest('POST', url);
+
+      // Add auth token to headers
+      if (_authToken != null) {
+        request.headers['Authorization'] = 'Bearer $_authToken';
+      }
 
       // Add file to request
       request.files.add(
@@ -99,6 +151,10 @@ class ApiService {
       var streamedResponse = await request.send().timeout(_timeout);
       var response = await http.Response.fromStream(streamedResponse);
 
+      if (kDebugMode) {
+        debugPrint('Response status: ${response.statusCode}');
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         if (kDebugMode) {
@@ -108,6 +164,7 @@ class ApiService {
       } else {
         if (kDebugMode) {
           debugPrint('Failed to upload image: ${response.statusCode}');
+          debugPrint('Response: ${response.body}');
         }
         throw Exception('Failed to upload image: ${response.statusCode}');
       }
@@ -126,9 +183,16 @@ class ApiService {
 
       if (kDebugMode) {
         debugPrint('Removing profile image from: $url');
+        debugPrint('Token present: ${_authToken != null}');
       }
 
-      final response = await http.delete(url).timeout(_timeout);
+      final response = await http
+          .delete(url, headers: _getHeaders())
+          .timeout(_timeout);
+
+      if (kDebugMode) {
+        debugPrint('Response status: ${response.statusCode}');
+      }
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
@@ -155,13 +219,23 @@ class ApiService {
 
       if (kDebugMode) {
         debugPrint('Fetching user profile from: $url');
+        debugPrint('Token present: ${_authToken != null}');
       }
 
-      final response = await http.get(url).timeout(_timeout);
+      final response = await http
+          .get(url, headers: _getHeaders())
+          .timeout(_timeout);
+
+      if (kDebugMode) {
+        debugPrint('Response status: ${response.statusCode}');
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
+          if (kDebugMode) {
+            debugPrint('User profile fetched successfully');
+          }
           return data['data'] ?? {};
         }
       }
@@ -173,25 +247,28 @@ class ApiService {
     return {};
   }
 
-  /// Update user profile information
+  /// Update user profile information (WORKS WITH AUTO-SAVE)
   static Future<Map<String, dynamic>> updateUserProfile(
     Map<String, dynamic> profileData,
   ) async {
     try {
-      // Note: You might need to adjust this endpoint based on your backend
+      // This endpoint matches your user.routes.js /profile endpoint
       final url = Uri.parse('$baseUrl/users/profile');
 
       if (kDebugMode) {
         debugPrint('Updating user profile at: $url');
+        debugPrint('Data: $profileData');
+        debugPrint('Token present: ${_authToken != null}');
       }
 
       final response = await http
-          .put(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(profileData),
-          )
+          .put(url, headers: _getHeaders(), body: jsonEncode(profileData))
           .timeout(_timeout);
+
+      if (kDebugMode) {
+        debugPrint('Response status: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -202,7 +279,8 @@ class ApiService {
           return data;
         }
       }
-      throw Exception('Failed to update profile');
+
+      throw Exception('Failed to update profile: ${response.statusCode}');
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating user profile: $e');
