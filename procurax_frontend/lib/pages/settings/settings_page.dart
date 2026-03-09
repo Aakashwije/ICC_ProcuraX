@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async'; // ADD THIS for Timer
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' show ThemeMode;
@@ -30,7 +31,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String lastName = "Jayarathna";
   String email = "dhasun.jayarathna@company.com";
   String phone = "+94 77 123 4567";
-  String? profileImageUrl; //store image URL from backend
+  String? profileImageUrl;
 
   bool isLoading = false;
 
@@ -44,6 +45,9 @@ class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController emailController;
   late TextEditingController phoneController;
 
+  // ADD THIS: Timer for auto-save
+  Timer? _saveTimer;
+
   @override
   void initState() {
     super.initState();
@@ -54,18 +58,111 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController = TextEditingController(text: email);
     phoneController = TextEditingController(text: phone);
 
+    // ADD THIS: Listen to text changes for auto-save
+    firstNameController.addListener(_onProfileDataChanged);
+    lastNameController.addListener(_onProfileDataChanged);
+    emailController.addListener(_onProfileDataChanged);
+    phoneController.addListener(_onProfileDataChanged);
+
     // Load all data
     _loadSettings();
-    _loadUserProfile(); // load user profile
+    _loadUserProfile();
   }
 
   @override
   void dispose() {
+    // ADD THIS: Clean up timer and listeners
+    _saveTimer?.cancel();
+    firstNameController.removeListener(_onProfileDataChanged);
+    lastNameController.removeListener(_onProfileDataChanged);
+    emailController.removeListener(_onProfileDataChanged);
+    phoneController.removeListener(_onProfileDataChanged);
+
     firstNameController.dispose();
     lastNameController.dispose();
     emailController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  // ADD THIS: Auto-save trigger
+  void _onProfileDataChanged() {
+    // Cancel existing timer
+    _saveTimer?.cancel();
+
+    // Start new timer to save after 1.5 seconds of no typing
+    _saveTimer = Timer(const Duration(milliseconds: 1500), () {
+      _autoSaveProfile();
+    });
+  }
+
+  // ADD THIS: Auto-save method
+  Future<void> _autoSaveProfile() async {
+    // Don't save if data hasn't changed
+    if (firstNameController.text == firstName &&
+        lastNameController.text == lastName &&
+        emailController.text == email &&
+        phoneController.text == phone) {
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('📝 Auto-saving profile changes...');
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await ApiService.updateUserProfile({
+        'firstName': firstNameController.text,
+        'lastName': lastNameController.text,
+        'email': emailController.text, // Now including email
+        'phone': phoneController.text,
+      });
+
+      if (response['success'] == true) {
+        setState(() {
+          firstName = firstNameController.text;
+          lastName = lastNameController.text;
+          email = emailController.text;
+          phone = phoneController.text;
+        });
+
+        // Show a subtle hint that it saved
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Changes saved automatically'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Auto-save failed: $e');
+      }
+      // Show error but don't interrupt user too much
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to save changes'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   // Contact Support Button Method
@@ -93,7 +190,6 @@ Issue Description:
         await launchUrl(emailUri, mode: LaunchMode.externalApplication);
         _showSuccessSnackBar('Opening email client...');
       } else {
-        // Fallback - copy email to clipboard
         await Clipboard.setData(
           const ClipboardData(text: 'support@procurax.com'),
         );
@@ -207,7 +303,6 @@ Issue Description:
     );
   }
 
-  // Helper method for default button behavior
   void _showInfoDialog(String buttonText) {
     showDialog(
       context: context,
@@ -509,39 +604,9 @@ Issue Description:
       if (kDebugMode) {
         debugPrint('Settings saved to MongoDB silently');
       }
-      _showSuccessSnackBar('Settings saved successfully');
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error saving settings: $e');
-      }
-      _showErrorSnackBar('Failed to save settings');
-    }
-  }
-
-  // Save profile info
-  Future<void> _saveProfileInfo() async {
-    setState(() => isLoading = true);
-
-    try {
-      final response = await ApiService.updateUserProfile({
-        'firstName': firstNameController.text,
-        'lastName': lastNameController.text,
-        'phone': phoneController.text,
-      });
-
-      if (response['success'] == true) {
-        setState(() {
-          firstName = firstNameController.text;
-          lastName = lastNameController.text;
-          phone = phoneController.text;
-        });
-        _showSuccessSnackBar('Profile updated successfully');
-      }
-    } catch (e) {
-      _showErrorSnackBar('Failed to save profile: $e');
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
       }
     }
   }
@@ -737,14 +802,14 @@ Issue Description:
                     : SingleChildScrollView(
                         child: Column(
                           children: [
-                            // Profile Card - working profile picture section
+                            // Profile Card - with auto-save
                             _card(
                               cardBg,
                               blue,
                               lightBlue,
                               Icons.person_outline,
                               "Profile",
-                              "Update your personal info",
+                              "Your information (auto-saves)",
                               Column(
                                 children: [
                                   _buildProfilePictureSection(
@@ -754,51 +819,42 @@ Issue Description:
                                   ),
                                   const SizedBox(height: 20),
 
-                                  // Input Fields
+                                  // Input Fields - ALL EDITABLE NOW
                                   _input(
                                     "First Name",
                                     firstNameController,
                                     fieldBg,
+                                    isEditable: true,
+                                    hintText: "Enter your first name",
                                   ),
                                   _input(
                                     "Last Name",
                                     lastNameController,
                                     fieldBg,
+                                    isEditable: true,
+                                    hintText: "Enter your last name",
                                   ),
                                   _input(
-                                    "Email",
+                                    "Email", // FIXED: Now editable!
                                     emailController,
                                     fieldBg,
-                                    isEditable: false,
+                                    isEditable: true, // CHANGED to true
+                                    hintText: "Enter your email",
+                                    keyboardType: TextInputType.emailAddress,
                                   ),
                                   _input(
                                     "Phone Number",
                                     phoneController,
                                     fieldBg,
+                                    isEditable: true,
+                                    hintText: "Enter your phone number",
+                                    keyboardType: TextInputType.phone,
                                   ),
 
                                   const SizedBox(height: 8),
 
-                                  // Save Profile Button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      onPressed: _saveProfileInfo,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: blue,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 14,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
-                                      child: const Text('Save Profile Changes'),
-                                    ),
-                                  ),
+                                  // REMOVED the Save Profile Changes button
+                                  // Now it auto-saves!
                                 ],
                               ),
                             ),
@@ -922,7 +978,6 @@ Issue Description:
                                     blue,
                                     onPressed: _launchPrivacyPolicy,
                                   ),
-
                                   const SizedBox(height: 8),
                                   _aboutButton(
                                     "Terms of Service",
@@ -988,11 +1043,14 @@ Issue Description:
     );
   }
 
+  // UPDATED _input method with more options
   Widget _input(
     String label,
     TextEditingController controller,
     Color bg, {
     bool isEditable = true,
+    String? hintText,
+    TextInputType? keyboardType,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1004,9 +1062,12 @@ Issue Description:
           TextField(
             controller: controller,
             enabled: isEditable,
+            keyboardType: keyboardType,
             decoration: InputDecoration(
               filled: true,
               fillColor: bg,
+              hintText: hintText,
+              hintStyle: TextStyle(color: Colors.grey[400]),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -1091,8 +1152,7 @@ Issue Description:
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        onPressed:
-            onPressed ?? () => _showInfoDialog(text), // Use the named parameter
+        onPressed: onPressed ?? () => _showInfoDialog(text),
         child: Text(text),
       ),
     );
