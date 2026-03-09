@@ -209,46 +209,18 @@ class _NotesPageState extends State<NotesPage> {
                         ),
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.sticky_note_2_outlined, color: primaryBlue),
-                        SizedBox(width: 8),
-                        Text(
-                          "Notes",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: primaryBlue,
-                          ),
-                        ),
-                      ],
+                    const Text(
+                      "Notes",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: primaryBlue,
+                      ),
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
-                            Icons.notifications_active_outlined,
-                            color: primaryBlue,
-                          ),
-                          SizedBox(width: 12),
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: lightBlue,
-                            child: Text(
-                              "AK",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: primaryBlue,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: SizedBox.shrink(),
                     ),
                   ],
                 ),
