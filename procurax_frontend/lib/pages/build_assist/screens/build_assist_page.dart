@@ -135,25 +135,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryBlue,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          "AI",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
+                      //App Title
                       const Text(
                         "BuildAssist",
                         style: TextStyle(
