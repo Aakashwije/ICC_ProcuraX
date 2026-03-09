@@ -264,46 +264,18 @@ class _TasksPageState extends State<TasksPage> {
                           ),
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.task_alt_rounded, color: primaryBlue),
-                          SizedBox(width: 8),
-                          Text(
-                            "Tasks",
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: primaryBlue,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        "Tasks",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: primaryBlue,
+                          fontFamily: 'Poppins',
+                        ),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(
-                              Icons.notifications_active_outlined,
-                              color: primaryBlue,
-                            ),
-                            SizedBox(width: 12),
-                            CircleAvatar(
-                              radius: 14,
-                              backgroundColor: lightBlue,
-                              child: Text(
-                                "AK",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryBlue,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: SizedBox.shrink(),
                       ),
                     ],
                   ),
