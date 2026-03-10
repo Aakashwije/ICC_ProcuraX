@@ -320,7 +320,19 @@ class _ChatScreenState extends State<ChatScreen> {
     final old = List<Message>.from(messages);
 
     setState(() {
-      messages.removeWhere((m) => m.id == messageId);
+      final index = messages.indexWhere((m) => m.id == messageId);
+      if (index != -1) {
+        final m = messages[index];
+        messages[index] = Message(
+          id: m.id,
+          senderId: m.senderId,
+          text: '',
+          isMe: m.isMe,
+          time: m.time,
+          createdAt: m.createdAt,
+          isDeleted: true, 
+        );
+      }
     });
 
     try {
@@ -367,6 +379,7 @@ class _ChatScreenState extends State<ChatScreen> {
             fileUrl: message.fileUrl,
             isMe: message.isMe,
             time: message.time,
+            isDeleted: message.isDeleted,
             onOpenFile: _openAttachment,
           ),
         ),
@@ -935,6 +948,7 @@ class Message {
   final String type;
   final String? fileUrl;
   final String? fileName;
+  final bool isDeleted;
 
   Message({
     required this.id,
@@ -946,5 +960,7 @@ class Message {
     this.type = 'text',
     this.fileUrl,
     this.fileName,
+    this.isDeleted = false;
+
   });
 }
