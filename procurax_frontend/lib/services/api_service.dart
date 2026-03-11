@@ -46,9 +46,9 @@ class ApiService {
   static Future<void> clearAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = null;
-    _userId = null; 
+    _userId = null;
     await prefs.remove(_tokenKey);
-    await prefs.remove(_userIdKey);   
+    await prefs.remove(_userIdKey);
   }
 
   static Future<void> setUserId(String userId, {bool persist = true}) async {
@@ -56,9 +56,8 @@ class ApiService {
     _userId = userId;
     if (persist) await prefs.setString(_userIdKey, userId);
   }
+
   static String? get currentUserId => _userId;
-
-
 
   static bool get hasToken => (_token ?? "").isNotEmpty;
 
@@ -76,7 +75,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getDocuments() async {
     final token = await getToken();
     final response = await http.get(
-      Uri.parse('$baseUrl/documents'),
+      Uri.parse('$baseUrl/api/documents'),
       headers: {'Authorization': 'Bearer $token'},
     );
     return jsonDecode(response.body);
@@ -86,7 +85,7 @@ class ApiService {
     final token = await getToken();
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('$baseUrl/documents/upload'),
+      Uri.parse('$baseUrl/api/documents/upload'),
     );
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['category'] = category;
@@ -101,7 +100,7 @@ class ApiService {
   static Future<void> deleteDocument(String documentId) async {
     final token = await getToken();
     final response = await http.delete(
-      Uri.parse('$baseUrl/documents/$documentId'),
+      Uri.parse('$baseUrl/api/documents/$documentId'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode != 200) {
