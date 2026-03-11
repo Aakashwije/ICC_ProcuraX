@@ -7,6 +7,15 @@ import { secret } from "../config/jwt.js";
   Sets req.userId and req.user on the request if valid.
   Returns 401 if token is missing or invalid.
 */
+
+export const generateToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    secret,
+    { expiresIn: process.env.JWT_EXPIRE || "7d" }
+  );
+};
+
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
