@@ -10,6 +10,10 @@ class ApiService {
   static String get baseUrl => '${core_api.ApiService.baseUrl}/api';
   static const Duration _timeout = Duration(seconds: 8);
 
+  static bool hasToken() {
+    return _authToken != null && _authToken!.isNotEmpty;
+  }
+
   // Token management
   static String? _authToken;
 
