@@ -27,7 +27,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
   @override
   void initState() {
     super.initState();
-    // Add initial AI message
+    // Adding initial AI message
     messages.add({
       'type': 'ai',
       'message':
@@ -39,6 +39,9 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
 
   Future<void> sendMessage(String userMessage) async {
     if (userMessage.trim().isEmpty) return;
+
+    print('Sending message: $userMessage');
+    print('URL: http://localhost:5002/api/buildassist');
 
     // Add user message to UI
     setState(() {
@@ -52,29 +55,30 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/chatbot'),
+        Uri.parse('http://localhost:5002/api/buildassist'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'message': userMessage}),
       );
 
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('Received data: $data');
 
         setState(() {
-          if (data['type'] == 'procurement_data' && data['data'] != null) {
-            // Handle structured procurement data
-            for (var record in data['data']) {
-              messages.add({
-                'type': 'ai_delivery',
-                'data': record,
-                'timestamp': _getCurrentTime(),
-              });
-            }
+          // The backend sends data as a single object, not array
+          if (data['data'] != null) {
+            messages.add({
+              'type': 'ai_delivery',
+              'data': data['data'], // This is now a single object, not array
+              'timestamp': _getCurrentTime(),
+            });
           } else {
-            // Regular AI message
             messages.add({
               'type': 'ai',
-              'message': data['reply'],
+              'message': data['reply'] ?? 'No reply',
               'timestamp': _getCurrentTime(),
               'showSuggestions': false,
             });
@@ -82,9 +86,10 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
           isLoading = false;
         });
       } else {
-        throw Exception('Failed to get response');
+        throw Exception('Failed to get response: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error: $e');
       setState(() {
         messages.add({
           'type': 'ai',
