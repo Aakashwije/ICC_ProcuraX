@@ -9,52 +9,44 @@ export const parseProcurementSheet = (rows) => {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     
-    // Skip completely empty rows
+    // Skip empty rows
     if (!row || row.length === 0 || row.every(cell => !cell)) {
       continue;
     }
     
-    // Check if this is a category header
-    // Category rows usually have first column empty and second column with category name
+    // Check if this is a category row (has category in column B, no number in column A)
     if ((!row[0] || row[0] === '') && row[1] && row[1].trim() !== '') {
-      // Check if it's a category (like "Electrical", "PLUMBING", etc.)
-      const possibleCategory = row[1].trim();
-      // Make sure it's not a material name
-      if (!possibleCategory.match(/^\d/) && possibleCategory.length < 30) {
-        currentCategory = possibleCategory;
-        console.log(`Found category: ${currentCategory} at row ${i}`);
-      }
+      // This is a category (like "Electrical", "Low Voltage System")
+      currentCategory = row[1].trim();
+      console.log(`Found category: ${currentCategory} at row ${i}`);
       continue;
     }
     
-    // Check if this is a material row (has a number in first column)
+    // Check if this is a material row (has a number in column A)
     const itemNumber = row[0] ? row[0].toString().trim() : '';
     if (itemNumber.match(/^\d+$/)) {
       const item = {
         id: itemNumber,
-        category: currentCategory,
-        material: row[1] || '',
-        source: row[2] || '',
-        responsibility: row[3] || '',
+        category: currentCategory, // Uses the last seen category
+        material: row[1] || '',          // Column B: Material
+        source: row[2] || '',             // Column C: Source (I/L)
+        responsibility: row[3] || '',      // Column D: Responsibility
+        initialSubmission: row[4] || '',   // Column E: Initial Submission
+        materialApplication: row[5] || '', // Column F: Submission of Material Application
+        approvedByConsultant: row[6] || '', // Column G: Approved by Consultant
+        shopDrawingSubmission: row[7] || '', // Column H: Shop drawing submission
+        proFormaInvoice: row[8] || '',     // Column I: Pro-forma Invoice
+        openingLC: row[9] || '',            // Column J: Opening L/C
+        etd: row[10] || '',                 // Column K: ETD
+        eta: row[11] || '',                  // Column L: ETA
+        boiApproval: row[12] || '',          // Column M: BOI Approval
+        clearingPort: row[13] || '',         // Column N: Clearing of Port
+        revisedDelivery: row[14] || '',      // Column O: Revised Delivery to Site
+        requiredDate: row[15] || '',         // Column P: Required Date
+        remarks: row[16] || '',              // Column Q: Remarks
+        draftLCAmount: row[17] || '',        // Column R: Draft LC amount
         
-        // Handle formula cells - they come as strings
-        initialSubmission: row[4] ? row[4].toString().replace('=O', '') : '',
-        materialApplication: row[5] ? row[5].toString().replace('=O', '') : '',
-        approvedByConsultant: row[6] ? row[6].toString().replace('=H', '') : '',
-        shopDrawingSubmission: row[7] ? row[7].toString() : '',
-        proFormaInvoice: row[8] ? row[8].toString() : '',
-        openingLC: row[9] ? row[9].toString() : '',
-        etd: row[10] ? row[10].toString() : '',
-        eta: row[11] ? row[11].toString() : '',
-        boiApproval: row[12] ? row[12].toString() : '',
-        clearingPort: row[13] ? row[13].toString() : '',
-        revisedDelivery: row[14] ? row[14].toString() : '',
-        requiredDate: row[15] ? row[15].toString() : '',
-        
-        remarks: row[16] || '',
-        draftLCAmount: row[17] || '',
-        
-        status: parseStatus(row[16] || ''),
+        status: parseStatus(row[16] || ''),  // Status from Remarks
         type: row[2] === 'I' ? 'Import' : row[2] === 'L' ? 'Local' : 'Unknown'
       };
       
