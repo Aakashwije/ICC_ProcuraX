@@ -9,6 +9,7 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
   final String time;
   final ValueChanged<String?>? onOpenFile;
+  final bool isDeleted;
 
   const MessageBubble({
     super.key,
@@ -19,6 +20,7 @@ class MessageBubble extends StatelessWidget {
     required this.isMe,
     required this.time,
     this.onOpenFile,
+    this.isDeleted = false,
   });
 
   @override
@@ -52,7 +54,16 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (type == 'file')
+            if (isDeleted)
+              Text(
+                'Message deleted',
+                style: TextStyle(
+                  color: isMe ? Colors.white70 : Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),  
+              )
+
+            else if (type == 'file')
               InkWell(
                 onTap: () => onOpenFile?.call(fileUrl),
                 child: Row(
