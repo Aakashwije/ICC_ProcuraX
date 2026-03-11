@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Camera Permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to capture images for procurement and project documentation.</string>
+	
+	<!-- Photo Library Permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photos to upload images for notes, tasks, and procurement updates.</string>
+	
+	<!-- Microphone Permission -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone for recording audio notes and meeting recordings.</string>
+	
+	<!-- Photo Library Add Permission (iOS 11+) -->
+	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
+	<string>We need permission to save photos from our app to your photo library.</string>
 </dict>
 </plist>

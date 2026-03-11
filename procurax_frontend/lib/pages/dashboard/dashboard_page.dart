@@ -8,6 +8,8 @@ import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/widgets/custom_toast.dart';
+import 'package:procurax_frontend/widgets/permission_request_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum ProjectStatus { active, pending, completed }
 
@@ -45,6 +47,26 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _refreshDashboard();
+    _checkAndRequestPermissions();
+  }
+
+  Future<void> _checkAndRequestPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownPermissionDialog =
+        prefs.getBool('permissions_requested') ?? false;
+
+    if (!hasShownPermissionDialog && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PermissionRequestDialog(
+          onPermissionsGranted: () async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('permissions_requested', true);
+          },
+        ),
+      );
+    }
   }
 
   @override
