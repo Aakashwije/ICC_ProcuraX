@@ -134,6 +134,207 @@ class _DocumentsPageState extends State<DocumentsPage> {
     });
   }
 
+  Future<String?> _showUploadCategoryDialog() async {
+    String? selectedCategory;
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            Widget buildOption(
+              String title,
+              IconData icon,
+              Color color,
+              String subtitle,
+            ) {
+              final isSelected = selectedCategory == title;
+
+              return InkWell(
+                onTap: () => setState(() {
+                  selectedCategory = title;
+                }),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color.withOpacity(0.12) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? color : color.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, size: 32, color: color),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        color: color,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.blue.shade50],
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header with icon
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: DocumentsPage.primaryBlue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.cloud_upload_rounded,
+                      size: 48,
+                      color: DocumentsPage.primaryBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Choose Category',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: DocumentsPage.primaryBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select where to upload your file',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 24),
+                  buildOption(
+                    'Site Photos',
+                    Icons.photo_camera_rounded,
+                    Colors.purple,
+                    'Project images & photos',
+                  ),
+                  const SizedBox(height: 12),
+                  buildOption(
+                    'Blueprints',
+                    Icons.architecture_rounded,
+                    Colors.blue,
+                    'Plans & designs',
+                  ),
+                  const SizedBox(height: 12),
+                  buildOption(
+                    'Progress Reports',
+                    Icons.bar_chart_rounded,
+                    Colors.green,
+                    'Status & updates',
+                  ),
+                  const SizedBox(height: 12),
+                  buildOption(
+                    'Videos',
+                    Icons.videocam_rounded,
+                    Colors.red,
+                    'Video recordings',
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: selectedCategory == null
+                              ? null
+                              : () => Navigator.pop(context, selectedCategory),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: DocumentsPage.primaryBlue,
+                          ),
+                          child: const Text(
+                            'Select',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _uploadFile() async {
     try {
       // 1) Pick a category
@@ -154,10 +355,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
               children: [
                 const Text(
                   'Select Upload Source',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 const Text(
@@ -229,47 +427,46 @@ class _DocumentsPageState extends State<DocumentsPage> {
                     color: DocumentsPage.primaryBlue.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                    child: const Icon(
-                      Icons.cloud_upload_rounded,
-                      size: 48,
-                      color: DocumentsPage.primaryBlue,
-                    ),
+                  child: const Icon(
+                    Icons.cloud_upload_rounded,
+                    size: 48,
+                    color: DocumentsPage.primaryBlue,
                   ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Uploading...',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: DocumentsPage.primaryBlue,
-                    ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Uploading...',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: DocumentsPage.primaryBlue,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Please wait while we upload your file',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                    textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Please wait while we upload your file',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    DocumentsPage.primaryBlue,
                   ),
-                  const SizedBox(height: 24),
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      DocumentsPage.primaryBlue,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        );
+        ),
+      );
 
-        // Use ApiService to upload
-        await ApiService.uploadDocument(file, selectedCategory);
+      // Use ApiService to upload
+      await ApiService.uploadDocument(file, selectedCategory);
 
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          _showSuccessDialog('File uploaded successfully!');
-          _loadDocuments(); // Refresh list
-        }
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        _showSuccessDialog('File uploaded successfully!');
+        _loadDocuments(); // Refresh list
       }
     } catch (e) {
       if (mounted) {
@@ -277,69 +474,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
         _showErrorDialog('Error: $e');
       }
     }
-  }
-
-  Widget _buildCategoryOption(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 32, color: color),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: color),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showSuccessDialog(String message) {
