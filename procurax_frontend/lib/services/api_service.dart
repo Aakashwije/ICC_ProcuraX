@@ -46,9 +46,9 @@ class ApiService {
   static Future<void> clearAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = null;
-    _userId = null; 
+    _userId = null;
     await prefs.remove(_tokenKey);
-    await prefs.remove(_userIdKey);   
+    await prefs.remove(_userIdKey);
   }
 
   static Future<void> setUserId(String userId, {bool persist = true}) async {
@@ -56,9 +56,8 @@ class ApiService {
     _userId = userId;
     if (persist) await prefs.setString(_userIdKey, userId);
   }
+
   static String? get currentUserId => _userId;
-
-
 
   static bool get hasToken => (_token ?? "").isNotEmpty;
 
@@ -76,7 +75,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getDocuments() async {
     final token = await getToken();
     final response = await http.get(
-      Uri.parse('$baseUrl/documents'),
+      Uri.parse('$baseUrl/api/documents'),
       headers: {'Authorization': 'Bearer $token'},
     );
     return jsonDecode(response.body);
@@ -84,24 +83,29 @@ class ApiService {
 
   static Future<void> uploadDocument(File file, String category) async {
     final token = await getToken();
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/documents/upload'),
-    );
+    final uploadUrl = '$baseUrl/api/documents/upload';
+
+    // Helpful debug output when the upload fails (use the Flutter console)
+    debugPrint('Uploading file to: $uploadUrl (category=$category)');
+
+    var request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['category'] = category;
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
     var response = await request.send();
     if (response.statusCode != 201) {
-      throw Exception('Failed to upload document');
+      final respBody = await response.stream.bytesToString();
+      throw Exception(
+        'Failed to upload document (${response.statusCode}): $respBody',
+      );
     }
   }
 
   static Future<void> deleteDocument(String documentId) async {
     final token = await getToken();
     final response = await http.delete(
-      Uri.parse('$baseUrl/documents/$documentId'),
+      Uri.parse('$baseUrl/api/documents/$documentId'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode != 200) {

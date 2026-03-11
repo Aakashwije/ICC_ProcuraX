@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:async'; // ADD THIS for Timer
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' show ThemeMode;
@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'theme_notifier.dart';
@@ -45,7 +46,6 @@ class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController emailController;
   late TextEditingController phoneController;
 
-  // ADD THIS: Timer for auto-save
   Timer? _saveTimer;
 
   @override
@@ -58,20 +58,18 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController = TextEditingController(text: email);
     phoneController = TextEditingController(text: phone);
 
-    // ADD THIS: Listen to text changes for auto-save
+    // Add listeners for auto-save
     firstNameController.addListener(_onProfileDataChanged);
     lastNameController.addListener(_onProfileDataChanged);
     emailController.addListener(_onProfileDataChanged);
     phoneController.addListener(_onProfileDataChanged);
 
-    // Load all data
-    _loadSettings();
-    _loadUserProfile();
+    // CRITICAL: Load token into ApiService first
+    _initializeSettings();
   }
 
   @override
   void dispose() {
-    // ADD THIS: Clean up timer and listeners
     _saveTimer?.cancel();
     firstNameController.removeListener(_onProfileDataChanged);
     lastNameController.removeListener(_onProfileDataChanged);
@@ -85,20 +83,111 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  // ADD THIS: Auto-save trigger
+  // ===== HELPER METHODS =====
+  int min(int a, int b) => a < b ? a : b;
+
+  // Check if user is logged in by looking for token
+  Future<bool> _isLoggedIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tokenFromPrefs = prefs.getString('auth_token');
+
+      // Also check if ApiService has token
+      final apiServiceHasToken = ApiService.hasToken();
+
+      if (kDebugMode) {
+        debugPrint('🔑 Token in SharedPreferences: ${tokenFromPrefs != null}');
+        debugPrint('🔑 Token in ApiService: $apiServiceHasToken');
+      }
+
+      return (tokenFromPrefs != null && tokenFromPrefs.isNotEmpty) ||
+          apiServiceHasToken;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error checking login status: $e');
+      }
+      return false;
+    }
+  }
+
+  // Load token from SharedPreferences into ApiService
+  Future<void> _loadTokenIntoApiService() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token != null && token.isNotEmpty) {
+        // Manually set the token in ApiService
+        await ApiService.setAuthToken(token);
+        if (kDebugMode) {
+          debugPrint(
+            '✅ Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
+          );
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ No token found in SharedPreferences');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error loading token: $e');
+      }
+    }
+  }
+
+  // Initialize settings - load token first, then load data
+  Future<void> _initializeSettings() async {
+    // First, load token into ApiService
+    await _loadTokenIntoApiService();
+
+    // Then check login status
+    final isLoggedIn = await _isLoggedIn();
+    if (kDebugMode) {
+      debugPrint('🔑 Final login status: $isLoggedIn');
+    }
+
+    // Load data
+    _loadSettings();
+    _loadUserProfile();
+  }
+
+  // ===== AUTO-SAVE METHODS =====
   void _onProfileDataChanged() {
     // Cancel existing timer
     _saveTimer?.cancel();
 
     // Start new timer to save after 1.5 seconds of no typing
     _saveTimer = Timer(const Duration(milliseconds: 1500), () {
-      _autoSaveProfile();
+      // Check if user is logged in before auto-saving
+      _checkLoginAndSave();
     });
   }
 
-  // ADD THIS: Auto-save method
+  Future<void> _checkLoginAndSave() async {
+    final isLoggedIn = await _isLoggedIn();
+    if (!isLoggedIn) {
+      if (kDebugMode) {
+        debugPrint('⚠️ User not logged in - auto-save SKIPPED');
+      }
+      return; // IMPORTANT: This prevents the auto-save
+    }
+
+    // Only proceed if user is logged in
+    _autoSaveProfile();
+  }
+
   Future<void> _autoSaveProfile() async {
-    // Don't save if data hasn't changed
+    // Double-check login status (safety)
+    final isLoggedIn = await _isLoggedIn();
+    if (!isLoggedIn) {
+      if (kDebugMode) {
+        debugPrint('⚠️ User not logged in - auto-save ABORTED');
+      }
+      return;
+    }
+
+    // Check if data actually changed
     if (firstNameController.text == firstName &&
         lastNameController.text == lastName &&
         emailController.text == email &&
@@ -108,6 +197,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (kDebugMode) {
       debugPrint('📝 Auto-saving profile changes...');
+      debugPrint('🔑 Token present before save: $isLoggedIn');
     }
 
     setState(() {
@@ -118,7 +208,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final response = await ApiService.updateUserProfile({
         'firstName': firstNameController.text,
         'lastName': lastNameController.text,
-        'email': emailController.text, // Now including email
+        'email': emailController.text,
         'phone': phoneController.text,
       });
 
@@ -130,7 +220,10 @@ class _SettingsPageState extends State<SettingsPage> {
           phone = phoneController.text;
         });
 
-        // Show a subtle hint that it saved
+        if (kDebugMode) {
+          debugPrint('✅ Profile saved successfully');
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Changes saved automatically'),
@@ -147,15 +240,6 @@ class _SettingsPageState extends State<SettingsPage> {
       if (kDebugMode) {
         debugPrint('❌ Auto-save failed: $e');
       }
-      // Show error but don't interrupt user too much
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to save changes'),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } finally {
       if (mounted) {
         setState(() {
@@ -165,7 +249,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // Contact Support Button Method
+  // ===== CONTACT SUPPORT METHODS =====
   Future<void> _launchContactSupport() async {
     final String supportEmail = 'support@procurax.com';
     final String subject = Uri.encodeComponent(
@@ -200,7 +284,7 @@ Issue Description:
     }
   }
 
-  // Privacy Policy Button Method
+  // ===== PRIVACY POLICY METHODS =====
   Future<void> _launchPrivacyPolicy() async {
     const String url = 'https://www.procurax.com/privacy';
     final Uri uri = Uri.parse(url);
@@ -250,7 +334,7 @@ Issue Description:
     );
   }
 
-  // Terms of Service Button Method
+  // ===== TERMS OF SERVICE METHODS =====
   Future<void> _launchTermsOfService() async {
     const String url = 'https://www.procurax.com/terms';
     final Uri uri = Uri.parse(url);
@@ -321,8 +405,20 @@ Issue Description:
     );
   }
 
-  // User profile loading
+  // ===== PROFILE LOADING =====
   Future<void> _loadUserProfile() async {
+    final isLoggedIn = await _isLoggedIn();
+    if (!isLoggedIn) {
+      if (kDebugMode) {
+        debugPrint('⚠️ User not logged in - skipping profile load');
+      }
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('📡 Fetching user profile with token...');
+    }
+
     try {
       final userProfile = await ApiService.getUserProfile();
       if (mounted) {
@@ -351,6 +447,7 @@ Issue Description:
     }
   }
 
+  // ===== IMAGE PICKER METHODS =====
   Future<void> _pickImageFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -535,6 +632,7 @@ Issue Description:
     }
   }
 
+  // ===== SNACKBAR METHODS =====
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -557,6 +655,7 @@ Issue Description:
     );
   }
 
+  // ===== SETTINGS METHODS =====
   Future<void> _loadSettings() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -638,7 +737,7 @@ Issue Description:
     _saveSettings();
   }
 
-  // show both local and server images
+  // ===== UI BUILD METHODS =====
   Widget _buildProfilePictureSection(
     Color fieldBg,
     Color blue,
@@ -802,14 +901,14 @@ Issue Description:
                     : SingleChildScrollView(
                         child: Column(
                           children: [
-                            // Profile Card - with auto-save
+                            // Profile Card
                             _card(
                               cardBg,
                               blue,
                               lightBlue,
                               Icons.person_outline,
                               "Profile",
-                              "Your information (auto-saves)",
+                              "Update your personal info",
                               Column(
                                 children: [
                                   _buildProfilePictureSection(
@@ -819,42 +918,28 @@ Issue Description:
                                   ),
                                   const SizedBox(height: 20),
 
-                                  // Input Fields - ALL EDITABLE NOW
+                                  // Input Fields
                                   _input(
                                     "First Name",
                                     firstNameController,
                                     fieldBg,
-                                    isEditable: true,
-                                    hintText: "Enter your first name",
                                   ),
                                   _input(
                                     "Last Name",
                                     lastNameController,
                                     fieldBg,
-                                    isEditable: true,
-                                    hintText: "Enter your last name",
                                   ),
                                   _input(
-                                    "Email", // FIXED: Now editable!
+                                    "Email",
                                     emailController,
                                     fieldBg,
-                                    isEditable: true, // CHANGED to true
-                                    hintText: "Enter your email",
-                                    keyboardType: TextInputType.emailAddress,
+                                    isEditable: true,
                                   ),
                                   _input(
                                     "Phone Number",
                                     phoneController,
                                     fieldBg,
-                                    isEditable: true,
-                                    hintText: "Enter your phone number",
-                                    keyboardType: TextInputType.phone,
                                   ),
-
-                                  const SizedBox(height: 8),
-
-                                  // REMOVED the Save Profile Changes button
-                                  // Now it auto-saves!
                                 ],
                               ),
                             ),
@@ -1043,14 +1128,11 @@ Issue Description:
     );
   }
 
-  // UPDATED _input method with more options
   Widget _input(
     String label,
     TextEditingController controller,
     Color bg, {
     bool isEditable = true,
-    String? hintText,
-    TextInputType? keyboardType,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1062,12 +1144,9 @@ Issue Description:
           TextField(
             controller: controller,
             enabled: isEditable,
-            keyboardType: keyboardType,
             decoration: InputDecoration(
               filled: true,
               fillColor: bg,
-              hintText: hintText,
-              hintStyle: TextStyle(color: Colors.grey[400]),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,

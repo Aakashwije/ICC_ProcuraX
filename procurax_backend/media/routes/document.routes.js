@@ -45,26 +45,38 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   // Allowed file types
   const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm'];
+  const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
   const allowedDocumentTypes = [
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain'
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+    'application/zip',
+    'application/octet-stream',
   ];
   const allowedBlueprintTypes = ['application/pdf', 'image/jpeg', 'image/png'];
 
-  // Check if file type is allowed
-  if (allowedImageTypes.includes(file.mimetype) ||
-      allowedVideoTypes.includes(file.mimetype) ||
-      allowedDocumentTypes.includes(file.mimetype) ||
-      allowedBlueprintTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Please upload images, videos, PDFs, or documents only.'), false);
+  // Allow unknown/empty mime types (some platforms may not send correct type)
+  if (!file.mimetype || file.mimetype === 'application/octet-stream') {
+    return cb(null, true);
   }
+
+  // Check if file type is allowed
+  if (
+    allowedImageTypes.includes(file.mimetype) ||
+    allowedVideoTypes.includes(file.mimetype) ||
+    allowedDocumentTypes.includes(file.mimetype) ||
+    allowedBlueprintTypes.includes(file.mimetype)
+  ) {
+    return cb(null, true);
+  }
+
+  // Reject unknown file types
+  cb(new Error('Invalid file type. Please upload images, videos, PDFs, or documents only.'), false);
 };
 
 // Configure multer upload
@@ -95,6 +107,7 @@ const getDocumentType = (category, mimeType) => {
 
 // 1. UPLOAD DOCUMENT
 router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
+  console.log('[DOC UPLOAD] received upload request for', req.originalUrl);
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -145,9 +158,26 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
 
   } catch (error) {
     console.error('Upload error:', error);
+
+    // Return client-friendly errors for common upload failures
+    if (error && error.message && error.message.includes('Invalid file type')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    // Multer limit errors (e.g., file size)
+    if (error && error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File is too large. Maximum upload size is 100MB.',
+      });
+    }
+
     res.status(500).json({ 
       success: false,
-      message: error.message 
+      message: 'Internal Server Error',
     });
   }
 });
