@@ -9,6 +9,40 @@ class DeliveryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if data is null or empty
+    if (data == null || data!.isEmpty) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: AppColors.primaryBlue,
+            child: const Text("AI", style: TextStyle(color: Colors.white)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Text(
+                "No procurement data found.",
+                style: TextStyle(fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     // If it's a list of items (for category queries)
     if (type == 'procurement_list' ||
         type == 'search_results' ||
@@ -28,14 +62,10 @@ class DeliveryCard extends StatelessWidget {
     }
 
     // Single item view
-    return _buildProcurementItem(data);
+    return _buildProcurementItem(data!);
   }
 
-  Widget _buildProcurementItem(Map<String, dynamic>? item) {
-    if (item == null) {
-      return _buildDefaultCard();
-    }
-
+  Widget _buildProcurementItem(Map<String, dynamic> item) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,8 +91,9 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Category and Material
-                if (item['category'] != null)
+                // Category
+                if (item['category'] != null &&
+                    item['category'].toString().isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -82,8 +113,10 @@ class DeliveryCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 8),
+
+                // Material
                 Text(
-                  item['material'] ?? "Concrete Delivery - Building A",
+                  item['material'] ?? "Unknown Material",
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
@@ -92,48 +125,53 @@ class DeliveryCard extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Source and Responsibility
-                _buildInfoRow("Source:", item['source'] ?? "N/A"),
-                _buildInfoRow(
-                  "Responsibility:",
-                  item['responsibility'] ?? "N/A",
-                ),
+                if (item['source'] != null &&
+                    item['source'].toString().isNotEmpty)
+                  _buildInfoRow("Source:", item['source']),
+                if (item['responsibility'] != null &&
+                    item['responsibility'].toString().isNotEmpty)
+                  _buildInfoRow("Responsibility:", item['responsibility']),
 
                 const SizedBox(height: 12),
 
                 // Delivery Dates
                 if (item['revisedDelivery'] != null &&
-                    item['revisedDelivery'] != '')
+                    item['revisedDelivery'].toString().isNotEmpty)
                   _buildDateRow(
                     Icons.access_time,
                     "Delivery:",
-                    _formatDate(item['revisedDelivery']),
+                    _formatDate(item['revisedDelivery'].toString()),
                   ),
 
-                if (item['requiredDate'] != null && item['requiredDate'] != '')
+                if (item['requiredDate'] != null &&
+                    item['requiredDate'].toString().isNotEmpty)
                   _buildDateRow(
                     Icons.event,
                     "Required:",
-                    _formatDate(item['requiredDate']),
+                    _formatDate(item['requiredDate'].toString()),
                   ),
 
                 const SizedBox(height: 12),
 
                 // Status Badge
-                if (item['status'] != null)
+                if (item['status'] != null &&
+                    item['status'].toString().isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(item['status']).withOpacity(0.1),
+                      color: _getStatusColor(
+                        item['status'].toString(),
+                      ).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       item['status'],
                       style: TextStyle(
                         fontSize: 12,
-                        color: _getStatusColor(item['status']),
+                        color: _getStatusColor(item['status'].toString()),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -216,94 +254,14 @@ class DeliveryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultCard() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          backgroundColor: AppColors.primaryBlue,
-          child: const Text("AI", style: TextStyle(color: Colors.white)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Concrete Delivery - Building A",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                ),
-                const SizedBox(height: 16),
-                _buildDateRow(
-                  Icons.access_time,
-                  "Scheduled Delivery:",
-                  "Nov 3, 2025 - 7:00 AM",
-                ),
-                const SizedBox(height: 10),
-                _buildDateRow(
-                  Icons.check_circle,
-                  "Quantity:",
-                  "45 cubic meters",
-                ),
-                const SizedBox(height: 10),
-                _buildDateRow(
-                  Icons.check_circle,
-                  "Supplier:",
-                  "ABC Concrete Co.",
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.warningBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 18,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Weather forecast shows rain on Nov 3. Consider rescheduling.",
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Completed':
+    switch (status.toLowerCase()) {
+      case 'completed':
         return Colors.green;
-      case 'Pending':
-      case 'Drawing Pending':
+      case 'pending':
+      case 'drawing pending':
         return Colors.orange;
-      case 'Not Confirmed':
+      case 'not confirmed':
         return Colors.red;
       default:
         return Colors.blue;

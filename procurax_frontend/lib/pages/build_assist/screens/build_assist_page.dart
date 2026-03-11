@@ -8,10 +8,8 @@ import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
-/// ===============================================================
-/// Main Chat Screen
-/// ===============================================================
 class BuildAssistPage extends StatefulWidget {
   const BuildAssistPage({super.key});
 
@@ -23,17 +21,36 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
   final List<Map<String, dynamic>> messages = [];
   final TextEditingController _messageController = TextEditingController();
   bool isLoading = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // Adding initial AI message
     messages.add({
       'type': 'ai',
       'message':
           "Hello! I'm your BuildAssist AI.\nHow can I help you with your construction project today?",
-      'timestamp': '09:30 AM',
+      'timestamp': _getCurrentTime(),
       'showSuggestions': true,
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -41,7 +58,6 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
     if (userMessage.trim().isEmpty) return;
 
     print('Sending message: $userMessage');
-    print('URL: http://localhost:5002/api/buildassist');
 
     // Add user message to UI
     setState(() {
@@ -53,12 +69,17 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       isLoading = true;
     });
 
+    _scrollToBottom();
+
     try {
-      final response = await http.post(
-        Uri.parse('http://localhost:5002/api/buildassist'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'message': userMessage}),
-      );
+      // Add timeout to prevent hanging
+      final response = await http
+          .post(
+            Uri.parse('http://192.168.8.131:5002/api/buildassist'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'message': userMessage}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
@@ -68,33 +89,68 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
         print('Received data: $data');
 
         setState(() {
-          // The backend sends data as a single object, not array
           if (data['data'] != null) {
-            messages.add({
-              'type': 'ai_delivery',
-              'data': data['data'], // This is now a single object, not array
-              'timestamp': _getCurrentTime(),
-            });
+            // Add the AI reply text first
+            if (data['reply'] != null) {
+              messages.add({
+                'type': 'ai',
+                'message': data['reply'],
+                'timestamp': _getCurrentTime(),
+                'showSuggestions': false,
+              });
+            }
+
+            // Then add the delivery data
+            if (data['data'] is List) {
+              final items = data['data'] as List;
+              for (var item in items) {
+                messages.add({
+                  'type': 'ai_delivery',
+                  'data': item,
+                  'timestamp': _getCurrentTime(),
+                });
+              }
+            } else {
+              messages.add({
+                'type': 'ai_delivery',
+                'data': data['data'],
+                'timestamp': _getCurrentTime(),
+              });
+            }
           } else {
             messages.add({
               'type': 'ai',
               'message': data['reply'] ?? 'No reply',
               'timestamp': _getCurrentTime(),
-              'showSuggestions': false,
+              'showSuggestions': true,
             });
           }
           isLoading = false;
         });
+
+        _scrollToBottom();
       } else {
         throw Exception('Failed to get response: ${response.statusCode}');
       }
+    } on TimeoutException catch (_) {
+      print('Timeout error');
+      setState(() {
+        messages.add({
+          'type': 'ai',
+          'message':
+              'The request timed out. Please check if the backend server is running.',
+          'timestamp': _getCurrentTime(),
+          'showSuggestions': true,
+        });
+        isLoading = false;
+      });
     } catch (e) {
       print('Error: $e');
       setState(() {
         messages.add({
           'type': 'ai',
           'message':
-              'Sorry, I\'m having trouble connecting right now. Please try again.',
+              'Connection error. Make sure the backend is running on port 5002.',
           'timestamp': _getCurrentTime(),
           'showSuggestions': true,
         });
@@ -120,9 +176,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       body: SafeArea(
         child: Column(
           children: [
-            /// ===================================================
-            /// CUSTOM HEADER (App Bar)
-            /// ===================================================
+            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Stack(
@@ -137,29 +191,22 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                       ),
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      //App Title
-                      const Text(
-                        "BuildAssist",
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    "BuildAssist",
+                    style: TextStyle(
+                      color: Color(0xFF2563EB),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
 
-            /// ===================================================
-            /// CHAT AREA
-            /// ===================================================
+            // Chat Area
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
@@ -198,9 +245,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
               ),
             ),
 
-            /// ===================================================
-            /// QUICK ACTION BUTTONS
-            /// ===================================================
+            // Quick Actions
             if (!isLoading)
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -212,27 +257,16 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      bottomAction(
-                        "Schedule Update",
-                        () => handleQuickAction("Schedule Update"),
-                      ),
-                      bottomAction(
-                        "Material Status",
-                        () => handleQuickAction("Material Status"),
-                      ),
-                      bottomAction(
-                        "Progress Report",
-                        () => handleQuickAction("Progress Report"),
-                      ),
-                      bottomAction("Team", () => handleQuickAction("Team")),
+                      _buildQuickAction("Schedule Update"),
+                      _buildQuickAction("Material Status"),
+                      _buildQuickAction("Progress Report"),
+                      _buildQuickAction("Team"),
                     ],
                   ),
                 ),
               ),
 
-            /// ===================================================
-            /// BOTTOM MESSAGE INPUT
-            /// ===================================================
+            // Bottom Input
             BottomInput(
               controller: _messageController,
               onSend: sendMessage,
@@ -244,11 +278,11 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
     );
   }
 
-  Widget bottomAction(String text, VoidCallback onTap) {
+  Widget _buildQuickAction(String text) {
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () => handleQuickAction(text),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
