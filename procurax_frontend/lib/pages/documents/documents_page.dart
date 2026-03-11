@@ -42,19 +42,62 @@ class _DocumentsPageState extends State<DocumentsPage> {
       setState(() {
         // Parse categories from API response with null safety
         final categoriesData = response['categories'];
+
+        // Ensure we always show the 4 core categories even when there are no files
+        const coreCategories = [
+          'Site Photos',
+          'Blueprints',
+          'Progress Reports',
+          'Videos',
+        ];
+
+        // Build a lookup for categories returned by the API
+        final apiCategories = <String, dynamic>{};
         if (categoriesData != null && categoriesData is List) {
-          _categories = categoriesData.map((cat) {
-            return CategoryItem(
-              icon: _getCategoryIcon(cat['name'] ?? 'Unknown'),
-              title: cat['name'] ?? 'Unknown',
-              files:
-                  '${cat['count'] ?? 0} ${(cat['count'] ?? 0) == 1 ? 'file' : 'files'}',
-              documents: cat['files'] ?? [],
-            );
-          }).toList();
-        } else {
-          _categories = [];
+          for (final cat in categoriesData) {
+            if (cat is Map && cat['name'] != null) {
+              apiCategories[cat['name']] = cat;
+            }
+          }
         }
+
+        // Start with the core categories (always shown), then append any extra categories
+        _categories = [
+          for (final name in coreCategories)
+            () {
+              final cat = apiCategories[name];
+              final count = (cat != null && cat['count'] is int)
+                  ? cat['count'] as int
+                  : 0;
+              final files = (cat != null && cat['files'] is List)
+                  ? cat['files'] as List<dynamic>
+                  : <dynamic>[];
+              return CategoryItem(
+                icon: _getCategoryIcon(name),
+                title: name,
+                files: '$count ${count == 1 ? 'file' : 'files'}',
+                documents: files,
+              );
+            }(),
+          // Add any non-core categories returned by the API
+          for (final entry in apiCategories.entries)
+            if (!coreCategories.contains(entry.key))
+              () {
+                final cat = entry.value;
+                final count = (cat != null && cat['count'] is int)
+                    ? cat['count'] as int
+                    : 0;
+                final files = (cat != null && cat['files'] is List)
+                    ? cat['files'] as List<dynamic>
+                    : <dynamic>[];
+                return CategoryItem(
+                  icon: _getCategoryIcon(entry.key),
+                  title: entry.key,
+                  files: '$count ${count == 1 ? 'file' : 'files'}',
+                  documents: files,
+                );
+              }(),
+        ];
 
         _filteredCategories = List.from(_categories);
         _isLoading = false;
@@ -93,104 +136,59 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   Future<void> _uploadFile() async {
     try {
-      // Pick category first with beautiful dialog
-      String? selectedCategory = await showDialog<String>(
+      // 1) Pick a category
+      final selectedCategory = await _showUploadCategoryDialog();
+      if (selectedCategory == null) return;
+
+      // 2) Pick upload source (Gallery vs Device)
+      final uploadSource = await showDialog<String>(
         context: context,
         builder: (context) => Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.white, Colors.blue.shade50],
-              ),
-              borderRadius: BorderRadius.circular(24),
-            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header with icon
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: DocumentsPage.primaryBlue.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.cloud_upload_rounded,
-                    size: 48,
-                    color: DocumentsPage.primaryBlue,
-                  ),
-                ),
-                const SizedBox(height: 20),
                 const Text(
-                  'Choose Category',
+                  'Select Upload Source',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: DocumentsPage.primaryBlue,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Select where to upload your file',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 24),
-                // Category options
-                _buildCategoryOption(
-                  context,
-                  icon: Icons.photo_camera_rounded,
-                  title: 'Site Photos',
-                  subtitle: 'Project images & photos',
-                  color: Colors.purple,
-                  onTap: () => Navigator.pop(context, 'Site Photos'),
-                ),
                 const SizedBox(height: 12),
-                _buildCategoryOption(
-                  context,
-                  icon: Icons.architecture_rounded,
-                  title: 'Blueprints',
-                  subtitle: 'Plans & designs',
-                  color: Colors.blue,
-                  onTap: () => Navigator.pop(context, 'Blueprints'),
-                ),
-                const SizedBox(height: 12),
-                _buildCategoryOption(
-                  context,
-                  icon: Icons.bar_chart_rounded,
-                  title: 'Progress Reports',
-                  subtitle: 'Status & updates',
-                  color: Colors.green,
-                  onTap: () => Navigator.pop(context, 'Progress Reports'),
-                ),
-                const SizedBox(height: 12),
-                _buildCategoryOption(
-                  context,
-                  icon: Icons.videocam_rounded,
-                  title: 'Videos',
-                  subtitle: 'Video recordings',
-                  color: Colors.red,
-                  onTap: () => Navigator.pop(context, 'Videos'),
+                const Text(
+                  'Choose where you want to pick the file from.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.black54),
                 ),
                 const SizedBox(height: 20),
-                // Cancel button
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('From Gallery (images)'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: DocumentsPage.primaryBlue,
+                  ),
+                  onPressed: () => Navigator.pop(context, 'gallery'),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('From Device (any file)'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: DocumentsPage.primaryBlue,
+                  ),
+                  onPressed: () => Navigator.pop(context, 'device'),
+                ),
+                const SizedBox(height: 14),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                  ),
+                  child: const Text('Cancel'),
                 ),
               ],
             ),
@@ -198,33 +196,39 @@ class _DocumentsPageState extends State<DocumentsPage> {
         ),
       );
 
-      if (selectedCategory == null) return;
+      if (uploadSource == null) return;
 
-      // Pick file
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      FilePickerResult? result;
+      if (uploadSource == 'gallery') {
+        result = await FilePicker.platform.pickFiles(type: FileType.image);
+      } else {
+        result = await FilePicker.platform.pickFiles(type: FileType.any);
+      }
 
-      if (result != null) {
-        File file = File(result.files.single.path!);
+      if (result == null || result.files.isEmpty) return;
+      if (!mounted) return;
 
-        // Show beautiful loading dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: DocumentsPage.primaryBlue.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
+      final file = File(result.files.single.path!);
+
+      // Show beautiful loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: DocumentsPage.primaryBlue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
                     child: const Icon(
                       Icons.cloud_upload_rounded,
                       size: 48,
@@ -902,7 +906,6 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
           'The file has been removed from your documents',
           title: 'File Deleted',
         );
-        Navigator.pop(context, true); // Refresh parent
       }
     } catch (e) {
       if (mounted) {
