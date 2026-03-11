@@ -15,7 +15,7 @@ class ChatScreen extends StatefulWidget {
   final String currentUserId;
   final String otherUserId;
   final VoidCallback? onChatRead;
-
+  
   final String userName;
   final String userRole;
   final String avatarUrl;
@@ -31,6 +31,7 @@ class ChatScreen extends StatefulWidget {
     required this.userRole,
     required this.avatarUrl,
     this.isOnline = false,
+    
   });
 
   @override
@@ -106,7 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
           messages.add(
             Message(
-              id: msg['id'].toString(), // ✅ messageId from backend
+              id: msg['id'].toString(), // messageId from backend
               senderId: (msg['senderId'] ?? '').toString(),
               text: (msg['content'] ?? '').toString(),
               type: (msg['type'] ?? 'text').toString(),
@@ -320,7 +321,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final old = List<Message>.from(messages);
 
     setState(() {
-      final index = messages.indexWhere((m) => m.id == messageId);
+     final index = messages.indexWhere((m) => m.id == messageId);
       if (index != -1) {
         final m = messages[index];
         messages[index] = Message(
@@ -330,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
           isMe: m.isMe,
           time: m.time,
           createdAt: m.createdAt,
-          isDeleted: true, 
+          isDeleted: true, // 
         );
       }
     });
@@ -379,8 +380,8 @@ class _ChatScreenState extends State<ChatScreen> {
             fileUrl: message.fileUrl,
             isMe: message.isMe,
             time: message.time,
-            isDeleted: message.isDeleted,
             onOpenFile: _openAttachment,
+            isDeleted: message.isDeleted,
           ),
         ),
       );
@@ -960,7 +961,6 @@ class Message {
     this.type = 'text',
     this.fileUrl,
     this.fileName,
-    this.isDeleted = false;
-
+    this.isDeleted = false,
   });
 }
