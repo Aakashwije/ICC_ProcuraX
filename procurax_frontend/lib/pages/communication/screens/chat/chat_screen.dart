@@ -133,31 +133,31 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) setState(() => loading = false);
     }
   }
-  // to get same colour in the avatar 
+
+  // to get same colour in the avatar
   Color _getColorForUser(String value) {
-  if (value.isEmpty) return AppColours.primary;
+    if (value.isEmpty) return AppColours.primary;
 
-  final int hash = value.hashCode;
+    final int hash = value.hashCode;
 
-  const List<Color> colors = [
-    Color(0xFF0D47A1),
-    Color(0xFF1565C0),
-    Color(0xFF1976D2),
-    Color(0xFF1E88E5),
-    Color(0xFF2196F3),
-    Color(0xFF42A5F5),
-    Color(0xFF64B5F6),
-    Color(0xFF90CAF9),
-    Color(0xFF01579B),
-    Color(0xFF0277BD),
-    Color(0xFF0288D1),
-    Color(0xFF039BE5),
-    Color(0xFF03A9F4),
-  ];
+    const List<Color> colors = [
+      Color(0xFF0D47A1),
+      Color(0xFF1565C0),
+      Color(0xFF1976D2),
+      Color(0xFF1E88E5),
+      Color(0xFF2196F3),
+      Color(0xFF42A5F5),
+      Color(0xFF64B5F6),
+      Color(0xFF90CAF9),
+      Color(0xFF01579B),
+      Color(0xFF0277BD),
+      Color(0xFF0288D1),
+      Color(0xFF039BE5),
+      Color(0xFF03A9F4),
+    ];
 
-  return colors[hash.abs() % colors.length];
-}
-
+    return colors[hash.abs() % colors.length];
+  }
 
   String _formatMessageTime(dynamic createdAt) {
     if (createdAt == null) return '';
@@ -276,16 +276,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   //to make the header role as Project Manager
   String _formatRole(String role) {
-  if (role.trim().isEmpty) return 'Member';
-  return role
-      .replaceAll('_', ' ')
-      .split(' ')
-      .map((word) {
-        if (word.isEmpty) return word;
-        return word[0].toUpperCase() + word.substring(1).toLowerCase();
-      })
-      .join(' ');
-}
+    if (role.trim().isEmpty) return 'Member';
+    return role
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
+  }
+
   //  Long-press delete menu (only for my messages)
   Future<void> _showDeleteMessageSheet(Message message) async {
     if (!message.isMe) return;
@@ -330,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
           isMe: m.isMe,
           time: m.time,
           createdAt: m.createdAt,
-          isDeleted: true, 
+          isDeleted: true,
         );
       }
     });
@@ -786,7 +787,6 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         )
                       : null,
-
                 ),
                 if (isOtherOnline)
                   Positioned(
@@ -820,7 +820,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     maxLines: 1,
                   ),
                   Text(
-                   _formatRole(widget.userRole), // to make the header role as Project Manager
+                    _formatRole(
+                      widget.userRole,
+                    ), // to make the header role as Project Manager
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -960,7 +962,6 @@ class Message {
     this.type = 'text',
     this.fileUrl,
     this.fileName,
-    this.isDeleted = false;
-
+    this.isDeleted = false,
   });
 }

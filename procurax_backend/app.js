@@ -53,12 +53,23 @@ import uploadRoutes from "./settings/routes/upload.routes.js";
 
 // =========================
 
+// ===== SETTINGS USER ROUTES =====
+import settingsUserProfileRoutes from "./settings/routes/user.routes.js";
+
+// =========================	
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// DEBUG: log incoming requests (helps diagnose missing routes)
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.url}`);
+  next();
+});
 
 // Static file serving for uploaded documents
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -95,6 +106,10 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/settings/users", settingsUserRoutes);
 app.use("/auth", authRoutes);
 
+// ===== SETTINGS USER ROUTES =====
+app.use("/api/users", settingsUserProfileRoutes);	
+// =========================
+
 // ===== COMMUNICATION MODULE ROUTES =====
 app.use("/api/users", userRoutes);
 app.use("/api/calls", callRoutes);
@@ -112,6 +127,8 @@ app.use("/admin-users", adminUserRoutes);
 
 /* User self-service profile route — GET /api/user/profile */
 app.use("/api/user", userProfileRoutes);
+
+
 
 // ===== UPLOAD ROUTES =====
 app.use("/api/upload", uploadRoutes);
@@ -135,6 +152,36 @@ app.use("/api/buildassist", chatbotRoutes);
 
 // Basic health route
 app.get("/", (req, res) => res.send("ProcuraX backend running"));
+
+// Print all registered routes (for debugging)
+const listRoutes = (app) => {
+  if (!app._router || !app._router.stack) {
+    console.log('No routes registered yet (app._router is undefined)');
+    return;
+  }
+
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods)
+        .map((m) => m.toUpperCase())
+        .join(',');
+      routes.push(`${methods} ${middleware.route.path}`);
+    } else if (middleware.name === 'router' && middleware.handle && middleware.handle.stack) {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          const methods = Object.keys(handler.route.methods)
+            .map((m) => m.toUpperCase())
+            .join(',');
+          routes.push(`${methods} ${handler.route.path}`);
+        }
+      });
+    }
+  });
+  console.log('Registered routes:\n' + routes.join('\n'));
+};
+
+listRoutes(app);
 
 // Handle unknown routes
 app.use((req, res) => {
