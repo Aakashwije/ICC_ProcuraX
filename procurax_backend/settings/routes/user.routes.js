@@ -1,7 +1,7 @@
 // settings/routes/user.routes.js
 import express from "express";
 import authMiddleware, { generateToken } from "../../auth/auth.middleware.js";  // Added generateToken
-import User from '../models/User.js';
+import User from '../../models/User.js';
 import Setting from '../models/setting.js';
 
 const router = express.Router();
@@ -87,7 +87,19 @@ router.post("/login", async (req, res) => {
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
-    res.json({ success: true, data: user });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const userObj = user.toObject();
+    // Ensure front-end receives firstName/lastName even if only 'name' exists
+    if (!userObj.firstName || !userObj.lastName) {
+      const parts = (userObj.name || '').split(' ');
+      userObj.firstName = userObj.firstName || parts[0] || '';
+      userObj.lastName = userObj.lastName || parts.slice(1).join(' ') || '';
+    }
+
+    res.json({ success: true, data: userObj });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -97,32 +109,46 @@ router.get("/me", authMiddleware, async (req, res) => {
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
-    const updateData = req.body;
-    
+    const updateData = { ...req.body };
+
     console.log('Updating profile for user:', userId);
     console.log('Update data:', updateData);
-    
+
     // Remove password if present
     if (updateData.password) {
       delete updateData.password;
     }
-    
+
+    // Keep full 'name' in sync with first/last name
+    const firstName = updateData.firstName;
+    const lastName = updateData.lastName;
+    if (firstName !== undefined || lastName !== undefined) {
+      updateData.name = `${firstName ?? ''} ${lastName ?? ''}`.trim();
+    }
+
     const user = await User.findByIdAndUpdate(
       userId,
       { ...updateData, updatedAt: new Date() },
       { new: true, runValidators: true }
     ).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    
+
     console.log('Profile updated for:', user.email);
-    
+
+    const userObj = user.toObject();
+    if (!userObj.firstName || !userObj.lastName) {
+      const parts = (userObj.name || '').split(' ');
+      userObj.firstName = userObj.firstName || parts[0] || '';
+      userObj.lastName = userObj.lastName || parts.slice(1).join(' ') || '';
+    }
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: user
+      data: userObj
     });
   } catch (err) {
     console.error('Profile update error:', err);
