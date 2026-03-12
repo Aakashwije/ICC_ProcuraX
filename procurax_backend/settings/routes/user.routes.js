@@ -1,5 +1,6 @@
 // settings/routes/user.routes.js
 import express from "express";
+import path from 'path';
 import authMiddleware, { generateToken } from "../../auth/auth.middleware.js";  // Added generateToken
 import User from '../../models/User.js';
 import Setting from '../models/setting.js';
@@ -99,6 +100,13 @@ router.get("/me", authMiddleware, async (req, res) => {
       userObj.lastName = userObj.lastName || parts.slice(1).join(' ') || '';
     }
 
+    // Build a full URL for profile image so frontend can display it after reload
+    if (userObj.profileImage) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const relativePath = userObj.profileImage.split(path.sep).join('/');
+      userObj.profileImageUrl = `${baseUrl}/${relativePath}`;
+    }
+
     res.json({ success: true, data: userObj });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -143,6 +151,13 @@ router.put("/profile", authMiddleware, async (req, res) => {
       const parts = (userObj.name || '').split(' ');
       userObj.firstName = userObj.firstName || parts[0] || '';
       userObj.lastName = userObj.lastName || parts.slice(1).join(' ') || '';
+    }
+
+    // Build a full URL for profile image so frontend can display it after reload
+    if (userObj.profileImage) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const relativePath = userObj.profileImage.split(path.sep).join('/');
+      userObj.profileImageUrl = `${baseUrl}/${relativePath}`;
     }
 
     res.json({
