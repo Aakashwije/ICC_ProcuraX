@@ -9,6 +9,18 @@ const UserSchema = new mongoose.Schema(
       trim: true
     },
 
+    firstName: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    lastName: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
     email: {
       type: String,
       required: true,
@@ -97,11 +109,14 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-// 🔍 Index
-UserSchema.index({ email: 1 });
 
-// 🔐 Hash password
+// 🔐 Normalize name (from first/last) and hash password
 UserSchema.pre("save", async function (next) {
+  // If first/last name are provided, keep the full name field in sync.
+  if (this.firstName || this.lastName) {
+    this.name = `${this.firstName || ""} ${this.lastName || ""}`.trim();
+  }
+
   if (!this.isModified("password")) return next();
 
   const salt = await bcrypt.genSalt(10);
