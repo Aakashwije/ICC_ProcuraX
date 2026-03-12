@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
@@ -427,7 +428,11 @@ Issue Description:
           lastName = userProfile['lastName'] ?? lastName;
           email = userProfile['email'] ?? email;
           phone = userProfile['phone'] ?? phone;
-          profileImageUrl = userProfile['profileImageUrl'];
+
+          final loadedUrl = userProfile['profileImageUrl'];
+          profileImageUrl = (loadedUrl is String && loadedUrl.isNotEmpty)
+              ? loadedUrl
+              : null;
 
           // Update controllers
           firstNameController.text = firstName;
@@ -448,8 +453,76 @@ Issue Description:
   }
 
   // ===== IMAGE PICKER METHODS =====
+  Future<bool> _ensurePhotoPermission() async {
+    if (!Platform.isAndroid && !Platform.isIOS) return true;
+
+    // On Android 13+ this is READ_MEDIA_IMAGES; on older Android it maps to storage.
+    // Try the modern permission first, fall back to storage if needed.
+    final primaryPermission = Platform.isIOS ? Permission.photos : Permission.photos;
+    final secondaryPermission = Platform.isAndroid ? Permission.storage : null;
+
+    final primaryStatus = await primaryPermission.status;
+    if (primaryStatus.isGranted) return true;
+
+    final primaryResult = await primaryPermission.request();
+    if (primaryResult.isGranted) return true;
+
+    if (secondaryPermission != null) {
+      final secondaryStatus = await secondaryPermission.status;
+      if (secondaryStatus.isGranted) return true;
+
+      final secondaryResult = await secondaryPermission.request();
+      if (secondaryResult.isGranted) return true;
+
+      if (secondaryResult.isPermanentlyDenied) {
+        _showPermissionSettingsDialog();
+      }
+    }
+
+    if (primaryResult.isPermanentlyDenied) {
+      _showPermissionSettingsDialog();
+    }
+
+    return false;
+  }
+
+  void _showPermissionSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Permission required'),
+          content: const Text(
+            'To pick an image, the app needs access to your photos. Please enable permission in Settings.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                openAppSettings();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _pickImageFromGallery() async {
     try {
+      if (!await _ensurePhotoPermission()) {
+        if (kDebugMode) {
+          debugPrint('Gallery permission not granted');
+        }
+        _showErrorSnackBar('Permission required to access gallery');
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 512,
@@ -478,6 +551,14 @@ Issue Description:
 
   Future<void> _takePhotoWithCamera() async {
     try {
+      if (!await _ensurePhotoPermission()) {
+        if (kDebugMode) {
+          debugPrint('Camera/photo permission not granted');
+        }
+        _showErrorSnackBar('Permission required to use the camera');
+        return;
+      }
+
       final bool cameraAvailable = await _picker.supportsImageSource(
         ImageSource.camera,
       );
@@ -576,6 +657,8 @@ Issue Description:
       if (response['success'] == true) {
         if (mounted) {
           setState(() {
+            // Clear the local temp file reference so we load the persisted URL from the server
+            _profileImage = null;
             profileImageUrl = response['data']?['profileImageUrl'];
           });
           _showSuccessSnackBar('Profile picture updated successfully');
