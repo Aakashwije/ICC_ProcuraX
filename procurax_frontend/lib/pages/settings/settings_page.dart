@@ -36,6 +36,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? profileImageUrl;
 
   bool isLoading = false;
+  bool _isSaving = false; // NEW: Track save state
 
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
@@ -47,8 +48,6 @@ class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController emailController;
   late TextEditingController phoneController;
 
-  Timer? _saveTimer;
-
   @override
   void initState() {
     super.initState();
@@ -59,11 +58,7 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController = TextEditingController(text: email);
     phoneController = TextEditingController(text: phone);
 
-    // Add listeners for auto-save
-    firstNameController.addListener(_onProfileDataChanged);
-    lastNameController.addListener(_onProfileDataChanged);
-    emailController.addListener(_onProfileDataChanged);
-    phoneController.addListener(_onProfileDataChanged);
+    // REMOVED: Auto-save listeners
 
     // CRITICAL: Load token into ApiService first
     _initializeSettings();
@@ -71,12 +66,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    _saveTimer?.cancel();
-    firstNameController.removeListener(_onProfileDataChanged);
-    lastNameController.removeListener(_onProfileDataChanged);
-    emailController.removeListener(_onProfileDataChanged);
-    phoneController.removeListener(_onProfileDataChanged);
-
+    // REMOVED: Listener removals
     firstNameController.dispose();
     lastNameController.dispose();
     emailController.dispose();
@@ -105,7 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
           apiServiceHasToken;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Error checking login status: $e');
+        debugPrint('Error checking login status: $e');
       }
       return false;
     }
@@ -122,17 +112,17 @@ class _SettingsPageState extends State<SettingsPage> {
         await ApiService.setAuthToken(token);
         if (kDebugMode) {
           debugPrint(
-            '✅ Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
+            'Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
           );
         }
       } else {
         if (kDebugMode) {
-          debugPrint('⚠️ No token found in SharedPreferences');
+          debugPrint('No token found in SharedPreferences');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error loading token: $e');
+        debugPrint('Error loading token: $e');
       }
     }
   }
@@ -145,7 +135,7 @@ class _SettingsPageState extends State<SettingsPage> {
     // Then check login status
     final isLoggedIn = await _isLoggedIn();
     if (kDebugMode) {
-      debugPrint('🔑 Final login status: $isLoggedIn');
+      debugPrint('Final login status: $isLoggedIn');
     }
 
     // Load data
@@ -153,38 +143,12 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadUserProfile();
   }
 
-  // ===== AUTO-SAVE METHODS =====
-  void _onProfileDataChanged() {
-    // Cancel existing timer
-    _saveTimer?.cancel();
-
-    // Start new timer to save after 1.5 seconds of no typing
-    _saveTimer = Timer(const Duration(milliseconds: 1500), () {
-      // Check if user is logged in before auto-saving
-      _checkLoginAndSave();
-    });
-  }
-
-  Future<void> _checkLoginAndSave() async {
+  // ===== NEW: SAVE PROFILE METHOD (called by button) =====
+  Future<void> _saveProfile() async {
+    // Check if user is logged in
     final isLoggedIn = await _isLoggedIn();
     if (!isLoggedIn) {
-      if (kDebugMode) {
-        debugPrint('⚠️ User not logged in - auto-save SKIPPED');
-      }
-      return; // IMPORTANT: This prevents the auto-save
-    }
-
-    // Only proceed if user is logged in
-    _autoSaveProfile();
-  }
-
-  Future<void> _autoSaveProfile() async {
-    // Double-check login status (safety)
-    final isLoggedIn = await _isLoggedIn();
-    if (!isLoggedIn) {
-      if (kDebugMode) {
-        debugPrint('⚠️ User not logged in - auto-save ABORTED');
-      }
+      _showErrorSnackBar('You must be logged in to save changes');
       return;
     }
 
@@ -193,17 +157,17 @@ class _SettingsPageState extends State<SettingsPage> {
         lastNameController.text == lastName &&
         emailController.text == email &&
         phoneController.text == phone) {
+      _showSuccessSnackBar('No changes to save');
       return;
     }
 
-    if (kDebugMode) {
-      debugPrint('📝 Auto-saving profile changes...');
-      debugPrint('🔑 Token present before save: $isLoggedIn');
-    }
-
     setState(() {
-      isLoading = true;
+      _isSaving = true;
     });
+
+    if (kDebugMode) {
+      debugPrint('Saving profile changes...');
+    }
 
     try {
       final response = await ApiService.updateUserProfile({
@@ -222,29 +186,20 @@ class _SettingsPageState extends State<SettingsPage> {
         });
 
         if (kDebugMode) {
-          debugPrint('✅ Profile saved successfully');
+          debugPrint('Profile saved successfully');
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Changes saved automatically'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        _showSuccessSnackBar('Profile saved successfully');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Auto-save failed: $e');
+        debugPrint('Save failed: $e');
       }
+      _showErrorSnackBar('Failed to save profile: $e');
     } finally {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          _isSaving = false;
         });
       }
     }
@@ -411,7 +366,7 @@ Issue Description:
     final isLoggedIn = await _isLoggedIn();
     if (!isLoggedIn) {
       if (kDebugMode) {
-        debugPrint('⚠️ User not logged in - skipping profile load');
+        debugPrint('User not logged in - skipping profile load');
       }
       return;
     }
@@ -458,7 +413,9 @@ Issue Description:
 
     // On Android 13+ this is READ_MEDIA_IMAGES; on older Android it maps to storage.
     // Try the modern permission first, fall back to storage if needed.
-    final primaryPermission = Platform.isIOS ? Permission.photos : Permission.photos;
+    final primaryPermission = Platform.isIOS
+        ? Permission.photos
+        : Permission.photos;
     final secondaryPermission = Platform.isAndroid ? Permission.storage : null;
 
     final primaryStatus = await primaryPermission.status;
@@ -984,7 +941,7 @@ Issue Description:
                     : SingleChildScrollView(
                         child: Column(
                           children: [
-                            // Profile Card
+                            // Profile Card - WITH SAVE BUTTON
                             _card(
                               cardBg,
                               blue,
@@ -1022,6 +979,45 @@ Issue Description:
                                     "Phone Number",
                                     phoneController,
                                     fieldBg,
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  // Save Profile Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: ElevatedButton(
+                                      onPressed: _isSaving
+                                          ? null
+                                          : _saveProfile,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: blue,
+                                        foregroundColor: Colors.white,
+                                        elevation: 2,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                      child: _isSaving
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Save Changes',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                    ),
                                   ),
                                 ],
                               ),
