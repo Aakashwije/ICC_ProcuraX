@@ -15,9 +15,8 @@ try {
   });
   
   sheets = google.sheets({ version: "v4", auth });
-  console.log("Google Sheets initialized successfully");
 } catch (error) {
-  console.error("Failed to initialize Google Sheets:", error);
+  console.error("❌ Failed to initialize Google Sheets:", error.message);
 }
 
 export const chatWithAI = async (req, res) => {

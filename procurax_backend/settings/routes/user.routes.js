@@ -1,8 +1,3 @@
-// At the very top of settings/routes/user.routes.js
-console.log('🔥🔥🔥 user.routes.js is LOADING! 🔥🔥🔥');
-console.log('Current directory:', import.meta.url);
-
-// Then the rest of your code...
 // settings/routes/user.routes.js
 import express from "express";
 import authMiddleware, { generateToken } from "../../auth/auth.middleware.js";  // Added generateToken

@@ -29,14 +29,12 @@ function initializeFirebase() {
       storageBucket: `${serviceAccount.project_id}.appspot.com`,
     });
 
-    console.log(" Firebase connected to:", serviceAccount.project_id);
-
     // Firebase instances
     db = admin.firestore();
     bucket = admin.storage().bucket();
     isInitialized = true;
   } catch (error) {
-    console.error("Failed to initialize Firebase:", error.message);
+    console.error("❌ Failed to initialize Firebase:", error.message);
   }
 }
 
