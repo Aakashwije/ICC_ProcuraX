@@ -50,7 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _typingDebounce;
   Timer? _typingPollTimer;
   Timer? _presenceTimer;
-  bool debugSimulateOtherTyping = false;
+ 
   bool _showScrollToBottom = false;
 
   final List<Message> messages = [];
@@ -457,7 +457,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _refreshOtherTyping() async {
-    if (kDebugMode && debugSimulateOtherTyping) return;
+    
     try {
       final typing = await _chatService.getTyping(
         chatId: widget.chatId,
@@ -470,18 +470,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _toggleDebugTyping() {
-    setState(() {
-      debugSimulateOtherTyping = !debugSimulateOtherTyping;
-      if (debugSimulateOtherTyping) {
-        isOtherTyping = true;
-      }
-    });
-    if (!debugSimulateOtherTyping) {
-      _refreshOtherTyping();
-    }
-  }
-
+  
   void _scheduleTypingUpdate(bool typingNow) {
     _typingDebounce?.cancel();
     if (!typingNow) {
@@ -834,19 +823,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: debugSimulateOtherTyping
-                  ? 'Disable simulate typing'
-                  : 'Simulate typing',
-              icon: Icon(
-                debugSimulateOtherTyping
-                    ? Icons.keyboard
-                    : Icons.keyboard_outlined,
-                color: AppColours.neutral,
-              ),
-              onPressed: _toggleDebugTyping,
-            ),
+          
           IconButton(
             icon: const Icon(Icons.video_call, color: AppColours.neutral),
             onPressed: () {},
