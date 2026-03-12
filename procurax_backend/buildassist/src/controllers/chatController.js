@@ -8,9 +8,15 @@ const __dirname = path.dirname(__filename);
 
 let sheets;
 try {
+  
+  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS 
+    ? path.join(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
+    : path.join(__dirname, '../../credentials.json');
+  
+  console.log("Looking for credentials at:", credentialsPath);
+  
   const auth = new google.auth.GoogleAuth({
-    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-             path.join(__dirname, '../../config/credentials.json'),
+    keyFile: credentialsPath,
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
   
@@ -18,6 +24,7 @@ try {
 } catch (error) {
   console.error("❌ Failed to initialize Google Sheets:", error.message);
 }
+
 
 export const chatWithAI = async (req, res) => {
   try {
@@ -64,7 +71,7 @@ export const chatWithAI = async (req, res) => {
       console.log("Fetching data from sheet...");
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: `${firstSheetName}!A6:R1000`, // Start from row 6
+        range: `${firstSheetName}!A2:R1000`, // Start from row 2
       });
       
       console.log("Sheet API call successful!");
