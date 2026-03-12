@@ -7,9 +7,8 @@ const connectDB = async () => {
       useUnifiedTopology: true
     });
 
-    console.log("✅ MongoDB connected");
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
+    console.error("❌ Database connection failed:", error.message);
     process.exit(1);
   }
 };
