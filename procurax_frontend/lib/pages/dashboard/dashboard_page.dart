@@ -464,10 +464,12 @@ class _DashboardPageState extends State<DashboardPage> {
         ? "No due date"
         : "Due: ${dueDate.day}/${dueDate.month}/${dueDate.year}";
 
-    return _infoRow(
+    return _infoRowWithColoredText(
       icon: icon,
       title: task.title.isEmpty ? "Untitled task" : task.title,
       subtitle: subtitle,
+      coloredPart: null,
+      highlightColor: Colors.transparent,
     );
   }
 
@@ -514,10 +516,12 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _infoRow({
+  Widget _infoRowWithColoredText({
     required IconData icon,
     required String title,
     required String subtitle,
+    required String? coloredPart,
+    required Color highlightColor,
   }) {
     return Row(
       children: [
@@ -536,14 +540,39 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: neutralText,
-                  fontFamily: 'Poppins',
+              if (coloredPart != null && subtitle.contains(coloredPart))
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: subtitle.replaceFirst(coloredPart, ''),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: neutralText,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      TextSpan(
+                        text: coloredPart,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: highlightColor,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: neutralText,
+                    fontFamily: 'Poppins',
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -579,12 +608,14 @@ class _DashboardPageState extends State<DashboardPage> {
         return Column(
           children: [
             for (var i = 0; i < updates.length; i++) ...[
-              _infoRow(
+              _infoRowWithColoredText(
                 icon: Icons.local_shipping_outlined,
                 title: updates[i].materialList.isEmpty
                     ? "Procurement Update"
                     : updates[i].materialList,
                 subtitle: _procurementSubtitle(updates[i]),
+                coloredPart: null,
+                highlightColor: Colors.transparent,
               ),
               if (i != updates.length - 1) const SizedBox(height: 12),
             ],
@@ -654,16 +685,17 @@ class _DashboardPageState extends State<DashboardPage> {
                 : "No meetings yet.",
           );
         }
-
         return Column(
           children: [
             for (var i = 0; i < visible.length; i++) ...[
-              _infoRow(
+              _infoRowWithColoredText(
                 icon: Icons.calendar_today_outlined,
                 title: visible[i].title.isEmpty
                     ? "Untitled meeting"
                     : visible[i].title,
                 subtitle: _meetingSubtitle(visible[i]),
+                coloredPart: null,
+                highlightColor: Colors.transparent,
               ),
               if (i < visible.length - 1) const SizedBox(height: 12),
             ],
