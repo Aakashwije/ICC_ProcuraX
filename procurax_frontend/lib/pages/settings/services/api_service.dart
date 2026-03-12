@@ -53,16 +53,28 @@ class ApiService {
   }
 
   // Get headers with auth token
+  static Future<void> _ensureTokenLoaded() async {
+    if (_authToken == null || _authToken!.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      _authToken = prefs.getString('auth_token');
+      if (kDebugMode) {
+        debugPrint('Settings API token loaded: ${_authToken != null}');
+      }
+    }
+  }
+
   static Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json',
-      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      if (_authToken != null && _authToken!.isNotEmpty)
+        'Authorization': 'Bearer $_authToken',
     };
   }
 
   /// Fetch settings from MongoDB backend
   static Future<Map<String, dynamic>> getSettings() async {
     try {
+      await _ensureTokenLoaded();
       final url = Uri.parse('$baseUrl/settings');
       if (kDebugMode) {
         debugPrint('Fetching settings from: $url');
@@ -100,6 +112,7 @@ class ApiService {
     Map<String, dynamic> settings,
   ) async {
     try {
+      await _ensureTokenLoaded();
       final url = Uri.parse('$baseUrl/settings/bulk');
       if (kDebugMode) {
         debugPrint('Updating settings at: $url');
@@ -127,6 +140,7 @@ class ApiService {
   /// Upload profile image to backend
   static Future<Map<String, dynamic>> uploadProfileImage(File imageFile) async {
     try {
+      await _ensureTokenLoaded();
       final url = Uri.parse('$baseUrl/users/profile-image');
 
       if (kDebugMode) {
@@ -183,6 +197,7 @@ class ApiService {
   /// Remove profile image
   static Future<void> removeProfileImage() async {
     try {
+      await _ensureTokenLoaded();
       final url = Uri.parse('$baseUrl/users/profile-image');
 
       if (kDebugMode) {
@@ -219,6 +234,7 @@ class ApiService {
   /// Get user profile including image URL
   static Future<Map<String, dynamic>> getUserProfile() async {
     try {
+      await _ensureTokenLoaded();
       final url = Uri.parse('$baseUrl/users/me');
 
       if (kDebugMode) {
@@ -256,6 +272,7 @@ class ApiService {
     Map<String, dynamic> profileData,
   ) async {
     try {
+      await _ensureTokenLoaded();
       // This endpoint matches your user.routes.js /profile endpoint
       final url = Uri.parse('$baseUrl/users/profile');
 
