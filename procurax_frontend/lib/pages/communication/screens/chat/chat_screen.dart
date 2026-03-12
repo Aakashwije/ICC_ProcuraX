@@ -15,7 +15,7 @@ class ChatScreen extends StatefulWidget {
   final String currentUserId;
   final String otherUserId;
   final VoidCallback? onChatRead;
-
+  
   final String userName;
   final String userRole;
   final String avatarUrl;
@@ -31,6 +31,7 @@ class ChatScreen extends StatefulWidget {
     required this.userRole,
     required this.avatarUrl,
     this.isOnline = false,
+    
   });
 
   @override
@@ -49,7 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _typingDebounce;
   Timer? _typingPollTimer;
   Timer? _presenceTimer;
-  bool debugSimulateOtherTyping = false;
+ 
   bool _showScrollToBottom = false;
 
   final List<Message> messages = [];
@@ -106,7 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
           messages.add(
             Message(
-              id: msg['id'].toString(), // ✅ messageId from backend
+              id: msg['id'].toString(), // messageId from backend
               senderId: (msg['senderId'] ?? '').toString(),
               text: (msg['content'] ?? '').toString(),
               type: (msg['type'] ?? 'text').toString(),
@@ -321,7 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final old = List<Message>.from(messages);
 
     setState(() {
-      final index = messages.indexWhere((m) => m.id == messageId);
+     final index = messages.indexWhere((m) => m.id == messageId);
       if (index != -1) {
         final m = messages[index];
         messages[index] = Message(
@@ -331,7 +332,7 @@ class _ChatScreenState extends State<ChatScreen> {
           isMe: m.isMe,
           time: m.time,
           createdAt: m.createdAt,
-          isDeleted: true,
+          isDeleted: true, // 
         );
       }
     });
@@ -380,8 +381,8 @@ class _ChatScreenState extends State<ChatScreen> {
             fileUrl: message.fileUrl,
             isMe: message.isMe,
             time: message.time,
-            isDeleted: message.isDeleted,
             onOpenFile: _openAttachment,
+            isDeleted: message.isDeleted,
           ),
         ),
       );
@@ -456,7 +457,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _refreshOtherTyping() async {
-    if (kDebugMode && debugSimulateOtherTyping) return;
+    
     try {
       final typing = await _chatService.getTyping(
         chatId: widget.chatId,
@@ -469,18 +470,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _toggleDebugTyping() {
-    setState(() {
-      debugSimulateOtherTyping = !debugSimulateOtherTyping;
-      if (debugSimulateOtherTyping) {
-        isOtherTyping = true;
-      }
-    });
-    if (!debugSimulateOtherTyping) {
-      _refreshOtherTyping();
-    }
-  }
-
+  
   void _scheduleTypingUpdate(bool typingNow) {
     _typingDebounce?.cancel();
     if (!typingNow) {
@@ -833,19 +823,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: debugSimulateOtherTyping
-                  ? 'Disable simulate typing'
-                  : 'Simulate typing',
-              icon: Icon(
-                debugSimulateOtherTyping
-                    ? Icons.keyboard
-                    : Icons.keyboard_outlined,
-                color: AppColours.neutral,
-              ),
-              onPressed: _toggleDebugTyping,
-            ),
+          
           IconButton(
             icon: const Icon(Icons.video_call, color: AppColours.neutral),
             onPressed: () {},
