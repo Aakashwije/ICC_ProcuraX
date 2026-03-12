@@ -75,7 +75,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       // Add timeout to prevent hanging
       final response = await http
           .post(
-            Uri.parse('http://192.168.8.131:5002/api/buildassist'),
+            Uri.parse('http://localhost:5002/api/buildassist'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'message': userMessage}),
           )

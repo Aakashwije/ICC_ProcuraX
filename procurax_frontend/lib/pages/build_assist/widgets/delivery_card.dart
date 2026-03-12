@@ -16,7 +16,7 @@ class DeliveryCard extends StatelessWidget {
         children: [
           CircleAvatar(
             backgroundColor: AppColors.primaryBlue,
-            child: const Text("AI", style: TextStyle(color: Colors.white)),
+            child: const Text("BA", style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -71,7 +71,7 @@ class DeliveryCard extends StatelessWidget {
       children: [
         CircleAvatar(
           backgroundColor: AppColors.primaryBlue,
-          child: const Text("AI", style: TextStyle(color: Colors.white)),
+          child: const Text("BA", style: TextStyle(color: Colors.white)),
         ),
         const SizedBox(width: 10),
         Expanded(
