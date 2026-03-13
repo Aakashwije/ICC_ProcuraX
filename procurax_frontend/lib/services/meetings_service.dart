@@ -80,6 +80,22 @@ class MeetingsService {
     }
   }
 
+  /// Mark meeting as done/undone
+  static Future<Meeting> markMeetingDone(String id, {bool done = true}) async {
+    final response = await http.patch(
+      Uri.parse('${ApiService.baseUrl}$_endpoint/$id/done'),
+      headers: ApiService.authHeaders,
+      body: jsonEncode({'done': done}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(_extractErrorMessage(response));
+    }
+
+    final data = jsonDecode(response.body);
+    return Meeting.fromJson(data);
+  }
+
   /// Get all meetings
   static Future<List<Meeting>> getMeetings() async {
     final response = await http.get(

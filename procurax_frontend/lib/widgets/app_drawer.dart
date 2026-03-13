@@ -244,7 +244,7 @@ class AppDrawer extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "ProcuuraX",
+                          "ProcuraX",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
