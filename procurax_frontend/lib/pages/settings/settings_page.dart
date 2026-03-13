@@ -23,7 +23,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  // REMOVED: selectedTheme - no longer needed
   String selectedTimezone = "UTC";
   String role = "Project Manager";
   String department = "Construction";
@@ -206,6 +205,266 @@ Issue Description:
     } catch (e) {
       _showErrorSnackBar('Could not open email client');
     }
+  }
+
+  // ===== CONTACT SUPPORT DIALOG METHOD =====
+  void _showContactSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.support_agent,
+                color: const Color(0xFF1F4CCF),
+                size: 28,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Contact Support',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Need help with ProcuraX? Our support team is here to assist you.',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Email Support
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F4CCF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.email_outlined,
+                        color: Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Email Support',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'support@procurax.com',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.copy,
+                        color: const Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(
+                          const ClipboardData(text: 'support@procurax.com'),
+                        );
+                        Navigator.pop(context);
+                        _showSuccessSnackBar('Email copied to clipboard');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Phone Support
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F4CCF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.phone_outlined,
+                        color: Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Phone Support',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '+1 (800) 123-4567',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.copy,
+                        color: const Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(
+                          const ClipboardData(text: '+1 (800) 123-4567'),
+                        );
+                        Navigator.pop(context);
+                        _showSuccessSnackBar(
+                          'Phone number copied to clipboard',
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Response Time
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF1F4CCF).withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: const Color(0xFF1F4CCF),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Response Time',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Within 24 hours on weekdays',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Operating Hours
+              Text(
+                'Monday - Friday: 9:00 AM - 6:00 PM (EST)',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey[600]),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _launchContactSupport(); // Opens email client
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1F4CCF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Send Email'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // ===== PRIVACY POLICY METHODS =====
@@ -659,8 +918,6 @@ Issue Description:
     }
   }
 
-  // REMOVED: _handleThemeChange - no longer needed
-
   void _handleTimezoneChange(String value) {
     setState(() => selectedTimezone = value);
     _saveSettings();
@@ -785,8 +1042,6 @@ Issue Description:
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1F4CCF);
-
-    // REMOVED: ThemeNotifier usage - now using fixed light theme colors
 
     final bg = const Color(0xFFF8FAFC);
     final cardBg = Colors.white;
@@ -1029,7 +1284,7 @@ Issue Description:
                                     "Contact Support",
                                     fieldBg,
                                     blue,
-                                    onPressed: _launchContactSupport,
+                                    onPressed: _showContactSupportDialog,
                                   ),
                                   const SizedBox(height: 8),
                                   _aboutButton(
