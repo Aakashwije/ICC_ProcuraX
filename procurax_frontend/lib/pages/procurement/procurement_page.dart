@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 
 /*
@@ -75,7 +76,7 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
   */
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1F4CCF);
+    const Color primaryBlue = AppColors.primary;
     const Color lightBlue = Color(0xFF8DB3E2);
     const Color cardBg = Color(0xFFEAF2FB);
     const Color iconBg = Color(0xFFF3F7FF);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/auth_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
 
 class AccountApprovalDialog extends StatefulWidget {
@@ -69,13 +70,13 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1F4DF0).withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.check_circle_outline,
                     size: 48,
-                    color: Color(0xFF1F4DF0),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -85,7 +86,7 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B1E29),
+                    color: AppColors.neutral900,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -104,7 +105,7 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1F4DF0).withOpacity(0.05),
+                    color: AppColors.primary.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -137,7 +138,7 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1F4DF0),
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -172,8 +173,8 @@ class CreateAccountPage extends StatefulWidget {
 class _CreateAccountPageState extends State<CreateAccountPage> {
   bool _animateIn = false;
 
-  static const Color primaryColor = Color(0xFF1F4DF0);
-  static const Color neutralColor = Color(0xFF1B1E29);
+  static const Color primaryColor = AppColors.primary;
+  static const Color neutralColor = AppColors.neutral900;
   static const Color inputBg = Color(0xFFF4F6FF);
 
   final _emailC = TextEditingController();

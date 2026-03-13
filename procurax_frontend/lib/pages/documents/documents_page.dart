@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/widgets/custom_toast.dart';
@@ -13,7 +14,7 @@ import 'package:http/http.dart' as http;
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key});
 
-  static const Color primaryBlue = Color(0xFF1F4CCF);
+  static const Color primaryBlue = AppColors.primary;
 
   @override
   State<DocumentsPage> createState() => _DocumentsPageState();

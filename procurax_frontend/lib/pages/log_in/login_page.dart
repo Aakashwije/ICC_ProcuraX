@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/services/auth_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/custom_toast.dart';
 import '../../routes/app_routes.dart';
 
@@ -12,8 +13,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const Color primaryColor = Color(0xFF1F4DF0);
-  static const Color neutralColor = Color(0xFF1B1E29);
+  static const Color primaryColor = AppColors.primary;
+  static const Color neutralColor = AppColors.neutral900;
   static const Color inputBg = Color(0xFFF4F6FF);
 
   bool _animateIn = false;

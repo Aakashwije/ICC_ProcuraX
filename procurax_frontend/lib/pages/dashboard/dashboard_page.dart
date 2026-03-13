@@ -6,9 +6,12 @@ import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/meetings_service.dart';
 import 'package:procurax_frontend/services/procurement_service.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/widgets/custom_toast.dart';
 import 'package:procurax_frontend/widgets/permission_request_dialog.dart';
+import 'package:procurax_frontend/components/loading_state.dart';
+import 'package:procurax_frontend/components/empty_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum ProjectStatus { active, pending, completed }
@@ -21,9 +24,9 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  static const Color primaryBlue = Color(0xFF1F4CCF);
-  static const Color lightBlue = Color(0xFFE6EEF8);
-  static const Color neutralText = Color(0xFF6B7280);
+  static const Color primaryBlue = AppColors.primary;
+  static const Color lightBlue = AppColors.primaryLight;
+  static const Color neutralText = AppColors.neutral500;
 
   // Simulated real-time status
   final ProjectStatus projectStatus = ProjectStatus.active;
@@ -133,12 +136,17 @@ class _DashboardPageState extends State<DashboardPage> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Builder(
-                        builder: (context) => IconButton(
-                          onPressed: () => Scaffold.of(context).openDrawer(),
-                          icon: const Icon(
-                            Icons.menu_rounded,
-                            size: 30,
-                            color: primaryBlue,
+                        builder: (context) => Semantics(
+                          label: 'Open navigation menu',
+                          button: true,
+                          child: IconButton(
+                            tooltip: 'Menu',
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              size: 30,
+                              color: primaryBlue,
+                            ),
                           ),
                         ),
                       ),
@@ -158,6 +166,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
+                            tooltip: 'Notifications',
                             onPressed: () => Navigator.pushNamed(
                               context,
                               AppRoutes.notifications,
@@ -169,6 +178,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ),
                           IconButton(
+                            tooltip: 'Settings',
                             onPressed: () => Navigator.pushNamed(
                               context,
                               AppRoutes.settings,
@@ -361,22 +371,26 @@ class _DashboardPageState extends State<DashboardPage> {
       future: _recentTasksFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const LoadingState(
+            message: 'Loading tasks...',
+            fullScreen: false,
+          );
         }
         if (snapshot.hasError) {
-          return Text(
-            "Failed to load tasks",
-            style: const TextStyle(fontFamily: 'Poppins'),
-            textAlign: TextAlign.center,
+          return const EmptyState(
+            icon: Icons.error_outline,
+            title: 'Failed to load tasks',
+            subtitle: 'Pull down to refresh',
           );
         }
         final tasks = snapshot.data ?? [];
         final filteredTasks = _filterTasks(tasks);
         if (filteredTasks.isEmpty) {
-          return Text(
-            _isSearching ? "No tasks match your search" : "No tasks yet",
-            style: const TextStyle(fontFamily: 'Poppins'),
-            textAlign: TextAlign.center,
+          return EmptyState(
+            icon: _isSearching
+                ? Icons.search_off_rounded
+                : Icons.task_alt_outlined,
+            title: _isSearching ? 'No tasks match your search' : 'No tasks yet',
           );
         }
         return Column(

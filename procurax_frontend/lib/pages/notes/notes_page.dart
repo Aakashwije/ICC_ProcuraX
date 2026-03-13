@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/services/notes_service.dart';
 import 'package:procurax_frontend/models/note_model.dart';
+import 'package:procurax_frontend/components/loading_state.dart';
+import 'package:procurax_frontend/components/error_state.dart';
+import 'package:procurax_frontend/components/empty_state.dart';
 import 'add_note_page.dart';
 import 'edit_note_page.dart';
 import 'note_added_page.dart';
+import 'note_detail_page.dart';
 
 class NotesPage extends StatefulWidget {
   const NotesPage({super.key});
@@ -15,9 +20,9 @@ class NotesPage extends StatefulWidget {
 }
 
 class _NotesPageState extends State<NotesPage> {
-  static const Color primaryBlue = Color(0xFF1F4DF0);
-  static const Color lightBlue = Color(0xFFEAF1FF);
-  static const Color neutralText = Color(0xFF6B7280);
+  static const Color primaryBlue = AppColors.primary;
+  static const Color lightBlue = AppColors.primaryLight;
+  static const Color neutralText = AppColors.neutral500;
 
   late Future<List<Note>> _notesFuture;
   String _query = '';
@@ -57,7 +62,7 @@ class _NotesPageState extends State<NotesPage> {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: const Color(0xFF16A34A),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -199,12 +204,17 @@ class _NotesPageState extends State<NotesPage> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Builder(
-                        builder: (context) => IconButton(
-                          onPressed: () => Scaffold.of(context).openDrawer(),
-                          icon: const Icon(
-                            Icons.menu_rounded,
-                            size: 30,
-                            color: primaryBlue,
+                        builder: (context) => Semantics(
+                          label: 'Open navigation menu',
+                          button: true,
+                          child: IconButton(
+                            tooltip: 'Menu',
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              size: 30,
+                              color: primaryBlue,
+                            ),
                           ),
                         ),
                       ),
@@ -233,14 +243,12 @@ class _NotesPageState extends State<NotesPage> {
                   future: _notesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const LoadingState(message: 'Loading notes...');
                     }
                     if (snapshot.hasError) {
-                      return Center(
-                        child: Text(
-                          "Failed to load notes",
-                          style: const TextStyle(fontFamily: 'Poppins'),
-                        ),
+                      return ErrorState(
+                        message: 'Failed to load notes',
+                        onRetry: _refreshNotes,
                       );
                     }
                     final notes = snapshot.data ?? [];
@@ -267,6 +275,7 @@ class _NotesPageState extends State<NotesPage> {
 
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addNote,
+        tooltip: 'Create new note',
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.edit_note_rounded),
@@ -279,100 +288,111 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Widget _noteCard(Note note) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: lightBlue,
-                  borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(builder: (_) => NoteDetailPage(note: note)),
+        );
+        if (result == 'edit') {
+          _editNote(note);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: lightBlue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.sticky_note_2_outlined,
+                    color: primaryBlue,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.sticky_note_2_outlined,
-                  color: primaryBlue,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        note.title,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        note.content,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          color: neutralText,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Column(
                   children: [
-                    Text(
-                      note.title,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                    IconButton(
+                      onPressed: () => _editNote(note),
+                      icon: const Icon(
+                        Icons.edit_note_outlined,
+                        color: primaryBlue,
                       ),
+                      tooltip: "Edit",
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      note.content,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        color: neutralText,
-                      ),
+                    IconButton(
+                      onPressed: () => _deleteNote(note),
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      tooltip: "Delete",
                     ),
                   ],
                 ),
-              ),
-              Column(
-                children: [
-                  IconButton(
-                    onPressed: () => _editNote(note),
-                    icon: const Icon(
-                      Icons.edit_note_outlined,
-                      color: primaryBlue,
-                    ),
-                    tooltip: "Edit",
-                  ),
-                  IconButton(
-                    onPressed: () => _deleteNote(note),
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    tooltip: "Delete",
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _tagBadge(note.tag),
-              const SizedBox(width: 8),
-              if (note.hasAttachment)
-                _metaBadge(icon: Icons.attach_file, label: "Attachment"),
-              const Spacer(),
-              _metaBadge(
-                icon: Icons.access_time_rounded,
-                label:
-                    "${note.createdAt.hour.toString().padLeft(2, '0')}:${note.createdAt.minute.toString().padLeft(2, '0')}",
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _tagBadge(note.tag),
+                const SizedBox(width: 8),
+                if (note.hasAttachment)
+                  _metaBadge(icon: Icons.attach_file, label: "Attachment"),
+                const Spacer(),
+                _metaBadge(
+                  icon: Icons.access_time_rounded,
+                  label:
+                      "${note.createdAt.hour.toString().padLeft(2, '0')}:${note.createdAt.minute.toString().padLeft(2, '0')}",
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -441,78 +461,18 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Widget _emptySearchState() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: lightBlue.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.search_off_rounded, color: primaryBlue, size: 36),
-            SizedBox(height: 10),
-            Text(
-              "No results",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: primaryBlue,
-              ),
-            ),
-            SizedBox(height: 6),
-            Text(
-              "Try a different keyword",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Icons.search_off_rounded,
+      title: 'No results',
+      subtitle: 'Try a different keyword',
     );
   }
 
   Widget _emptyState() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: lightBlue.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.note_alt_outlined, color: primaryBlue, size: 36),
-            SizedBox(height: 10),
-            Text(
-              "No notes yet",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: primaryBlue,
-              ),
-            ),
-            SizedBox(height: 6),
-            Text(
-              "Tap New Note to create your first note",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Icons.note_alt_outlined,
+      title: 'No notes yet',
+      subtitle: 'Tap New Note to create your first note',
     );
   }
 
