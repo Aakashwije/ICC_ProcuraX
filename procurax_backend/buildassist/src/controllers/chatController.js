@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import path from "path";
 import { fileURLToPath } from "url";
+import mongoose from "mongoose";
 import { parseProcurementSheet } from "../services/procurementSheetService.js";
 import {
   fetchUserMeetings,
@@ -13,6 +14,7 @@ import {
   searchMeetings,
   getDashboardSummary
 } from "../services/dataFetchService.js";
+import Meeting from "../../../meetings/models/Meeting.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +45,88 @@ const enrichProcurementItems = async (items, userId) => {
   }));
 };
 
+const parseMeetingDetails = (message) => {
+  const lowerMessage = message.toLowerCase();
+  
+  // Extract title - look for "titled" or "called" or just the first part
+  let title = 'New Meeting';
+  const titleMatch = message.match(/(?:titled|called|named)\s+['"]([^'"]+)['"]/i) || 
+                    message.match(/meeting\s+(.+?)(?:\s+on|\s+at|\s+in|$)/i);
+  if (titleMatch) {
+    title = titleMatch[1].trim();
+  }
+
+  // Extract date - look for YYYY-MM-DD, MM/DD/YYYY, or day/month names (e.g., 23rd March)
+  let dateStr = null;
+  const dateMatch = message.match(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/);
+  if (dateMatch) {
+    dateStr = dateMatch[1];
+  } else {
+    // Detect patterns like "23rd March" or "March 23"
+    const monthNames = {
+      jan: 1, january: 1,
+      feb: 2, february: 2,
+      mar: 3, march: 3,
+      apr: 4, april: 4,
+      may: 5,
+      jun: 6, june: 6,
+      jul: 7, july: 7,
+      aug: 8, august: 8,
+      sep: 9, sept: 9, september: 9,
+      oct: 10, october: 10,
+      nov: 11, november: 11,
+      dec: 12, december: 12,
+    };
+
+    const monthDayMatch = message.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s*(\d{4})?/i);
+    if (monthDayMatch) {
+      const day = parseInt(monthDayMatch[1], 10);
+      const monthName = monthDayMatch[2].toLowerCase();
+      const year = monthDayMatch[3] ? parseInt(monthDayMatch[3], 10) : new Date().getFullYear();
+      const month = monthNames[monthName.toLowerCase()];
+      if (month) {
+        const paddedDay = String(day).padStart(2, '0');
+        const paddedMonth = String(month).padStart(2, '0');
+        dateStr = `${year}-${paddedMonth}-${paddedDay}`;
+      }
+    }
+  }
+
+  // Extract time - support 4pm, 4:30pm, 16:00, etc.
+  let timeStr = null;
+  const timeMatch = message.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)/i);
+  if (timeMatch) {
+    timeStr = timeMatch[1].trim();
+    // Normalize times like '4pm' -> '4:00 PM'
+    const simpleTimeMatch = timeStr.match(/^(\d{1,2})\s*(am|pm)$/i);
+    if (simpleTimeMatch) {
+      timeStr = `${simpleTimeMatch[1]}:00 ${simpleTimeMatch[2].toUpperCase()}`;
+    }
+  }
+
+  // Extract location - look for "in" or "at" followed by location
+  let location = null;
+  const locationMatch = message.match(/(?:in|at)\s+(.+?)(?:\s+on|\s+at|$)/i);
+  if (locationMatch) {
+    location = locationMatch[1].trim();
+  }
+
+  // Extract duration if mentioned (e.g., "for 1 hour")
+  let durationMinutes = 60; // default 1 hour
+  const durationMatch = message.match(/for\s+(\d+)\s*(hour|minute|min)/i);
+  if (durationMatch) {
+    const num = parseInt(durationMatch[1]);
+    const unit = durationMatch[2].toLowerCase();
+    if (unit.startsWith('hour')) {
+      durationMinutes = num * 60;
+    } else {
+      durationMinutes = num;
+    }
+  }
+
+  return { title, dateStr, timeStr, location, durationMinutes };
+};
+
 export const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
@@ -67,6 +151,67 @@ export const chatWithAI = async (req, res) => {
       .filter(w => w.length > 0 && !stopWords.includes(w));
     console.log('Parsed tokens:', tokens);
     const query = tokens.join(' ');
+
+    // ===== SCHEDULE MEETING =====
+    if (tokens.includes('schedule') || tokens.includes('create') || tokens.includes('new')) {
+      if (tokens.includes('meeting') || tokens.includes('meet')) {
+        console.log('🔍 Schedule meeting branch triggered');
+        
+        // Allow scheduling for all users (no authentication required).
+        // If userId is missing, owner will be left undefined.
+
+
+        const meetingDetails = parseMeetingDetails(message);
+        console.log('Parsed meeting details:', meetingDetails);
+
+        // Validate required fields
+        if (!meetingDetails.dateStr || !meetingDetails.timeStr) {
+          return res.json({
+            reply: "Please provide both date and time for the meeting. Example: 'schedule a meeting titled \"Project Review\" on 2026-03-15 at 2:00 PM in Conference Room'",
+          });
+        }
+
+        try {
+          // Parse date and time
+          const dateTimeStr = `${meetingDetails.dateStr} ${meetingDetails.timeStr}`;
+          const startTime = new Date(dateTimeStr);
+          
+          if (isNaN(startTime.getTime())) {
+            return res.json({
+              reply: "Invalid date or time format. Please use formats like '2026-03-15 2:00 PM' or '03/15/2026 14:00'",
+            });
+          }
+
+          const endTime = new Date(startTime.getTime() + meetingDetails.durationMinutes * 60000);
+
+          // Create the meeting
+          const newMeeting = new Meeting({
+            title: meetingDetails.title,
+            description: `Scheduled via BuildAssist: ${message}`,
+            location: meetingDetails.location,
+            startTime,
+            endTime,
+            priority: 'medium',
+            // If user is not authenticated, create meetings under a generic internal owner.
+            owner: userId || mongoose.Types.ObjectId(),
+          });
+
+          await newMeeting.save();
+
+          return res.json({
+            reply: `✅ Meeting scheduled successfully!\n\n📅 **${meetingDetails.title}**\n🕐 ${startTime.toLocaleString()} - ${endTime.toLocaleString()}\n📍 ${meetingDetails.location || 'No location specified'}`,
+            type: "meeting_scheduled"
+          });
+
+        } catch (error) {
+          console.error('Error scheduling meeting:', error);
+          return res.status(500).json({
+            reply: "Failed to schedule the meeting. Please try again.",
+            error: true
+          });
+        }
+      }
+    }
 
     // ===== MEETINGS =====
     if (tokens.includes('meeting') || tokens.includes('meetings') || tokens.includes('schedule') || tokens.includes('upcoming')) {
