@@ -6,6 +6,7 @@ import '../widgets/delivery_card.dart';
 import '../widgets/bottom_input.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/services/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -72,11 +73,20 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
     _scrollToBottom();
 
     try {
+      // Get auth token from ApiService (optional - not required)
+      final token = ApiService.token;
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
       // Add timeout to prevent hanging
       final response = await http
           .post(
-            Uri.parse('http://localhost:5002/api/buildassist'),
-            headers: {'Content-Type': 'application/json'},
+            Uri.parse(
+              'http://10.0.2.2:5002/api/buildassist',
+            ), // Android emulator
+            headers: headers,
             body: jsonEncode({'message': userMessage}),
           )
           .timeout(const Duration(seconds: 10));
@@ -84,45 +94,42 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 401) {
         final data = jsonDecode(response.body);
         print('Received data: $data');
 
         setState(() {
-          if (data['data'] != null) {
-            // Add the AI reply text first
-            if (data['reply'] != null) {
-              messages.add({
-                'type': 'ai',
-                'message': data['reply'],
-                'timestamp': _getCurrentTime(),
-                'showSuggestions': false,
-              });
-            }
+          final responseType = data['type'] ?? 'ai';
+          final reply = data['reply'] ?? 'No reply';
+          final responseData = data['data'];
 
-            // Then add the delivery data
-            if (data['data'] is List) {
-              final items = data['data'] as List;
-              for (var item in items) {
-                messages.add({
-                  'type': 'ai_delivery',
-                  'data': item,
-                  'timestamp': _getCurrentTime(),
-                });
-              }
-            } else {
-              messages.add({
-                'type': 'ai_delivery',
-                'data': data['data'],
-                'timestamp': _getCurrentTime(),
-              });
-            }
-          } else {
+          // Handle different response types
+          if (responseType == 'meetings_data' ||
+              responseType == 'tasks_data' ||
+              responseType == 'notes_data' ||
+              responseType == 'procurement_data') {
+            // Add message with data
+            messages.add({
+              'type': responseType,
+              'message': reply,
+              'data': responseData,
+              'timestamp': _getCurrentTime(),
+              'showSuggestions': false,
+            });
+          } else if (responseType == 'dashboard_data') {
             messages.add({
               'type': 'ai',
-              'message': data['reply'] ?? 'No reply',
+              'message': reply,
               'timestamp': _getCurrentTime(),
-              'showSuggestions': true,
+              'showSuggestions': false,
+            });
+          } else {
+            // Default AI message
+            messages.add({
+              'type': 'ai',
+              'message': reply,
+              'timestamp': _getCurrentTime(),
+              'showSuggestions': responseType == 'help',
             });
           }
           isLoading = false;
@@ -165,7 +172,23 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
   }
 
   void handleQuickAction(String action) {
-    sendMessage(action);
+    // Map button labels to BuildAssist queries
+    final queryMap = {
+      'Schedule': 'show upcoming meetings',
+      'Schedule Update': 'show upcoming meetings',
+      'Schedule Meetings': 'show upcoming meetings',
+      'Materials': 'show concrete status',
+      'Material Status': 'show concrete status',
+      'Progress': 'show progress status',
+      'Progress Report': 'show progress status',
+      'Team': 'show team members',
+      'Meetings': 'show upcoming meetings',
+      'Tasks': 'show pending tasks',
+      'Notes': 'show all notes',
+    };
+    
+    final query = queryMap[action] ?? action;
+    sendMessage(query);
   }
 
   @override
@@ -221,11 +244,59 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         const SizedBox(height: 20),
                       ],
                     );
-                  } else if (msg['type'] == 'ai_delivery') {
+                  } else if (msg['type'] == 'ai_delivery' ||
+                      msg['type'] == 'procurement_data') {
                     return Column(
                       children: [
                         DeliveryCard(data: msg['data']),
                         const SizedBox(height: 20),
+                      ],
+                    );
+                  } else if (msg['type'] == 'meetings_data' ||
+                      msg['type'] == 'tasks_data' ||
+                      msg['type'] == 'notes_data') {
+                    return Column(
+                      children: [
+                        // Show the reply text first
+                        AIMessage(
+                          message: msg['message'],
+                          timestamp: msg['timestamp'],
+                          showSuggestions: false,
+                          onSuggestionTap: handleQuickAction,
+                        ),
+                        const SizedBox(height: 12),
+                        // Then show the data as cards
+                        if (msg['data'] is List)
+                          ...(msg['data'] as List)
+                              .map(
+                                (item) => Column(
+                                  children: [
+                                    DeliveryCard(
+                                      data: Map<String, dynamic>.from(
+                                        item is Map
+                                            ? item
+                                            : {'title': item.toString()},
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                ),
+                              )
+                              .toList()
+                        else if (msg['data'] != null)
+                          Column(
+                            children: [
+                              DeliveryCard(
+                                data: Map<String, dynamic>.from(
+                                  msg['data'] is Map
+                                      ? msg['data']
+                                      : {'title': msg['data'].toString()},
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        const SizedBox(height: 8),
                       ],
                     );
                   } else {

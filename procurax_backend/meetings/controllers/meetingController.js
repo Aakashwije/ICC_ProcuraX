@@ -1,5 +1,6 @@
 import Meeting from "../models/Meeting.js";
 import { findConflicts, suggestNextSlot } from "../services/meetingService.js";
+import NotificationService from "../../notifications/notification.service.js";
 
 /**
  * ===========================
@@ -60,6 +61,18 @@ export const createMeeting = async (req, res) => {
       done,
       owner: req.userId,
     });
+
+    // Create notification for the meeting
+    try {
+      await NotificationService.createMeetingNotification(req.userId, {
+        meetingTitle: meeting.title,
+        meetingId: meeting._id,
+        startTime: meeting.startTime,
+        action: 'scheduled'
+      });
+    } catch (notifErr) {
+      console.error("Failed to create notification for meeting:", notifErr);
+    }
 
     res.status(201).json(meeting);
   } catch (err) {

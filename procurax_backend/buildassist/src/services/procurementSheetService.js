@@ -3,6 +3,7 @@ export const parseProcurementSheet = (rows) => {
   
   const procurementItems = [];
   let currentCategory = '';
+  let parentCategory = '';  // Track parent category
   
   console.log(`Processing ${rows.length} rows from sheet`);
   
@@ -18,6 +19,12 @@ export const parseProcurementSheet = (rows) => {
     if ((!row[0] || row[0] === '') && row[1] && row[1].trim() !== '') {
       // This is a category (like "Electrical", "Low Voltage System")
       currentCategory = row[1].trim();
+      
+      // Detect parent categories (top-level ones like "Electrical", "PLUMBING")
+      if (currentCategory.match(/^(Electrical|PLUMBING|HVAC|FIRE|CIVIL|Elevators|Generator|ELV)/i)) {
+        parentCategory = currentCategory.split(' ')[0];  // e.g., "Electrical" from "Electrical"
+      }
+      
       console.log(`Found category: ${currentCategory} at row ${i}`);
       continue;
     }
@@ -27,7 +34,8 @@ export const parseProcurementSheet = (rows) => {
     if (itemNumber.match(/^\d+$/)) {
       const item = {
         id: itemNumber,
-        category: currentCategory, // Uses the last seen category
+        category: currentCategory,
+        parentCategory: parentCategory,  // Add parent category
         material: row[1] || '',          // Column B: Material
         source: row[2] || '',             // Column C: Source (I/L)
         responsibility: row[3] || '',      // Column D: Responsibility

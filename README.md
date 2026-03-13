@@ -30,6 +30,7 @@ Core Modules
 - Smart Calendar
 - Notifications System
 - Document Storage
+- Communication Hub
 - AI Chatbot (BuildAssist)
 
 Users

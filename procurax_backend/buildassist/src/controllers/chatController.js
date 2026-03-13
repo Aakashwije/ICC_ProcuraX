@@ -2,18 +2,25 @@ import { google } from "googleapis";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseProcurementSheet } from "../services/procurementSheetService.js";
+import {
+  fetchUserMeetings,
+  fetchUserNotes,
+  fetchUserTasks,
+  fetchUpcomingMeetings,
+  fetchPendingTasks,
+  searchNotes,
+  searchTasks,
+  getDashboardSummary
+} from "../services/dataFetchService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let sheets;
 try {
-  
   const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS 
     ? path.join(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
     : path.join(__dirname, '../../credentials.json');
-  
-  console.log("Looking for credentials at:", credentialsPath);
   
   const auth = new google.auth.GoogleAuth({
     keyFile: credentialsPath,
@@ -25,10 +32,10 @@ try {
   console.error("❌ Failed to initialize Google Sheets:", error.message);
 }
 
-
 export const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
+    const userId = req.user?.id; // Optional - may be null
 
     if (!message) {
       return res.status(400).json({ 
@@ -37,203 +44,182 @@ export const chatWithAI = async (req, res) => {
       });
     }
 
-    console.log("Received message:", message);
-    console.log("Request body:", req.body);
+    const rawQuery = message.toLowerCase();
+    console.log('BuildAssist query received:', rawQuery);
 
-    // Check if sheets is initialized
-    if (!sheets || !process.env.GOOGLE_SHEET_ID) {
-      console.log("Sheets not configured:", { 
-        sheets: !!sheets, 
-        sheetId: process.env.GOOGLE_SHEET_ID 
-      });
+    // remove punctuation
+    const sanitized = rawQuery.replace(/[^a-z0-9\s]/g, '').trim();
+    // drop common filler words
+    const stopWords = ['show','please','me','give','list','items','details','about','the','a','an','of','for','you'];
+    const tokens = sanitized
+      .split(/\s+/)
+      .filter(w => w.length > 0 && !stopWords.includes(w));
+    console.log('Parsed tokens:', tokens);
+    const query = tokens.join(' ');
+
+    // ===== MEETINGS =====
+    if (tokens.includes('meeting') || tokens.includes('meetings') || tokens.includes('schedule') || tokens.includes('upcoming')) {
+      console.log('🔍 Meeting branch triggered');
+      const upcomingMeetings = await fetchUserMeetings(null);
+      console.log('   → meetings count', upcomingMeetings.length);
       return res.json({
-        reply: "Google Sheets is not configured. Please check your environment variables.",
-        error: true
+        reply: upcomingMeetings.length > 0 
+          ? `You have ${upcomingMeetings.length} upcoming meetings:`
+          : "You don't have any upcoming meetings.",
+        data: upcomingMeetings,
+        type: "meetings_data"
       });
     }
 
-    console.log("Fetching sheet data with ID:", process.env.GOOGLE_SHEET_ID);
-    
+    // ===== TASKS =====
+    if (tokens.includes('task') || tokens.includes('tasks') || tokens.includes('todo') || tokens.includes('pending') || tokens.includes('stuck') || tokens.includes('blocked')) {
+      console.log('🔍 Task branch triggered');
+      const pendingTasks = await fetchUserTasks(null);
+      console.log('   → pendingTasks count', pendingTasks.length);
+      return res.json({
+        reply: pendingTasks.length > 0 
+          ? `You have ${pendingTasks.length} pending tasks:`
+          : "No pending tasks. Great!",
+        data: pendingTasks,
+        type: "tasks_data"
+      });
+    }
+
+    // ===== NOTES =====
+    if (tokens.includes('note') || tokens.includes('notes') || tokens.includes('search')) {
+      console.log('🔍 Notes branch triggered');
+      const keywords = tokens.filter(w => !['note','notes','search','find'].includes(w));
+      const searchKeyword = keywords[0] || '';
+      const noteResults = await fetchUserNotes(null);
+      const filtered = searchKeyword 
+        ? noteResults.filter(note => note.title.toLowerCase().includes(searchKeyword) || note.content?.toLowerCase().includes(searchKeyword))
+        : noteResults;
+      console.log('   → noteResults count', filtered.length);
+      return res.json({
+        reply: filtered.length > 0 
+          ? `Found ${filtered.length} notes${searchKeyword ? ` matching "${searchKeyword}"` : ''}:`
+          : "No notes found.",
+        data: filtered.slice(0, 10),
+        type: "notes_data"
+      });
+    }
+
+    // ===== DASHBOARD =====
+    if (tokens.includes('summary') || tokens.includes('dashboard')) {
+      console.log('🔍 Dashboard branch triggered');
+      const summary = await getDashboardSummary(null);
+      console.log('   → dashboard summary', summary);
+      return res.json({
+        reply: `Dashboard Summary:\n• Meetings: ${summary?.summary?.totalMeetings || 0}\n• Notes: ${summary?.summary?.totalNotes || 0}\n• Pending: ${summary?.summary?.pendingTasks || 0}`,
+        data: summary,
+        type: "dashboard_data"
+      });
+    }
+
+    // ===== PROCUREMENT =====
+    if (!sheets || !process.env.GOOGLE_SHEET_ID) {
+      return res.json({ reply: "Procurement data unavailable", error: true });
+    }
+
     let rows = null;
-    
     try {
-      // First, get the sheet metadata to find the correct sheet name
-      console.log("Getting sheet metadata...");
-      const metadata = await sheets.spreadsheets.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID
-      });
-
-      // Get the first sheet name
-      const firstSheetName = metadata.data.sheets[0].properties.title;
-      console.log(`Using sheet: "${firstSheetName}"`);
-
-      // Now fetch data from that sheet
-      console.log("Fetching data from sheet...");
-      const response = await sheets.spreadsheets.values.get({
+      const metadata = await sheets.spreadsheets.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID });
+      const sheetName = metadata.data.sheets[0].properties.title;
+      const sheetResponse = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: `${firstSheetName}!A2:R1000`, // Start from row 2
+        range: `${sheetName}!A2:R1000`,
       });
-      
-      console.log("Sheet API call successful!");
-      console.log(`Sheet returned ${response.data.values?.length || 0} rows`);
-      rows = response.data.values;
-      
+      rows = sheetResponse.data.values;
     } catch (apiError) {
-      console.error("===== GOOGLE SHEETS API ERROR =====");
-      console.error("Error message:", apiError.message);
-      console.error("Error code:", apiError.code);
-      console.error("Error status:", apiError.status);
-      if (apiError.response) {
-        console.error("Response data:", apiError.response.data);
-      }
-      console.error("===================================");
-      
-      // Return a helpful error message
-      return res.status(500).json({ 
-        reply: "Cannot connect to Google Sheets. This might be due to network/firewall restrictions. Please check:\n1. Your internet connection\n2. Corporate firewall/VPN settings\n3. Google Sheets API access",
-        error: true,
-        details: apiError.message
-      });
+      return res.status(500).json({ reply: "Cannot access Google Sheets", error: true });
     }
 
     if (!rows || rows.length === 0) {
-      return res.json({ 
-        reply: "No procurement data found in the sheet." 
-      });
+      return res.json({ reply: "No procurement data found" });
     }
 
-    // Parse the procurement data
     const procurementItems = parseProcurementSheet(rows);
-    
-    console.log(`Parsed ${procurementItems.length} procurement items`);
-    if (procurementItems.length > 0) {
-      console.log("First item sample:", JSON.stringify(procurementItems[0], null, 2));
-    }
-
-    // If no items parsed, return error
     if (procurementItems.length === 0) {
-      return res.json({
-        reply: "Could not parse procurement data from the sheet. The sheet might have an unexpected format.",
-        error: true
-      });
+      return res.json({ reply: "Could not parse procurement data", error: true });
     }
 
-    // Handle different types of queries
-    const query = message.toLowerCase();
-    
-    // Check for specific material queries
-    if (query.includes('concrete')) {
-      const concreteItems = procurementItems.filter(item => 
-        item.material && item.material.toLowerCase().includes('concrete')
-      );
-      
-      if (concreteItems.length > 0) {
-        // Return all concrete items
+    // Procurement queries
+    console.log('🔍 Procurement tokens:', tokens);
+    console.log('   Total items parsed:', procurementItems.length);
+    if (procurementItems.length > 0) {
+      console.log('   First item sample:', JSON.stringify(procurementItems[0], null, 2));
+    }
+
+    if (tokens.includes('concrete')) {
+      const items = procurementItems.filter(item => item.material?.toLowerCase().includes('concrete'));
+      console.log('   concrete items count', items.length);
+      if (items.length > 0) {
         return res.json({
-          reply: `Found ${concreteItems.length} concrete-related items:`,
-          data: concreteItems.length === 1 ? concreteItems[0] : concreteItems,
+          reply: `Found ${items.length} concrete items:`,
+          data: items.slice(0, 10),
           type: "procurement_data"
         });
       }
     }
-    
-    // Check for delivery queries
-    if (query.includes('delivery') || query.includes('schedule')) {
-      const upcomingItems = procurementItems
-        .filter(item => item.revisedDelivery && item.revisedDelivery !== '')
-        .slice(0, 10);
-      
-      if (upcomingItems.length > 0) {
+
+    if (tokens.includes('delivery')) {
+      const items = procurementItems.filter(item => item.revisedDelivery).slice(0, 10);
+      console.log('   delivery items count', items.length);
+      if (items.length > 0) {
         return res.json({
-          reply: `Here are ${upcomingItems.length} upcoming deliveries:`,
-          data: upcomingItems.length === 1 ? upcomingItems[0] : upcomingItems,
+          reply: `Found ${items.length} deliveries:`,
+          data: items,
           type: "procurement_data"
         });
       }
     }
-    
-    // Check for category queries
-    const categories = ['electrical', 'plumbing', 'hvac', 'civil', 'fire', 'elevator', 'generator'];
-    for (const category of categories) {
-      if (query.includes(category)) {
-        const categoryItems = procurementItems.filter(item => 
-          item.category && item.category.toLowerCase().includes(category)
+
+    const categories = [
+      'electrical', 'low voltage', 'protection', 'plumbing', 'hvac', 'civil', 
+      'fire', 'elevator', 'concrete', 'glass', 'steel', 'generator', 'elv',
+      'lightning', 'detection', 'system'
+    ];
+    for (const cat of categories) {
+      if (tokens.includes(cat)) {
+        const items = procurementItems.filter(item => 
+          item.category?.toLowerCase().includes(cat) ||
+          item.parentCategory?.toLowerCase().includes(cat) ||
+          item.material?.toLowerCase().includes(cat)
         );
-        
-        if (categoryItems.length > 0) {
+        console.log(`   category/material "${cat}" matched, count`, items.length);
+        if (items.length > 0) {
           return res.json({
-            reply: `Found ${categoryItems.length} items in ${category} category:`,
-            data: categoryItems.slice(0, 10),
+            reply: `Found ${items.length} ${cat} items:`,
+            data: items.slice(0, 10),
             type: "procurement_data"
           });
         }
       }
     }
-    
-    // Check for status queries
-    if (query.includes('pending')) {
-      const pendingItems = procurementItems.filter(item => 
-        item.status && item.status.toLowerCase().includes('pending')
-      );
-      
-      if (pendingItems.length > 0) {
-        return res.json({
-          reply: `Found ${pendingItems.length} items with pending status:`,
-          data: pendingItems.slice(0, 10),
-          type: "procurement_data"
-        });
-      }
-    }
-    
-    if (query.includes('drawing')) {
-      const drawingPendingItems = procurementItems.filter(item => 
-        item.status && item.status.toLowerCase().includes('drawing pending')
-      );
-      
-      if (drawingPendingItems.length > 0) {
-        return res.json({
-          reply: `Found ${drawingPendingItems.length} items with drawing pending:`,
-          data: drawingPendingItems.slice(0, 10),
-          type: "procurement_data"
-        });
-      }
-    }
-    
-    // Search by material name
-    const searchResults = procurementItems.filter(item => 
-      item.material && item.material.toLowerCase().includes(query)
+
+    // generic search using any remaining token(s) – include both material and category
+    const searchResults = procurementItems.filter(item =>
+      tokens.some(term =>
+        item.material?.toLowerCase().includes(term) ||
+        item.category?.toLowerCase().includes(term)
+      )
     );
-    
+    console.log('   generic search results count', searchResults.length);
     if (searchResults.length > 0) {
       return res.json({
-        reply: `Found ${searchResults.length} items matching "${message}":`,
+        reply: `Found ${searchResults.length} items:`,
         data: searchResults.slice(0, 10),
         type: "procurement_data"
       });
     }
-    
-    // Default response with summary
-    const categories_summary = [...new Set(procurementItems.map(item => item.category).filter(c => c))];
+
     return res.json({
-      reply: `Found ${procurementItems.length} items in the procurement schedule.\n\nAvailable categories:\n${categories_summary.slice(0, 10).join(', ')}\n\nTry asking about:\n• Concrete\n• Deliveries\n• Pending items\n• Specific materials`,
-      data: procurementItems.slice(0, 5),
-      type: "procurement_data"
+      reply: `I can help with:\n• Meetings\n• Tasks\n• Notes\n• Procurement items\nWhat would you like?`,
+      type: "help"
     });
 
   } catch (error) {
-    console.error("===== FULL ERROR DETAILS =====");
-    console.error("Error message:", error.message);
-    console.error("Error code:", error.code);
-    console.error("Error status:", error.status);
-    if (error.response) {
-      console.error("Response data:", error.response.data);
-    }
-    console.error("Stack:", error.stack);
-    console.error("==============================");
-    
-    return res.status(500).json({ 
-      reply: "I'm having trouble accessing the procurement data right now. Please try again later.",
-      error: true 
-    });
+    console.error("Error:", error.message);
+    return res.status(500).json({ reply: "Error processing request", error: true });
   }
 };
