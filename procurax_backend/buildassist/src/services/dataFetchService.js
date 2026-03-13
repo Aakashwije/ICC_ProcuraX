@@ -214,6 +214,39 @@ export const searchTasks = async (userId, keyword) => {
 };
 
 /**
+ * Search meetings by keyword
+ */
+export const searchMeetings = async (userId, keyword) => {
+  try {
+    const filter = {
+      $or: [
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } }
+      ]
+    };
+    if (userId) filter.owner = userId;
+    const meetings = await Meeting.find(filter)
+      .sort({ startTime: 1 })
+      .limit(5)
+      .lean();
+    
+    return meetings.map(meeting => ({
+      id: meeting._id.toString(),
+      title: meeting.title,
+      description: meeting.description,
+      startTime: meeting.startTime,
+      endTime: meeting.endTime,
+      priority: meeting.priority,
+      done: meeting.done,
+      type: 'meeting'
+    }));
+  } catch (error) {
+    console.error("Error searching meetings:", error.message);
+    return [];
+  }
+};
+
+/**
  * Get dashboard summary for user
  */
 export const getDashboardSummary = async (userId) => {

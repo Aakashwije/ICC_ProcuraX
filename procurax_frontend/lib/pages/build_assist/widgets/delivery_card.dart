@@ -10,6 +10,23 @@ class DeliveryCard extends StatelessWidget {
 
   String _detectDataType() {
     if (data == null) return 'unknown';
+
+    // Prefer explicit type hints from the backend
+    final typeField = data!['type'];
+    if (typeField is String) {
+      switch (typeField.toLowerCase()) {
+        case 'meeting':
+          return 'meeting';
+        case 'task':
+          return 'task';
+        case 'note':
+          return 'note';
+        case 'procurement':
+          return 'procurement';
+      }
+    }
+
+    // Fallback heuristic detection
     if (data!.containsKey('startTime') && data!.containsKey('endTime')) {
       return 'meeting';
     }
@@ -109,6 +126,7 @@ class DeliveryCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Date/Time
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.access_time,
@@ -117,13 +135,28 @@ class DeliveryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Expanded(
-                      child: Text(
-                        _formatDateTime(data!['startTime']) ?? 'No time',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatDateTime(data!['startTime']),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (data!['endTime'] != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              "Ends: ${_formatDateTime(data!['endTime'])}",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.orange.shade600,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
@@ -253,7 +286,7 @@ class DeliveryCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        _formatDateTime(data!['dueDate']) ?? 'No due date',
+                        _formatDateTime(data!['dueDate']),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.blue.shade700,
@@ -374,7 +407,7 @@ class DeliveryCard extends StatelessWidget {
                 // Date
                 if (data!['createdAt'] != null)
                   Text(
-                    'Created: ${_formatDateTime(data!['createdAt']) ?? ""}',
+                    'Created: ${_formatDateTime(data!['createdAt'])}',
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   ),
               ],
@@ -498,6 +531,36 @@ class DeliveryCard extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                // Related Meetings
+                if (data!['relatedMeetings'] != null &&
+                    (data!['relatedMeetings'] as List).isNotEmpty)
+                  _buildRelatedSection(
+                    'Related Meetings',
+                    data!['relatedMeetings'],
+                    Icons.event,
+                    Colors.orange,
+                  ),
+
+                // Related Tasks
+                if (data!['relatedTasks'] != null &&
+                    (data!['relatedTasks'] as List).isNotEmpty)
+                  _buildRelatedSection(
+                    'Related Tasks',
+                    data!['relatedTasks'],
+                    Icons.task,
+                    Colors.blue,
+                  ),
+
+                // Related Notes
+                if (data!['relatedNotes'] != null &&
+                    (data!['relatedNotes'] as List).isNotEmpty)
+                  _buildRelatedSection(
+                    'Related Notes',
+                    data!['relatedNotes'],
+                    Icons.note,
+                    Colors.purple,
+                  ),
               ],
             ),
           ),
@@ -606,5 +669,50 @@ class DeliveryCard extends StatelessWidget {
     } catch (e) {
       return dateString;
     }
+  }
+
+  Widget _buildRelatedSection(
+    String title,
+    List items,
+    IconData icon,
+    Color color,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...items
+              .take(3)
+              .map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    item['title'] ??
+                        item['content']?.substring(0, 50) ??
+                        'Item',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ),
+              )
+              .toList(),
+        ],
+      ),
+    );
   }
 }
