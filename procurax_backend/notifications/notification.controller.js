@@ -1,6 +1,15 @@
 import mongoose from 'mongoose';
 import Notification from './notification.model.js';
 
+// Helper to convert userId string to ObjectId with error handling
+const toObjectId = (userId) => {
+  try {
+    return new mongoose.Types.ObjectId(userId);
+  } catch {
+    throw new Error('Invalid user ID format');
+  }
+};
+
 // Get all notifications for the authenticated user
 export const getUserNotifications = async (req, res) => {
   try {
@@ -9,14 +18,7 @@ export const getUserNotifications = async (req, res) => {
 
     console.log('[Notifications] Fetching for user:', userId);
 
-    // Convert string userId to ObjectId for MongoDB query
-    let ownerObjectId;
-    try {
-      ownerObjectId = new mongoose.Types.ObjectId(userId);
-    } catch (e) {
-      console.error('[Notifications] Invalid userId format:', userId);
-      return res.status(400).json({ error: 'Invalid user ID format' });
-    }
+    const ownerObjectId = toObjectId(userId);
 
     // Build query
     const query = { owner: ownerObjectId };
@@ -59,7 +61,7 @@ export const getNotificationById = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const notification = await Notification.findOne({ _id: id, owner: userId })
+    const notification = await Notification.findOne({ _id: id, owner: toObjectId(userId) })
       .populate('projectId', 'name status')
       .populate('taskId', 'title status')
       .populate('meetingId', 'title startTime');
@@ -131,7 +133,7 @@ export const markNotificationAsRead = async (req, res) => {
     const { id } = req.params;
 
     const notification = await Notification.findOneAndUpdate(
-      { _id: id, owner: userId },
+      { _id: id, owner: toObjectId(userId) },
       { isRead: true },
       { new: true }
     );
@@ -153,7 +155,7 @@ export const markAllAsRead = async (req, res) => {
     const userId = req.userId;
     const { type } = req.query;
 
-    const query = { owner: userId, isRead: false };
+    const query = { owner: toObjectId(userId), isRead: false };
     if (type) query.type = type;
 
     const result = await Notification.updateMany(
@@ -167,7 +169,8 @@ export const markAllAsRead = async (req, res) => {
     });
   } catch (error) {
     console.error('Error marking all as read:', error);
-    res.status(500).json({ error: 'Failed to update notifications' });
+    const statusCode = error.message?.includes('Invalid') ? 400 : 500;
+    res.status(statusCode).json({ error: error.message || 'Failed to update notifications' });
   }
 };
 
@@ -179,7 +182,7 @@ export const deleteNotification = async (req, res) => {
 
     const notification = await Notification.findOneAndDelete({
       _id: id,
-      owner: userId
+      owner: toObjectId(userId)
     });
 
     if (!notification) {
@@ -199,7 +202,7 @@ export const deleteAllNotifications = async (req, res) => {
     const userId = req.userId;
     const { type, isRead } = req.query;
 
-    const query = { owner: userId };
+    const query = { owner: toObjectId(userId) };
     if (type) query.type = type;
     if (isRead !== undefined) query.isRead = isRead === 'true';
 
@@ -220,8 +223,10 @@ export const getNotificationStats = async (req, res) => {
   try {
     const userId = req.userId;
 
+    const ownerObjId = toObjectId(userId);
+
     const stats = await Notification.aggregate([
-      { $match: { owner: userId } },
+      { $match: { owner: ownerObjId } },
       {
         $group: {
           _id: '$type',
@@ -234,7 +239,7 @@ export const getNotificationStats = async (req, res) => {
     ]);
 
     const priorityStats = await Notification.aggregate([
-      { $match: { owner: userId, isRead: false } },
+      { $match: { owner: ownerObjId, isRead: false } },
       {
         $group: {
           _id: '$priority',
@@ -244,7 +249,7 @@ export const getNotificationStats = async (req, res) => {
     ]);
 
     const totalUnread = await Notification.countDocuments({
-      owner: userId,
+      owner: ownerObjId,
       isRead: false
     });
 
@@ -270,7 +275,7 @@ export const bulkUpdateNotifications = async (req, res) => {
     }
 
     const result = await Notification.updateMany(
-      { _id: { $in: ids }, owner: userId },
+      { _id: { $in: ids }, owner: toObjectId(userId) },
       { isRead: isRead !== undefined ? isRead : true }
     );
 
@@ -296,7 +301,7 @@ export const bulkDeleteNotifications = async (req, res) => {
 
     const result = await Notification.deleteMany({
       _id: { $in: ids },
-      owner: userId
+      owner: toObjectId(userId)
     });
 
     res.json({

@@ -8,13 +8,24 @@
  */
 
 import NoteService from "../core/services/note.service.js";
+import NotificationService from "../notifications/notification.service.js";
 import { asyncHandler } from "../core/middleware/errorHandler.js";
+import logger from "../core/logging/logger.js";
 
 /**
  * POST /api/notes — Create a new note
  */
 export const createNote = asyncHandler(async (req, res) => {
   const note = await NoteService.createNote(req.body, req.userId);
+
+  // Fire-and-forget notification
+  NotificationService.createNoteNotification(req.userId, {
+    noteTitle: note.title,
+    noteId: note.id,
+    action: "created",
+    tag: note.tag,
+  }).catch((err) => logger.error("Note notification failed", { err: err.message }));
+
   res.status(201).json(note);
 });
 
@@ -39,6 +50,15 @@ export const getNotes = asyncHandler(async (req, res) => {
  */
 export const updateNote = asyncHandler(async (req, res) => {
   const note = await NoteService.updateNote(req.params.id, req.userId, req.body);
+
+  // Fire-and-forget notification
+  NotificationService.createNoteNotification(req.userId, {
+    noteTitle: note.title,
+    noteId: note.id,
+    action: "updated",
+    tag: note.tag,
+  }).catch((err) => logger.error("Note update notification failed", { err: err.message }));
+
   res.json(note);
 });
 

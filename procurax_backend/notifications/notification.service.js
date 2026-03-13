@@ -146,6 +146,61 @@ class NotificationService {
   }
 
   /**
+   * Create a note notification
+   */
+  static async createNoteNotification(userId, { noteTitle, noteId, action, tag }) {
+    const titles = {
+      created: `New Note: ${noteTitle}`,
+      updated: `Note Updated: ${noteTitle}`,
+      deleted: `Note Deleted: ${noteTitle}`
+    };
+
+    const messages = {
+      created: `A new note "${noteTitle}" has been created${tag ? ` with tag "${tag}"` : ''}.`,
+      updated: `The note "${noteTitle}" has been updated.`,
+      deleted: `The note "${noteTitle}" has been deleted.`
+    };
+
+    return await Notification.create({
+      owner: userId,
+      title: titles[action] || `Note: ${noteTitle}`,
+      message: messages[action] || `Update for note "${noteTitle}".`,
+      type: 'notes',
+      priority: 'low',
+      noteId,
+      metadata: { tag }
+    });
+  }
+
+  /**
+   * Create a communication notification
+   */
+  static async createCommunicationNotification(userId, { senderName, chatId, messagePreview, action = 'received' }) {
+    const titles = {
+      received: `New Message from ${senderName}`,
+      mention: `${senderName} mentioned you`,
+      missed: `Missed messages from ${senderName}`
+    };
+
+    const messages = {
+      received: messagePreview
+        ? `${senderName}: "${messagePreview.substring(0, 100)}${messagePreview.length > 100 ? '...' : ''}"`
+        : `You have a new message from ${senderName}.`,
+      mention: `${senderName} mentioned you in a conversation.`,
+      missed: `You have missed messages from ${senderName}.`
+    };
+
+    return await Notification.create({
+      owner: userId,
+      title: titles[action] || `Message from ${senderName}`,
+      message: messages[action] || `New message from ${senderName}.`,
+      type: 'communication',
+      priority: action === 'mention' ? 'high' : 'medium',
+      metadata: { chatId, senderName }
+    });
+  }
+
+  /**
    * Create a general notification
    */
   static async createGeneralNotification(userId, { title, message, priority = 'medium', metadata }) {
