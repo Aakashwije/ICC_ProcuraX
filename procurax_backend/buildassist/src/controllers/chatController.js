@@ -10,6 +10,7 @@ import {
   fetchPendingTasks,
   searchNotes,
   searchTasks,
+  searchMeetings,
   getDashboardSummary
 } from "../services/dataFetchService.js";
 
@@ -31,6 +32,16 @@ try {
 } catch (error) {
   console.error("❌ Failed to initialize Google Sheets:", error.message);
 }
+
+const enrichProcurementItems = async (items, userId) => {
+  return await Promise.all(items.map(async (item) => {
+    const materialName = item.material || '';
+    const relatedMeetings = await searchMeetings(userId, materialName);
+    const relatedTasks = await searchTasks(userId, materialName);
+    const relatedNotes = await searchNotes(userId, materialName);
+    return { ...item, relatedMeetings, relatedTasks, relatedNotes };
+  }));
+};
 
 export const chatWithAI = async (req, res) => {
   try {
@@ -154,9 +165,10 @@ export const chatWithAI = async (req, res) => {
       const items = procurementItems.filter(item => item.material?.toLowerCase().includes('concrete'));
       console.log('   concrete items count', items.length);
       if (items.length > 0) {
+        const enrichedItems = await enrichProcurementItems(items.slice(0, 10), userId);
         return res.json({
           reply: `Found ${items.length} concrete items:`,
-          data: items.slice(0, 10),
+          data: enrichedItems,
           type: "procurement_data"
         });
       }
@@ -166,9 +178,10 @@ export const chatWithAI = async (req, res) => {
       const items = procurementItems.filter(item => item.revisedDelivery).slice(0, 10);
       console.log('   delivery items count', items.length);
       if (items.length > 0) {
+        const enrichedItems = await enrichProcurementItems(items, userId);
         return res.json({
           reply: `Found ${items.length} deliveries:`,
-          data: items,
+          data: enrichedItems,
           type: "procurement_data"
         });
       }
@@ -188,9 +201,10 @@ export const chatWithAI = async (req, res) => {
         );
         console.log(`   category/material "${cat}" matched, count`, items.length);
         if (items.length > 0) {
+          const enrichedItems = await enrichProcurementItems(items.slice(0, 10), userId);
           return res.json({
             reply: `Found ${items.length} ${cat} items:`,
-            data: items.slice(0, 10),
+            data: enrichedItems,
             type: "procurement_data"
           });
         }
@@ -206,9 +220,10 @@ export const chatWithAI = async (req, res) => {
     );
     console.log('   generic search results count', searchResults.length);
     if (searchResults.length > 0) {
+      const enrichedItems = await enrichProcurementItems(searchResults.slice(0, 10), userId);
       return res.json({
         reply: `Found ${searchResults.length} items:`,
-        data: searchResults.slice(0, 10),
+        data: enrichedItems,
         type: "procurement_data"
       });
     }
