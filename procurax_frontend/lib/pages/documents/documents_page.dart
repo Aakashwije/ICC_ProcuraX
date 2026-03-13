@@ -290,25 +290,33 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
+                      // CANCEL BUTTON - IMPROVED VISIBILITY
                       Expanded(
-                        child: TextButton(
+                        child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(
+                              color: Colors.grey.shade400,
+                              width: 1.5,
                             ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            foregroundColor: Colors.grey.shade700,
                           ),
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Colors.grey.shade600,
                               fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
+
+                      // SELECT BUTTON - IMPROVED DISABLED STATE
                       Expanded(
                         child: ElevatedButton(
                           onPressed: selectedCategory == null
@@ -317,10 +325,25 @@ class _DocumentsPageState extends State<DocumentsPage> {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             backgroundColor: DocumentsPage.primaryBlue,
+                            disabledBackgroundColor: Colors.grey.shade300,
+                            foregroundColor: Colors.white,
+                            disabledForegroundColor: Colors.grey.shade600,
+                            elevation: selectedCategory == null ? 0 : 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          child: const Text(
-                            'Select',
-                            style: TextStyle(fontSize: 16),
+                          child: Text(
+                            selectedCategory == null
+                                ? 'Select a category'
+                                : 'Select',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: selectedCategory == null
+                                  ? Colors.grey.shade600
+                                  : Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -365,8 +388,11 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.photo_library),
-                  label: const Text('From Gallery (images)'),
+                  icon: const Icon(Icons.photo_library, color: Colors.white),
+                  label: const Text(
+                    'From Gallery (images)',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     backgroundColor: DocumentsPage.primaryBlue,
@@ -375,8 +401,11 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('From Device (any file)'),
+                  icon: const Icon(Icons.folder_open, color: Colors.white),
+                  label: const Text(
+                    'From Device (any file)',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     backgroundColor: DocumentsPage.primaryBlue,

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
@@ -22,7 +23,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String selectedTheme = "Light";
   String selectedTimezone = "UTC";
   String role = "Project Manager";
   String department = "Construction";
@@ -35,6 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? profileImageUrl;
 
   bool isLoading = false;
+  bool _isSaving = false;
 
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
@@ -46,8 +47,6 @@ class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController emailController;
   late TextEditingController phoneController;
 
-  Timer? _saveTimer;
-
   @override
   void initState() {
     super.initState();
@@ -58,24 +57,12 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController = TextEditingController(text: email);
     phoneController = TextEditingController(text: phone);
 
-    // Add listeners for auto-save
-    firstNameController.addListener(_onProfileDataChanged);
-    lastNameController.addListener(_onProfileDataChanged);
-    emailController.addListener(_onProfileDataChanged);
-    phoneController.addListener(_onProfileDataChanged);
-
-    // CRITICAL: Load token into ApiService first
+    // Load token into ApiService first
     _initializeSettings();
   }
 
   @override
   void dispose() {
-    _saveTimer?.cancel();
-    firstNameController.removeListener(_onProfileDataChanged);
-    lastNameController.removeListener(_onProfileDataChanged);
-    emailController.removeListener(_onProfileDataChanged);
-    phoneController.removeListener(_onProfileDataChanged);
-
     firstNameController.dispose();
     lastNameController.dispose();
     emailController.dispose();
@@ -91,8 +78,6 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final tokenFromPrefs = prefs.getString('auth_token');
-
-      // Also check if ApiService has token
       final apiServiceHasToken = ApiService.hasToken();
 
       if (kDebugMode) {
@@ -103,9 +88,6 @@ class _SettingsPageState extends State<SettingsPage> {
       return (tokenFromPrefs != null && tokenFromPrefs.isNotEmpty) ||
           apiServiceHasToken;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error checking login status: $e');
-      }
       return false;
     }
   }
@@ -117,91 +99,49 @@ class _SettingsPageState extends State<SettingsPage> {
       final token = prefs.getString('auth_token');
 
       if (token != null && token.isNotEmpty) {
-        // Manually set the token in ApiService
         await ApiService.setAuthToken(token);
         if (kDebugMode) {
           debugPrint(
-            '✅ Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
+            'Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
           );
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️ No token found in SharedPreferences');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error loading token: $e');
+        debugPrint('Error loading token: $e');
       }
     }
   }
 
   // Initialize settings - load token first, then load data
   Future<void> _initializeSettings() async {
-    // First, load token into ApiService
     await _loadTokenIntoApiService();
-
-    // Then check login status
     final isLoggedIn = await _isLoggedIn();
     if (kDebugMode) {
       debugPrint('🔑 Final login status: $isLoggedIn');
     }
-
-    // Load data
     _loadSettings();
     _loadUserProfile();
   }
 
-  // ===== AUTO-SAVE METHODS =====
-  void _onProfileDataChanged() {
-    // Cancel existing timer
-    _saveTimer?.cancel();
-
-    // Start new timer to save after 1.5 seconds of no typing
-    _saveTimer = Timer(const Duration(milliseconds: 1500), () {
-      // Check if user is logged in before auto-saving
-      _checkLoginAndSave();
-    });
-  }
-
-  Future<void> _checkLoginAndSave() async {
+  // ===== SAVE PROFILE METHOD =====
+  Future<void> _saveProfile() async {
     final isLoggedIn = await _isLoggedIn();
     if (!isLoggedIn) {
-      if (kDebugMode) {
-        debugPrint('⚠️ User not logged in - auto-save SKIPPED');
-      }
-      return; // IMPORTANT: This prevents the auto-save
-    }
-
-    // Only proceed if user is logged in
-    _autoSaveProfile();
-  }
-
-  Future<void> _autoSaveProfile() async {
-    // Double-check login status (safety)
-    final isLoggedIn = await _isLoggedIn();
-    if (!isLoggedIn) {
-      if (kDebugMode) {
-        debugPrint('⚠️ User not logged in - auto-save ABORTED');
-      }
+      _showErrorSnackBar('You must be logged in to save changes');
       return;
     }
 
-    // Check if data actually changed
     if (firstNameController.text == firstName &&
         lastNameController.text == lastName &&
         emailController.text == email &&
         phoneController.text == phone) {
+      _showSuccessSnackBar('No changes to save');
       return;
     }
 
-    if (kDebugMode) {
-      debugPrint('📝 Auto-saving profile changes...');
-      debugPrint('🔑 Token present before save: $isLoggedIn');
-    }
-
     setState(() {
-      isLoading = true;
+      _isSaving = true;
     });
 
     try {
@@ -219,31 +159,14 @@ class _SettingsPageState extends State<SettingsPage> {
           email = emailController.text;
           phone = phoneController.text;
         });
-
-        if (kDebugMode) {
-          debugPrint('✅ Profile saved successfully');
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Changes saved automatically'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        _showSuccessSnackBar('Profile saved successfully');
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Auto-save failed: $e');
-      }
+      _showErrorSnackBar('Failed to save profile: $e');
     } finally {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          _isSaving = false;
         });
       }
     }
@@ -282,6 +205,266 @@ Issue Description:
     } catch (e) {
       _showErrorSnackBar('Could not open email client');
     }
+  }
+
+  // ===== CONTACT SUPPORT DIALOG METHOD =====
+  void _showContactSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.support_agent,
+                color: const Color(0xFF1F4CCF),
+                size: 28,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Contact Support',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Need help with ProcuraX? Our support team is here to assist you.',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Email Support
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F4CCF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.email_outlined,
+                        color: Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Email Support',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'support@procurax.com',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.copy,
+                        color: const Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(
+                          const ClipboardData(text: 'support@procurax.com'),
+                        );
+                        Navigator.pop(context);
+                        _showSuccessSnackBar('Email copied to clipboard');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Phone Support
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F4CCF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.phone_outlined,
+                        color: Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Phone Support',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '+1 (800) 123-4567',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.copy,
+                        color: const Color(0xFF1F4CCF),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(
+                          const ClipboardData(text: '+1 (800) 123-4567'),
+                        );
+                        Navigator.pop(context);
+                        _showSuccessSnackBar(
+                          'Phone number copied to clipboard',
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Response Time
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF1F4CCF).withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: const Color(0xFF1F4CCF),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Response Time',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Within 24 hours on weekdays',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Operating Hours
+              Text(
+                'Monday - Friday: 9:00 AM - 6:00 PM (EST)',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey[600]),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _launchContactSupport(); // Opens email client
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1F4CCF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Send Email'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // ===== PRIVACY POLICY METHODS =====
@@ -408,16 +591,7 @@ Issue Description:
   // ===== PROFILE LOADING =====
   Future<void> _loadUserProfile() async {
     final isLoggedIn = await _isLoggedIn();
-    if (!isLoggedIn) {
-      if (kDebugMode) {
-        debugPrint('⚠️ User not logged in - skipping profile load');
-      }
-      return;
-    }
-
-    if (kDebugMode) {
-      debugPrint('📡 Fetching user profile with token...');
-    }
+    if (!isLoggedIn) return;
 
     try {
       final userProfile = await ApiService.getUserProfile();
@@ -427,7 +601,11 @@ Issue Description:
           lastName = userProfile['lastName'] ?? lastName;
           email = userProfile['email'] ?? email;
           phone = userProfile['phone'] ?? phone;
-          profileImageUrl = userProfile['profileImageUrl'];
+
+          final loadedUrl = userProfile['profileImageUrl'];
+          profileImageUrl = (loadedUrl is String && loadedUrl.isNotEmpty)
+              ? loadedUrl
+              : null;
 
           // Update controllers
           firstNameController.text = firstName;
@@ -435,10 +613,6 @@ Issue Description:
           emailController.text = email;
           phoneController.text = phone;
         });
-
-        if (kDebugMode) {
-          debugPrint('📱 User profile loaded: $userProfile');
-        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -448,8 +622,73 @@ Issue Description:
   }
 
   // ===== IMAGE PICKER METHODS =====
+  Future<bool> _ensurePhotoPermission() async {
+    if (!Platform.isAndroid && !Platform.isIOS) return true;
+
+    final primaryPermission = Platform.isIOS
+        ? Permission.photos
+        : Permission.photos;
+    final secondaryPermission = Platform.isAndroid ? Permission.storage : null;
+
+    final primaryStatus = await primaryPermission.status;
+    if (primaryStatus.isGranted) return true;
+
+    final primaryResult = await primaryPermission.request();
+    if (primaryResult.isGranted) return true;
+
+    if (secondaryPermission != null) {
+      final secondaryStatus = await secondaryPermission.status;
+      if (secondaryStatus.isGranted) return true;
+
+      final secondaryResult = await secondaryPermission.request();
+      if (secondaryResult.isGranted) return true;
+
+      if (secondaryResult.isPermanentlyDenied) {
+        _showPermissionSettingsDialog();
+      }
+    }
+
+    if (primaryResult.isPermanentlyDenied) {
+      _showPermissionSettingsDialog();
+    }
+
+    return false;
+  }
+
+  void _showPermissionSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Permission required'),
+          content: const Text(
+            'To pick an image, the app needs access to your photos. Please enable permission in Settings.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                openAppSettings();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _pickImageFromGallery() async {
     try {
+      if (!await _ensurePhotoPermission()) {
+        _showErrorSnackBar('Permission required to access gallery');
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 512,
@@ -461,23 +700,20 @@ Issue Description:
         setState(() {
           _profileImage = File(image.path);
         });
-
         await _uploadProfileImage();
-
-        if (kDebugMode) {
-          debugPrint('Image selected: ${image.path}');
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error picking image: $e');
-      }
       _showErrorSnackBar('Failed to pick image: $e');
     }
   }
 
   Future<void> _takePhotoWithCamera() async {
     try {
+      if (!await _ensurePhotoPermission()) {
+        _showErrorSnackBar('Permission required to use the camera');
+        return;
+      }
+
       final bool cameraAvailable = await _picker.supportsImageSource(
         ImageSource.camera,
       );
@@ -498,17 +734,9 @@ Issue Description:
         setState(() {
           _profileImage = File(image.path);
         });
-
         await _uploadProfileImage();
-
-        if (kDebugMode) {
-          debugPrint('Photo captured: ${image.path}');
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error taking photo: $e');
-      }
       _showErrorSnackBar('Failed to take photo: $e');
     }
   }
@@ -576,19 +804,13 @@ Issue Description:
       if (response['success'] == true) {
         if (mounted) {
           setState(() {
+            _profileImage = null;
             profileImageUrl = response['data']?['profileImageUrl'];
           });
           _showSuccessSnackBar('Profile picture updated successfully');
         }
-
-        if (kDebugMode) {
-          debugPrint('Profile image uploaded: $response');
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error uploading image: $e');
-      }
       _showErrorSnackBar('Failed to upload image: $e');
     } finally {
       if (mounted) {
@@ -614,14 +836,7 @@ Issue Description:
         });
         _showSuccessSnackBar('Profile picture removed');
       }
-
-      if (kDebugMode) {
-        debugPrint('Profile image removed');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error removing image: $e');
-      }
       _showErrorSnackBar('Failed to remove image: $e');
     } finally {
       if (mounted) {
@@ -668,17 +883,11 @@ Issue Description:
 
       if (!mounted) return;
       setState(() {
-        selectedTheme = settings['theme'] ?? 'Light';
         selectedTimezone = settings['timezone'] ?? 'UTC';
         role = settings['role'] ?? 'Project Manager';
         department = settings['department'] ?? 'Construction';
         defaultProject = settings['defaultProject'] ?? 'Tower A - Downtown';
       });
-
-      if (mounted) {
-        final themeNotifier = context.read<ThemeNotifier>();
-        themeNotifier.setTheme(selectedTheme);
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error loading settings from backend: $e');
@@ -693,7 +902,6 @@ Issue Description:
   Future<void> _saveSettings() async {
     try {
       await ApiService.updateMultipleSettings({
-        'theme': selectedTheme,
         'timezone': selectedTimezone,
         'role': role,
         'department': department,
@@ -708,13 +916,6 @@ Issue Description:
         debugPrint('Error saving settings: $e');
       }
     }
-  }
-
-  void _handleThemeChange(String value) {
-    setState(() => selectedTheme = value);
-    final themeNotifier = context.read<ThemeNotifier>();
-    themeNotifier.setTheme(value);
-    _saveSettings();
   }
 
   void _handleTimezoneChange(String value) {
@@ -842,14 +1043,11 @@ Issue Description:
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1F4CCF);
 
-    final themeNotifier = context.watch<ThemeNotifier>();
-    final isDark = themeNotifier.themeMode == ThemeMode.dark;
-
-    final bg = isDark ? Colors.black : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? Colors.grey[900]! : Colors.white;
-    final fieldBg = isDark ? Colors.grey[800]! : const Color(0xFFDCE7F1);
-    final blue = isDark ? Colors.white : primaryBlue;
-    final lightBlue = isDark ? Colors.grey[400]! : const Color(0xFF769BC5);
+    final bg = const Color(0xFFF8FAFC);
+    final cardBg = Colors.white;
+    final fieldBg = const Color(0xFFDCE7F1);
+    final blue = primaryBlue;
+    final lightBlue = const Color(0xFF769BC5);
 
     return Scaffold(
       drawer: AppDrawer(currentRoute: AppRoutes.settings),
@@ -940,6 +1138,45 @@ Issue Description:
                                     phoneController,
                                     fieldBg,
                                   ),
+
+                                  const SizedBox(height: 16),
+
+                                  // Save Profile Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: ElevatedButton(
+                                      onPressed: _isSaving
+                                          ? null
+                                          : _saveProfile,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: blue,
+                                        foregroundColor: Colors.white,
+                                        elevation: 2,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                      child: _isSaving
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Save Changes',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -996,23 +1233,16 @@ Issue Description:
                               ),
                             ),
 
-                            // Display Preferences Card
+                            // Display Preferences Card - TIMEZONE ONLY
                             _card(
                               cardBg,
                               blue,
                               lightBlue,
-                              Icons.palette_outlined,
-                              "Display Preferences",
-                              "Customize appearance",
+                              Icons.tune_outlined,
+                              "App Preferences",
+                              "Customize your application experience",
                               Column(
                                 children: [
-                                  _dropdown(
-                                    "Theme",
-                                    selectedTheme,
-                                    ["Light", "Dark"],
-                                    fieldBg,
-                                    _handleThemeChange,
-                                  ),
                                   _dropdown(
                                     "Timezone",
                                     selectedTimezone,
@@ -1054,7 +1284,7 @@ Issue Description:
                                     "Contact Support",
                                     fieldBg,
                                     blue,
-                                    onPressed: _launchContactSupport,
+                                    onPressed: _showContactSupportDialog,
                                   ),
                                   const SizedBox(height: 8),
                                   _aboutButton(

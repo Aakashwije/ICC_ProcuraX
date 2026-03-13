@@ -141,7 +141,7 @@ class ApiService {
   static Future<Map<String, dynamic>> uploadProfileImage(File imageFile) async {
     try {
       await _ensureTokenLoaded();
-      final url = Uri.parse('$baseUrl/users/profile-image');
+      final url = Uri.parse('$baseUrl/upload/profile-image');
 
       if (kDebugMode) {
         debugPrint('Uploading profile image to: $url');
@@ -198,7 +198,7 @@ class ApiService {
   static Future<void> removeProfileImage() async {
     try {
       await _ensureTokenLoaded();
-      final url = Uri.parse('$baseUrl/users/profile-image');
+      final url = Uri.parse('$baseUrl/upload/profile-image');
 
       if (kDebugMode) {
         debugPrint('Removing profile image from: $url');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
+import 'package:intl/intl.dart';
 
 class DeliveryCard extends StatelessWidget {
   final Map<String, dynamic>? data;
@@ -7,84 +8,407 @@ class DeliveryCard extends StatelessWidget {
 
   const DeliveryCard({super.key, this.data, this.type});
 
+  String _detectDataType() {
+    if (data == null) return 'unknown';
+    if (data!.containsKey('startTime') && data!.containsKey('endTime')) {
+      return 'meeting';
+    }
+    if (data!.containsKey('dueDate') && data!.containsKey('status')) {
+      return 'task';
+    }
+    if (data!.containsKey('content') && data!.containsKey('tag')) {
+      return 'note';
+    }
+    if (data!.containsKey('material') && data!.containsKey('category')) {
+      return 'procurement';
+    }
+    return 'unknown';
+  }
+
   @override
   Widget build(BuildContext context) {
     // Check if data is null or empty
     if (data == null || data!.isEmpty) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: AppColors.primaryBlue,
-            child: const Text("BA", style: TextStyle(color: Colors.white)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: const Text(
-                "No procurement data found.",
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ),
-        ],
-      );
+      return const SizedBox.shrink();
     }
 
-    // If it's a list of items (for category queries)
-    if (type == 'procurement_list' ||
-        type == 'search_results' ||
-        type == 'delivery_schedule') {
-      if (data is List) {
-        return Column(
-          children: (data as List)
-              .map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildProcurementItem(item),
-                ),
-              )
-              .toList(),
-        );
-      }
-    }
+    final dataType = _detectDataType();
 
-    // Single item view
-    return _buildProcurementItem(data!);
+    switch (dataType) {
+      case 'meeting':
+        return _buildMeetingCard();
+      case 'task':
+        return _buildTaskCard();
+      case 'note':
+        return _buildNoteCard();
+      case 'procurement':
+        return _buildProcurementCard();
+      default:
+        return _buildGenericCard();
+    }
   }
 
-  Widget _buildProcurementItem(Map<String, dynamic> item) {
+  Widget _buildMeetingCard() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
-          backgroundColor: AppColors.primaryBlue,
-          child: const Text("BA", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.orange.shade100,
+          child: const Icon(Icons.event, color: Colors.orange),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.orange.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),
                   blurRadius: 10,
-                  offset: const Offset(0, 6),
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Text(
+                  data!['title'] ?? 'Meeting',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Location
+                if (data!['location'] != null)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          data!['location'],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                // Date/Time
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: Colors.orange.shade600,
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        _formatDateTime(data!['startTime']) ?? 'No time',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (data!['description'] != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      data!['description'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade800,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskCard() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.blue.shade100,
+          child: const Icon(Icons.check_circle, color: Colors.blue),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.blue.shade200, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title + Status
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        data!['title'] ?? 'Task',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(
+                          data!['status'],
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        (data!['status'] ?? 'pending')
+                            .toString()
+                            .replaceAll('_', ' ')
+                            .toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _getStatusColor(data!['status']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Priority
+                if (data!['priority'] != null)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.flag,
+                        size: 14,
+                        color: _getPriorityColor(data!['priority']),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        (data!['priority']).toString().toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _getPriorityColor(data!['priority']),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                // Due Date
+                if (data!['dueDate'] != null)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: Colors.blue.shade600,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _formatDateTime(data!['dueDate']) ?? 'No due date',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                if (data!['description'] != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      data!['description'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade800,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoteCard() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.purple.shade100,
+          child: const Icon(Icons.note, color: Colors.purple),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.purple.shade200, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title + Tag
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        data!['title'] ?? 'Note',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                    if (data!['tag'] != null &&
+                        data!['tag'].toString().isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          data!['tag'],
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.purple.shade700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Content
+                if (data!['content'] != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      data!['content'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade800,
+                        height: 1.5,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                // Date
+                if (data!['createdAt'] != null)
+                  Text(
+                    'Created: ${_formatDateTime(data!['createdAt']) ?? ""}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProcurementCard() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundColor: AppColors.primaryBlue.withOpacity(0.2),
+          child: const Icon(Icons.shopping_cart, color: Color(0xFF2563EB)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.primaryBlue.withOpacity(0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -92,8 +416,8 @@ class DeliveryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Category
-                if (item['category'] != null &&
-                    item['category'].toString().isNotEmpty)
+                if (data!['category'] != null &&
+                    data!['category'].toString().isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -104,7 +428,7 @@ class DeliveryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      item['category'],
+                      data!['category'],
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.primaryBlue,
@@ -116,90 +440,59 @@ class DeliveryCard extends StatelessWidget {
 
                 // Material
                 Text(
-                  item['material'] ?? "Unknown Material",
+                  data!['material'] ?? "Unknown Material",
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // Source and Responsibility
-                if (item['source'] != null &&
-                    item['source'].toString().isNotEmpty)
-                  _buildInfoRow("Source:", item['source']),
-                if (item['responsibility'] != null &&
-                    item['responsibility'].toString().isNotEmpty)
-                  _buildInfoRow("Responsibility:", item['responsibility']),
-
-                const SizedBox(height: 12),
-
-                // Delivery Dates
-                if (item['revisedDelivery'] != null &&
-                    item['revisedDelivery'].toString().isNotEmpty)
-                  _buildDateRow(
-                    Icons.access_time,
-                    "Delivery:",
-                    _formatDate(item['revisedDelivery'].toString()),
-                  ),
-
-                if (item['requiredDate'] != null &&
-                    item['requiredDate'].toString().isNotEmpty)
-                  _buildDateRow(
-                    Icons.event,
-                    "Required:",
-                    _formatDate(item['requiredDate'].toString()),
-                  ),
-
-                const SizedBox(height: 12),
-
-                // Status Badge
-                if (item['status'] != null &&
-                    item['status'].toString().isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(
-                        item['status'].toString(),
-                      ).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                if (data!['source'] != null &&
+                    data!['source'].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      item['status'],
+                      'Source: ${data!['source']}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: _getStatusColor(item['status'].toString()),
-                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                if (data!['responsibility'] != null &&
+                    data!['responsibility'].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Responsibility: ${data!['responsibility']}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
                       ),
                     ),
                   ),
 
-                // Remarks/Warning
-                if (item['remarks'] != null &&
-                    item['remarks'].toString().isNotEmpty &&
-                    !item['remarks'].toString().contains('C Drawing'))
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningBg,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                // Delivery Dates
+                if (data!['revisedDelivery'] != null &&
+                    data!['revisedDelivery'].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
                     child: Row(
                       children: [
                         Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.orange,
-                          size: 18,
+                          Icons.local_shipping,
+                          size: 14,
+                          color: Colors.green.shade600,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            item['remarks'],
-                            style: const TextStyle(fontSize: 13),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDate(data!['revisedDelivery'].toString()),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -213,65 +506,105 @@ class DeliveryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-                color: Colors.grey,
-              ),
+  Widget _buildGenericCard() {
+    final title =
+        data!['title'] ?? data!['material'] ?? data!['name'] ?? 'Item';
+    final description = data!['description'] ?? data!['content'] ?? '';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundColor: AppColors.primaryBlue,
+          child: const Text("BA", style: TextStyle(color: Colors.white)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ],
+              ],
             ),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDateRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.orange),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-          ),
-          const SizedBox(width: 4),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed' || 'done':
         return Colors.green;
-      case 'pending':
-      case 'drawing pending':
+      case 'in_progress' || 'in progress':
         return Colors.orange;
-      case 'not confirmed':
-        return Colors.red;
-      default:
+      case 'pending' || 'todo':
         return Colors.blue;
+      default:
+        return Colors.grey;
     }
   }
 
-  String _formatDate(String dateStr) {
-    if (dateStr.contains('00:00:00')) {
-      return dateStr.split(' ')[0];
+  Color _getPriorityColor(String? priority) {
+    switch (priority?.toLowerCase()) {
+      case 'critical':
+        return Colors.red;
+      case 'high':
+        return Colors.orange;
+      case 'medium':
+        return Colors.blue;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
-    return dateStr;
+  }
+
+  String _formatDateTime(dynamic dateValue) {
+    if (dateValue == null) return '';
+    try {
+      final DateTime date = dateValue is String
+          ? DateTime.parse(dateValue)
+          : DateTime.fromMillisecondsSinceEpoch(dateValue as int);
+      return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+    } catch (e) {
+      return dateValue.toString();
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final DateTime date = DateTime.parse(dateString);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (e) {
+      return dateString;
+    }
   }
 }
