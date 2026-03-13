@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/components/loading_state.dart';
+import 'package:procurax_frontend/components/error_state.dart';
+import 'package:procurax_frontend/components/empty_state.dart';
 
 import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/pages/tasks/add_task_page.dart';
 import 'package:procurax_frontend/pages/tasks/edit_task_page.dart';
 import 'package:procurax_frontend/pages/tasks/task_added_page.dart';
+import 'package:procurax_frontend/pages/tasks/task_detail_page.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
 
 class TasksPage extends StatefulWidget {
@@ -16,9 +21,9 @@ class TasksPage extends StatefulWidget {
 }
 
 class _TasksPageState extends State<TasksPage> {
-  static const Color primaryBlue = Color(0xFF1F4DF0);
-  static const Color lightBlue = Color(0xFFEAF1FF);
-  static const Color neutralText = Color(0xFF6B7280);
+  static const Color primaryBlue = AppColors.primary;
+  static const Color lightBlue = AppColors.primaryLight;
+  static const Color neutralText = AppColors.neutral500;
 
   final TasksService _tasksService = TasksService();
   final List<Task> tasks = [];
@@ -176,7 +181,7 @@ class _TasksPageState extends State<TasksPage> {
                         Expanded(child: Text("Task deleted")),
                       ],
                     ),
-                    backgroundColor: const Color(0xFF16A34A),
+                    backgroundColor: AppColors.success,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -254,12 +259,18 @@ class _TasksPageState extends State<TasksPage> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Builder(
-                          builder: (context) => IconButton(
-                            onPressed: () => Scaffold.of(context).openDrawer(),
-                            icon: const Icon(
-                              Icons.menu_rounded,
-                              size: 30,
-                              color: primaryBlue,
+                          builder: (context) => Semantics(
+                            label: 'Open navigation menu',
+                            button: true,
+                            child: IconButton(
+                              tooltip: 'Menu',
+                              onPressed: () =>
+                                  Scaffold.of(context).openDrawer(),
+                              icon: const Icon(
+                                Icons.menu_rounded,
+                                size: 30,
+                                color: primaryBlue,
+                              ),
                             ),
                           ),
                         ),
@@ -298,9 +309,12 @@ class _TasksPageState extends State<TasksPage> {
                 // ================= BODY =================
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const LoadingState(message: 'Loading tasks...')
                       : (_errorMessage != null
-                            ? Center(child: Text(_errorMessage!))
+                            ? ErrorState(
+                                message: _errorMessage!,
+                                onRetry: _loadTasks,
+                              )
                             : TabBarView(
                                 children: [
                                   _taskListView(
@@ -324,6 +338,7 @@ class _TasksPageState extends State<TasksPage> {
 
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _addTask,
+          tooltip: 'Create new task',
           backgroundColor: primaryBlue,
           foregroundColor: Colors.white,
           icon: const Icon(Icons.add_task_rounded),
@@ -426,76 +441,18 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Widget _emptyStateBox({String label = "No tasks available"}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: lightBlue.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.task_alt_outlined, color: primaryBlue, size: 36),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: primaryBlue,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            "Tap New Task to create your first task",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: Icons.task_alt_outlined,
+      title: label,
+      subtitle: 'Tap New Task to create your first task',
     );
   }
 
   Widget _emptySearchState() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: lightBlue.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.search_off_rounded, color: primaryBlue, size: 36),
-            SizedBox(height: 10),
-            Text(
-              "No results",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: primaryBlue,
-              ),
-            ),
-            SizedBox(height: 6),
-            Text(
-              "Try a different keyword",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Icons.search_off_rounded,
+      title: 'No results',
+      subtitle: 'Try a different keyword',
     );
   }
 
@@ -521,216 +478,237 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Widget _taskCard(Task task, {bool showRestore = false}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // checkbox to mark complete
-              Checkbox(
-                value: task.completed,
-                onChanged: (_) => _toggleComplete(task),
-                activeColor: primaryBlue,
-              ),
-              const SizedBox(width: 4),
-
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: lightBlue,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.assignment_outlined,
-                  color: primaryBlue,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  task.title,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    decoration: task.completed
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
-                ),
-              ),
-
-              // menu: edit / archive / delete
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: neutralText),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                color: Colors.white,
-                elevation: 8,
-                offset: const Offset(0, 40),
-                onSelected: (value) async {
-                  if (value == "edit") {
-                    final updated = await Navigator.push<Task>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) {
-                          return EditTaskPage(task: task);
-                        },
-                      ),
-                    );
-                    if (updated != null) {
-                      setState(() {
-                        final idx = tasks.indexWhere((t) => t.id == updated.id);
-                        if (idx >= 0) tasks[idx] = updated;
-                      });
-                    } else {
-                      // if edit page modified the passed object in-place, just refresh
-                      setState(() {});
-                    }
-                  }
-                  if (value == "archive") {
-                    final index = tasks.indexWhere((t) => t.id == task.id);
-                    if (index == -1) return;
-                    final backup = tasks[index];
-                    setState(
-                      () => tasks[index] = task.copyWith(isArchived: true),
-                    );
-                    try {
-                      await _tasksService.archiveTask(task.id);
-                      await _loadTasks();
-                    } catch (err) {
-                      if (!mounted) return;
-                      setState(() => tasks[index] = backup);
-                    }
-                  }
-                  if (value == "restore") {
-                    try {
-                      await _tasksService.restoreTask(task.id);
-                      await _loadTasks();
-                    } catch (err) {
-                      if (!mounted) return;
-                    }
-                  }
-                  if (value == "delete") _confirmDelete(task);
-                },
-                itemBuilder: (_) => [
-                  if (!showRestore)
-                    PopupMenuItem(
-                      value: "edit",
-                      child: Row(
-                        children: const [
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                            color: neutralText,
-                          ),
-                          SizedBox(width: 10),
-                          Text("Edit"),
-                        ],
-                      ),
-                    ),
-                  if (!showRestore)
-                    PopupMenuItem(
-                      value: "archive",
-                      child: Row(
-                        children: const [
-                          Icon(
-                            Icons.archive_outlined,
-                            size: 18,
-                            color: neutralText,
-                          ),
-                          SizedBox(width: 10),
-                          Text("Archive"),
-                        ],
-                      ),
-                    ),
-                  if (showRestore)
-                    PopupMenuItem(
-                      value: "restore",
-                      child: Row(
-                        children: const [
-                          Icon(
-                            Icons.restore_outlined,
-                            size: 18,
-                            color: neutralText,
-                          ),
-                          SizedBox(width: 10),
-                          Text("Restore"),
-                        ],
-                      ),
-                    ),
-                  PopupMenuItem(
-                    value: "delete",
-                    child: Row(
-                      children: const [
-                        Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                        SizedBox(width: 10),
-                        Text(
-                          "Delete",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-          Text(
-            task.description,
-            style: const TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              color: neutralText,
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(builder: (_) => TaskDetailPage(task: task)),
+        );
+        if (result == 'edit') {
+          final updated = await Navigator.push<Task>(
+            context,
+            MaterialPageRoute(builder: (_) => EditTaskPage(task: task)),
+          );
+          if (updated != null) _loadTasks();
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
             ),
-          ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // checkbox to mark complete
+                Checkbox(
+                  value: task.completed,
+                  onChanged: (_) => _toggleComplete(task),
+                  activeColor: primaryBlue,
+                ),
+                const SizedBox(width: 4),
 
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                task.dueDate == null
-                    ? "No due date"
-                    : "${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}",
-                style: const TextStyle(fontSize: 12, color: neutralText),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: lightBlue,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.assignment_outlined,
+                    color: primaryBlue,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      decoration: task.completed
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+                ),
+
+                // menu: edit / archive / delete
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: neutralText),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  color: Colors.white,
+                  elevation: 8,
+                  offset: const Offset(0, 40),
+                  onSelected: (value) async {
+                    if (value == "edit") {
+                      final updated = await Navigator.push<Task>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) {
+                            return EditTaskPage(task: task);
+                          },
+                        ),
+                      );
+                      if (updated != null) {
+                        setState(() {
+                          final idx = tasks.indexWhere(
+                            (t) => t.id == updated.id,
+                          );
+                          if (idx >= 0) tasks[idx] = updated;
+                        });
+                      } else {
+                        // if edit page modified the passed object in-place, just refresh
+                        setState(() {});
+                      }
+                    }
+                    if (value == "archive") {
+                      final index = tasks.indexWhere((t) => t.id == task.id);
+                      if (index == -1) return;
+                      final backup = tasks[index];
+                      setState(
+                        () => tasks[index] = task.copyWith(isArchived: true),
+                      );
+                      try {
+                        await _tasksService.archiveTask(task.id);
+                        await _loadTasks();
+                      } catch (err) {
+                        if (!mounted) return;
+                        setState(() => tasks[index] = backup);
+                      }
+                    }
+                    if (value == "restore") {
+                      try {
+                        await _tasksService.restoreTask(task.id);
+                        await _loadTasks();
+                      } catch (err) {
+                        if (!mounted) return;
+                      }
+                    }
+                    if (value == "delete") _confirmDelete(task);
+                  },
+                  itemBuilder: (_) => [
+                    if (!showRestore)
+                      PopupMenuItem(
+                        value: "edit",
+                        child: Row(
+                          children: const [
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: neutralText,
+                            ),
+                            SizedBox(width: 10),
+                            Text("Edit"),
+                          ],
+                        ),
+                      ),
+                    if (!showRestore)
+                      PopupMenuItem(
+                        value: "archive",
+                        child: Row(
+                          children: const [
+                            Icon(
+                              Icons.archive_outlined,
+                              size: 18,
+                              color: neutralText,
+                            ),
+                            SizedBox(width: 10),
+                            Text("Archive"),
+                          ],
+                        ),
+                      ),
+                    if (showRestore)
+                      PopupMenuItem(
+                        value: "restore",
+                        child: Row(
+                          children: const [
+                            Icon(
+                              Icons.restore_outlined,
+                              size: 18,
+                              color: neutralText,
+                            ),
+                            SizedBox(width: 10),
+                            Text("Restore"),
+                          ],
+                        ),
+                      ),
+                    PopupMenuItem(
+                      value: "delete",
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            "Delete",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 6),
+            Text(
+              task.description,
+              style: const TextStyle(
+                fontSize: 13,
+                fontFamily: 'Poppins',
+                color: neutralText,
               ),
-            ],
-          ),
+            ),
 
-          const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  task.dueDate == null
+                      ? "No due date"
+                      : "${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}",
+                  style: const TextStyle(fontSize: 12, color: neutralText),
+                ),
+              ],
+            ),
 
-          Row(
-            children: [
-              _PriorityBadge(priority: task.priority),
-              const SizedBox(width: 8),
-              _StatusChip(status: task.status),
-            ],
-          ),
-        ],
+            const SizedBox(height: 10),
+
+            Row(
+              children: [
+                _PriorityBadge(priority: task.priority),
+                const SizedBox(width: 8),
+                _StatusChip(status: task.status),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

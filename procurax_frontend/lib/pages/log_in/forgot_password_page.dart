@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:procurax_frontend/services/auth_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -13,11 +14,11 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     with SingleTickerProviderStateMixin {
-  static const Color primaryColor = Color(0xFF1F4DF0);
-  static const Color neutralColor = Color(0xFF1B1E29);
-  static const Color inputBg = Color(0xFFF4F6FF);
-  static const Color successGreen = Color(0xFF10B981);
-  static const Color dangerRed = Color(0xFFEF4444);
+  static const Color primaryColor = AppColors.primary;
+  static const Color neutralColor = AppColors.neutral900;
+  static const Color inputBg = AppColors.neutral100;
+  static const Color successGreen = AppColors.success;
+  static const Color dangerRed = AppColors.error;
 
   final AuthService _authService = AuthService();
 

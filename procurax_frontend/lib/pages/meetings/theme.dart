@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 
-/// Primary blue used across the app
-const primaryBlue = Color(0xFF1E40AF);
+/// Primary blue used across the app — delegates to the design system
+const primaryBlue = AppColors.primary;
 
 /// Light blue used for input backgrounds & FAB
 const lightBlue = Color(0xFFE6EFF8);
@@ -11,7 +12,7 @@ const greyText = Color(0xFF6B7280);
 
 /// Global application theme
 final appTheme = ThemeData(
-  fontFamily: 'Inter', // Matches design font
+  fontFamily: 'Poppins', // Matches design font
   scaffoldBackgroundColor: Colors.white,
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.white,

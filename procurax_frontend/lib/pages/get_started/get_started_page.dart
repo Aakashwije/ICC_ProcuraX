@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
+import '../../theme/app_theme.dart';
 
 class GetStartedPage extends StatelessWidget {
   const GetStartedPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1F4CCF);
+    const Color primaryBlue = AppColors.primary;
     const Color lightBlueText = Color(0xFF8FA3DD);
 
     return Scaffold(

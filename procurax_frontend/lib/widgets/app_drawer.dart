@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/api_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 
 class LogoutConfirmationDialog extends StatefulWidget {
   const LogoutConfirmationDialog({super.key});
@@ -102,7 +103,7 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B1E29),
+                    color: AppColors.neutral900,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -129,7 +130,7 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(
-                            color: Color(0xFF1F4DF0),
+                            color: AppColors.primary,
                             width: 2,
                           ),
                           shape: RoundedRectangleBorder(
@@ -141,7 +142,7 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1F4DF0),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -221,10 +222,7 @@ class AppDrawer extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF1F4DF0),
-                        width: 1,
-                      ),
+                      border: Border.all(color: AppColors.primary, width: 1),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
@@ -248,7 +246,7 @@ class AppDrawer extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: Color(0xFF1F4DF0),
+                            color: AppColors.primary,
                           ),
                         ),
 
@@ -383,41 +381,60 @@ class _DrawerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? Colors.blue.shade50 : Colors.transparent,
+    return Semantics(
+      button: true,
+      label:
+          '$title${badge != null ? ', $badge items' : ''}${selected ? ', selected' : ''}',
+      child: Tooltip(
+        message: title,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color ?? Colors.grey.shade700),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: color ?? Colors.black87,
-                ),
-              ),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.primaryLight : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
             ),
-            if (badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color:
+                      color ??
+                      (selected ? AppColors.primary : Colors.grey.shade700),
                 ),
-                child: Text(
-                  badge!,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color:
+                          color ??
+                          (selected ? AppColors.primary : Colors.black87),
+                    ),
+                  ),
                 ),
-              ),
-          ],
+                if (badge != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge!,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

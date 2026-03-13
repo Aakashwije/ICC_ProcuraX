@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'routes/app_routes.dart';
 import 'services/api_service.dart';
+import 'theme/app_theme.dart';
 
 import 'pages/get_started/get_started_page.dart';
 import 'pages/procurement/procurement_page.dart';
@@ -46,37 +47,67 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             navigatorKey: navigatorKey,
             themeMode: themeNotifier.themeMode,
-            theme: ThemeData.light(),
-            darkTheme: ThemeData.dark(),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
 
             // ✅ Correct initial route
             initialRoute: ApiService.hasToken
                 ? AppRoutes.dashboard
                 : AppRoutes.getStarted,
 
-            routes: {
-              AppRoutes.getStarted: (context) => const GetStartedPage(),
-              AppRoutes.login: (context) => const LoginPage(),
-              AppRoutes.createAccount: (context) => const CreateAccountPage(),
-              AppRoutes.forgotPassword: (context) => const ForgotPasswordPage(),
-              AppRoutes.procurement: (context) =>
-                  const AuthGate(child: ProcurementSchedulePage()),
-              AppRoutes.dashboard: (context) =>
-                  const AuthGate(child: DashboardPage()),
-              AppRoutes.settings: (context) =>
-                  const AuthGate(child: SettingsPage()),
-              AppRoutes.notifications: (context) =>
-                  const AuthGate(child: NotificationsPage()),
-              AppRoutes.tasks: (context) => const AuthGate(child: TasksPage()),
-              AppRoutes.buildAssist: (context) =>
-                  const AuthGate(child: BuildAssistPage()),
-              AppRoutes.notes: (context) => const AuthGate(child: NotesPage()),
-              AppRoutes.communication: (context) =>
-                  const AuthGate(child: CommunicationPage()),
-              AppRoutes.meetings: (context) =>
-                  const AuthGate(child: MeetingsPage()),
-              AppRoutes.documents: (context) =>
-                  const AuthGate(child: DocumentsPage()),
+            onGenerateRoute: (settings) {
+              final routes = <String, Widget Function()>{
+                AppRoutes.getStarted: () => const GetStartedPage(),
+                AppRoutes.login: () => const LoginPage(),
+                AppRoutes.createAccount: () => const CreateAccountPage(),
+                AppRoutes.forgotPassword: () => const ForgotPasswordPage(),
+                AppRoutes.procurement: () =>
+                    const AuthGate(child: ProcurementSchedulePage()),
+                AppRoutes.dashboard: () =>
+                    const AuthGate(child: DashboardPage()),
+                AppRoutes.settings: () => const AuthGate(child: SettingsPage()),
+                AppRoutes.notifications: () =>
+                    const AuthGate(child: NotificationsPage()),
+                AppRoutes.tasks: () => const AuthGate(child: TasksPage()),
+                AppRoutes.buildAssist: () =>
+                    const AuthGate(child: BuildAssistPage()),
+                AppRoutes.notes: () => const AuthGate(child: NotesPage()),
+                AppRoutes.communication: () =>
+                    const AuthGate(child: CommunicationPage()),
+                AppRoutes.meetings: () => const AuthGate(child: MeetingsPage()),
+                AppRoutes.documents: () =>
+                    const AuthGate(child: DocumentsPage()),
+              };
+
+              final builder = routes[settings.name];
+              if (builder == null) return null;
+
+              return PageRouteBuilder(
+                settings: settings,
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    builder(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      const curve = Curves.easeInOutCubic;
+                      final fadeAnim = CurvedAnimation(
+                        parent: animation,
+                        curve: curve,
+                      );
+                      final slideAnim = Tween<Offset>(
+                        begin: const Offset(0.05, 0),
+                        end: Offset.zero,
+                      ).animate(fadeAnim);
+                      return FadeTransition(
+                        opacity: fadeAnim,
+                        child: SlideTransition(
+                          position: slideAnim,
+                          child: child,
+                        ),
+                      );
+                    },
+                transitionDuration: AppAnimations.normal,
+                reverseTransitionDuration: AppAnimations.fast,
+              );
             },
           );
         },

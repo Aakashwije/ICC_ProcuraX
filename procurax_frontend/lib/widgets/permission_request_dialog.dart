@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/permission_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 
 class PermissionRequestDialog extends StatefulWidget {
   final VoidCallback onPermissionsGranted;
@@ -109,14 +110,14 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.security, size: 48, color: Color(0xFF1F4DF0)),
+            const Icon(Icons.security, size: 48, color: AppColors.primary),
             const SizedBox(height: 16),
             const Text(
               'App Permissions Required',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F4DF0),
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -161,7 +162,7 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
               child: ElevatedButton(
                 onPressed: _isRequesting ? null : _requestAllPermissions,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1F4DF0),
+                  backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -195,7 +196,7 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
                 onPressed: _isRequesting ? null : () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF1F4DF0)),
+                  side: const BorderSide(color: AppColors.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -203,7 +204,7 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
                 child: const Text(
                   'Skip for Now',
                   style: TextStyle(
-                    color: Color(0xFF1F4DF0),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
@@ -223,7 +224,7 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
   }) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF1F4DF0), size: 24),
+        Icon(icon, color: AppColors.primary, size: 24),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

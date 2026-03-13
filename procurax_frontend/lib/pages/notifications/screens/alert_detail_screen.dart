@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 import '../models/alert_model.dart';
 import '../widgets/priority_badge.dart';
 import '../utils/constants.dart';
@@ -123,7 +124,7 @@ class AlertDetailScreen extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1F4CCF),
+                      backgroundColor: theme.AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

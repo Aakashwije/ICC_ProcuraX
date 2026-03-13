@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 
 /// Enum representing the type of toast message
 enum ToastType { success, error, warning, info }
 
 /// A beautiful custom toast widget with animations and icons
 class CustomToast {
-  static const Color primaryBlue = Color(0xFF1F4CCF);
+  static const Color primaryBlue = AppColors.primary;
 
   /// Shows a beautiful animated toast message
   static void show(
