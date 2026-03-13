@@ -4,6 +4,7 @@
 */
 import mongoose from "mongoose";
 import Task from "./tasks.model.js";
+import NotificationService from "../notifications/notification.service.js";
 
 /*
   In-memory fallback store, keyed by owner.
@@ -103,6 +104,18 @@ export const createTask = async (req, res) => {
       ...buildTaskPayload(req, { title: body.title }),
       owner: req.userId,
     });
+
+    // Create notification for the task owner
+    try {
+      await NotificationService.createTaskNotification(req.userId, {
+        taskTitle: task.title,
+        taskId: task._id,
+        action: 'created'
+      });
+    } catch (notifErr) {
+      console.error("Failed to create notification for task:", notifErr);
+      // Don't fail the request if notification creation fails
+    }
 
     res.status(201).json(normalizeTask(task));
   } catch (err) {
@@ -212,6 +225,7 @@ export const updateTask = async (req, res) => {
     /*
       DB mode: update and return the latest doc.
     */
+    const oldTask = await Task.findOne({ _id: req.params.id, owner: req.userId });
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, owner: req.userId },
       buildTaskPayload(req),
@@ -220,6 +234,25 @@ export const updateTask = async (req, res) => {
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Create notification if task was completed
+    try {
+      if (req.body.status === 'completed' && oldTask?.status !== 'completed') {
+        await NotificationService.createTaskNotification(req.userId, {
+          taskTitle: task.title,
+          taskId: task._id,
+          action: 'completed'
+        });
+      } else if (req.body.status && req.body.status !== oldTask?.status) {
+        await NotificationService.createTaskNotification(req.userId, {
+          taskTitle: task.title,
+          taskId: task._id,
+          action: 'updated'
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to create notification for task update:", notifErr);
     }
 
     res.json(normalizeTask(task));
