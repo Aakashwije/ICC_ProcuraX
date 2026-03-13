@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/widgets/custom_toast.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:http/http.dart' as http;
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key});
@@ -36,14 +40,11 @@ class _DocumentsPageState extends State<DocumentsPage> {
     });
 
     try {
-      // Use your existing ApiService
       final response = await ApiService.getDocuments();
 
       setState(() {
-        // Parse categories from API response with null safety
         final categoriesData = response['categories'];
 
-        // Ensure we always show the 4 core categories even when there are no files
         const coreCategories = [
           'Site Photos',
           'Blueprints',
@@ -51,7 +52,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
           'Videos',
         ];
 
-        // Build a lookup for categories returned by the API
         final apiCategories = <String, dynamic>{};
         if (categoriesData != null && categoriesData is List) {
           for (final cat in categoriesData) {
@@ -61,7 +61,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
           }
         }
 
-        // Start with the core categories (always shown), then append any extra categories
         _categories = [
           for (final name in coreCategories)
             () {
@@ -79,7 +78,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 documents: files,
               );
             }(),
-          // Add any non-core categories returned by the API
           for (final entry in apiCategories.entries)
             if (!coreCategories.contains(entry.key))
               () {
@@ -232,7 +230,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header with icon
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -290,7 +287,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      // CANCEL BUTTON - IMPROVED VISIBILITY
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
@@ -315,8 +311,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
-
-                      // SELECT BUTTON - IMPROVED DISABLED STATE
                       Expanded(
                         child: ElevatedButton(
                           onPressed: selectedCategory == null
@@ -360,11 +354,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
   Future<void> _uploadFile() async {
     try {
-      // 1) Pick a category
       final selectedCategory = await _showUploadCategoryDialog();
       if (selectedCategory == null) return;
 
-      // 2) Pick upload source (Gallery vs Device)
       final uploadSource = await showDialog<String>(
         context: context,
         builder: (context) => Dialog(
@@ -437,7 +429,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
       final file = File(result.files.single.path!);
 
-      // Show beautiful loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -489,17 +480,16 @@ class _DocumentsPageState extends State<DocumentsPage> {
         ),
       );
 
-      // Use ApiService to upload
       await ApiService.uploadDocument(file, selectedCategory);
 
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         _showSuccessDialog('File uploaded successfully!');
-        _loadDocuments(); // Refresh list
+        _loadDocuments();
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog if open
+        Navigator.pop(context);
         _showErrorDialog('Error: $e');
       }
     }
@@ -649,7 +639,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row (Menu + Title)
               Row(
                 children: [
                   Builder(
@@ -676,7 +665,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 ],
               ),
               const SizedBox(height: 24),
-              // Search bar
               Container(
                 height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -703,7 +691,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Categories list
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
@@ -752,6 +739,30 @@ class _DocumentsPageState extends State<DocumentsPage> {
                                 ),
                               ).then((_) => _loadDocuments());
                             },
+                            onDelete: (docId, fileName) async {
+                              try {
+                                await ApiService.deleteDocument(docId);
+                                _loadDocuments();
+                                if (mounted) {
+                                  CustomToast.success(
+                                    context,
+                                    'The file has been removed from your documents',
+                                    title: 'File Deleted',
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  CustomToast.error(
+                                    context,
+                                    e.toString().replaceFirst(
+                                      'Exception: ',
+                                      '',
+                                    ),
+                                    title: 'Delete Failed',
+                                  );
+                                }
+                              }
+                            },
                           );
                         },
                       ),
@@ -775,6 +786,7 @@ class CategoryCard extends StatefulWidget {
   final String files;
   final List<dynamic> documents;
   final VoidCallback onTap;
+  final Function(String, String) onDelete;
 
   const CategoryCard({
     super.key,
@@ -783,6 +795,7 @@ class CategoryCard extends StatefulWidget {
     required this.files,
     required this.documents,
     required this.onTap,
+    required this.onDelete,
   });
 
   @override
@@ -812,6 +825,64 @@ class _CategoryCardState extends State<CategoryCard> {
     }
   }
 
+  Future<void> _openFile(String url, String filename) async {
+    try {
+      final fullUrl = 'http://10.0.2.2:5002$url';
+
+      final response = await http.get(Uri.parse(fullUrl));
+
+      if (response.statusCode == 200) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(response.bodyBytes);
+
+        final result = await OpenFile.open(file.path);
+
+        if (result.type != ResultType.done && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open file: ${result.message}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening file'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(String documentId, String fileName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete File'),
+        content: Text('Are you sure you want to delete "$fileName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      widget.onDelete(documentId, fileName);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -830,7 +901,6 @@ class _CategoryCardState extends State<CategoryCard> {
       ),
       child: Column(
         children: [
-          // Header (always visible)
           InkWell(
             onTap: () {
               setState(() {
@@ -890,7 +960,6 @@ class _CategoryCardState extends State<CategoryCard> {
               ),
             ),
           ),
-          // Expanded content (files list)
           if (_isExpanded) ...[
             const Divider(height: 1),
             if (widget.documents.isEmpty)
@@ -930,6 +999,7 @@ class _CategoryCardState extends State<CategoryCard> {
                     final filename = doc['filename']?.toString() ?? 'Unknown';
                     final fileType = doc['fileType']?.toString() ?? 'file';
                     final fileSize = doc['size'] ?? 0;
+                    final docId = doc['id']?.toString() ?? '';
 
                     return Container(
                       margin: const EdgeInsets.symmetric(
@@ -975,12 +1045,18 @@ class _CategoryCardState extends State<CategoryCard> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.open_in_new, size: 20),
+                              icon: const Icon(Icons.visibility, size: 20),
                               color: DocumentsPage.primaryBlue,
-                              onPressed: () {
-                                // Open file detail or view
-                                widget.onTap();
-                              },
+                              onPressed: () => _openFile(doc['url'], filename),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: 20,
+                                color: Colors.redAccent,
+                              ),
+                              onPressed: () => _confirmDelete(docId, filename),
                             ),
                           ],
                         ),
@@ -1056,7 +1132,6 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
     if (confirm != true) return;
 
     try {
-      // Use ApiService to delete
       await ApiService.deleteDocument(documentId);
 
       setState(() {
@@ -1085,6 +1160,40 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Future<void> _openFile(String url, String filename) async {
+    try {
+      final fullUrl = 'http://10.0.2.2:5002$url';
+
+      final response = await http.get(Uri.parse(fullUrl));
+
+      if (response.statusCode == 200) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(response.bodyBytes);
+
+        final result = await OpenFile.open(file.path);
+
+        if (result.type != ResultType.done && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open file: ${result.message}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening file'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -1194,17 +1303,28 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
                             subtitle: Text(
                               '${_formatFileSize(fileSize)} • $fileType',
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.redAccent,
-                              ),
-                              onPressed: () => _deleteDocument(docId, filename),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.visibility,
+                                    color: DocumentsPage.primaryBlue,
+                                  ),
+                                  onPressed: () =>
+                                      _openFile(doc['url'], filename),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.redAccent,
+                                  ),
+                                  onPressed: () =>
+                                      _deleteDocument(docId, filename),
+                                ),
+                              ],
                             ),
-                            onTap: () {
-                              // Optional: Open/view file
-                              // You can add file viewer functionality here
-                            },
+                            onTap: () => _openFile(doc['url'], filename),
                           ),
                         );
                       },
