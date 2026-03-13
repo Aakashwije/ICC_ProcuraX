@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use /core/middleware/auth.middleware.js instead.
+ * This file is kept for reference only. All routes have been migrated
+ * to the unified core auth middleware.
+ */
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { secret } from "../config/jwt.js";

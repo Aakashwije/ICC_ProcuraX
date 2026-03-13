@@ -8,7 +8,24 @@ const __dirname = path.dirname(__filename);
 import cors from "cors";
 import mongoose from "mongoose";
 
-// Existing modules
+// ===== CORE INFRASTRUCTURE =====
+import {
+  errorHandler,
+  notFoundHandler,
+  requestIdMiddleware,
+  httpLogger,
+  apiLimiter,
+  authLimiter,
+  logger,
+  jobQueue,
+} from "./core/index.js";
+
+import NotificationService from "./notifications/notification.service.js";
+
+// ===== API v1 ROUTES (versioned, validated, service-layer) =====
+import v1Routes from "./api/v1/index.js";
+
+// Existing module routes (backward compatibility)
 import procurementRoutes from "./procument/routes/procurement.js";
 import notesRoutes from "./notes/notes.routes.js";
 import tasksRoutes from "./tasks/tasks.routes.js";
@@ -60,19 +77,45 @@ import settingsUserProfileRoutes from "./settings/routes/user.routes.js";
 
 const app = express();
 
-// Middleware
+// ===== GLOBAL MIDDLEWARE PIPELINE =====
+// 1. Request ID — assigns correlation ID to every request
+app.use(requestIdMiddleware);
+
+// 2. HTTP Logger — structured request/response logging
+app.use(httpLogger);
+
+// 3. Security & Parsing
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Optional: Uncomment below to log incoming requests for debugging
-// app.use((req, res, next) => {
-//   console.log(`[REQ] ${req.method} ${req.url}`);
-//   next();
-// });
+// 4. Global Rate Limiter — protects against DDoS
+app.use("/api", apiLimiter);
+app.use("/auth", authLimiter);
 
 // Static file serving for uploaded documents
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ===== ASYNC JOB QUEUE SETUP =====
+// Register notification job handler for async processing
+jobQueue.registerHandler("send_notification", async (payload) => {
+  const { userId, type, data } = payload;
+  switch (type) {
+    case "task":
+      await NotificationService.createTaskNotification(userId, data);
+      break;
+    case "meeting":
+      await NotificationService.createMeetingNotification(userId, data);
+      break;
+    case "project":
+      await NotificationService.createProjectNotification(userId, data);
+      break;
+    default:
+      await NotificationService.createGeneralNotification(userId, data);
+  }
+});
+
+logger.info("Async job queue initialized with notification handler");
 
 // MongoDB Connection
 const mongoUri =
@@ -83,23 +126,27 @@ const mongoUri =
 mongoose
 	.connect(mongoUri)
 	.then(() => {
-		console.log("✅ MongoDB connected");
+		logger.info("✅ MongoDB connected", { uri: mongoUri.replace(/\/\/.*@/, "//***@") });
 	})
 	.catch((err) => {
-		console.error("❌ MongoDB connection error:", err.message);
+		logger.error("❌ MongoDB connection error", { error: err.message });
 	});
 
 // Global process handlers
 process.on("unhandledRejection", (err) => {
-	console.error(" Unhandled rejection:", err);
+	logger.error("Unhandled rejection", { error: err?.message, stack: err?.stack });
 });
 
 process.on("uncaughtException", (err) => {
-	console.error(" Uncaught exception:", err);
+	logger.error("Uncaught exception", { error: err.message, stack: err.stack });
 	process.exit(1);
 });
 
-// ===== EXISTING CORE ROUTES =====
+// ===== VERSIONED API ROUTES (v1) =====
+// New architecture: validated, service-layer backed
+app.use("/api/v1", v1Routes);
+
+// ===== EXISTING CORE ROUTES (backward compatibility) =====
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/tasks", tasksRoutes);
@@ -152,28 +199,41 @@ app.use("/api/buildassist", chatbotRoutes);
 
 // =================================
 
-// Basic health route
-app.get("/", (req, res) => res.send("ProcuraX backend running"));
+// Basic health route with system info
+app.get("/", (req, res) => res.json({
+  status: "running",
+  service: "ProcuraX Backend",
+  version: "1.0.0",
+  timestamp: new Date().toISOString(),
+  uptime: process.uptime(),
+}));
 
-// Handle unknown routes
-app.use((req, res) => {
-	res.status(404).json({ error: "Route not found" });
-});
+// Health check endpoint
+app.get("/health", (req, res) => res.json({
+  status: "healthy",
+  db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+  uptime: process.uptime(),
+  memory: process.memoryUsage(),
+}));
 
-// Global error handler
-app.use((err, req, res, next) => {
-	console.error(err.stack);
-	res.status(500).json({ error: "Internal Server Error" });
-});
+// ===== ERROR HANDLING (must be last) =====
+// 404 handler — catches unmatched routes
+app.use(notFoundHandler);
+
+// Global error handler — catches ALL errors from asyncHandler and middleware
+app.use(errorHandler);
 
 // Start server
 const port = process.env.PORT || 5002;
 
 const server = app.listen(port, () => {
-	console.log(`✅ Server listening on port ${port}`);
+	logger.info(`✅ Server listening on port ${port}`, {
+		env: process.env.NODE_ENV || "development",
+		port,
+	});
 });
 
 server.on("error", (err) => {
-	console.error("❌ Server failed to start:", err.message);
+	logger.error("❌ Server failed to start", { error: err.message });
 	process.exit(1);
 });

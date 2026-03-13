@@ -1,6 +1,6 @@
 // settings/routes/user.routes.js
 import express from "express";
-import authMiddleware, { generateToken } from "../../auth/auth.middleware.js";  // Added generateToken
+import { authMiddleware, generateToken } from "../../core/middleware/auth.middleware.js";
 import User from '../../models/User.js';
 import Setting from '../models/setting.js';
 

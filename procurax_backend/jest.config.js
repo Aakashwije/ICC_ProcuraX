@@ -1,5 +1,9 @@
 /**
  * Jest Configuration for ProcuraX Backend
+ * 
+ * Uses native ESM support via --experimental-vm-modules.
+ * Test files must import { jest, describe, it, expect, ... } from "@jest/globals"
+ * OR rely on the globals injected by the injectGlobals setting.
  */
 
 export default {
@@ -8,15 +12,18 @@ export default {
   moduleFileExtensions: ["js", "mjs"],
   testMatch: ["**/__tests__/**/*.test.js", "**/?(*.)+(spec|test).js"],
   collectCoverageFrom: [
-    "**/*.js",
+    "core/**/*.js",
+    "tasks/**/*.js",
+    "notes/**/*.js",
+    "notifications/**/*.js",
+    "meetings/**/*.js",
     "!**/node_modules/**",
     "!**/coverage/**",
     "!**/logs/**",
-    "!jest.config.js",
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "clover"],
-  setupFilesAfterEnv: ["./tests/setup.js"],
+  setupFilesAfterEnv: [],
   testTimeout: 10000,
   verbose: true,
 };
