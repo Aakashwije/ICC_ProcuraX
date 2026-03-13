@@ -3,7 +3,7 @@
   All routes use authMiddleware so only logged-in users can access.
 */
 import { Router } from "express";
-import authMiddleware from "../auth/auth.middleware.js";
+import { authMiddleware } from "../core/middleware/auth.middleware.js";
 import {
   createTask,
   getTasks,

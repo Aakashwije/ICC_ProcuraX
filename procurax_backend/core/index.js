@@ -57,6 +57,10 @@ export {
 export { default as TaskService } from "./services/task.service.js";
 export { default as NoteService } from "./services/note.service.js";
 export { default as MeetingService } from "./services/meeting.service.js";
+export { default as ProjectService } from "./services/project.service.js";
+export { default as NotificationCoreService } from "./services/notification.service.js";
+export { default as cache } from "./services/cache.service.js";
+export { default as jobQueue } from "./services/jobQueue.js";
 
 // Logging
 export { default as logger } from "./logging/logger.js";

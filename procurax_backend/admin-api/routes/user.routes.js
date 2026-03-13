@@ -1,5 +1,5 @@
 import { Router } from "express";
-import adminAuth from "../middleware/adminAuth.middleware.js";
+import { adminMiddleware as adminAuth } from "../../core/middleware/auth.middleware.js";
 import {
   approveUser,
   assignSheetUrl,

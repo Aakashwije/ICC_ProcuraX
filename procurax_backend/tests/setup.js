@@ -4,6 +4,8 @@
  * Runs before all test suites.
  */
 
+import { jest, beforeAll, afterAll } from "@jest/globals";
+
 // Set test environment variables
 process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = "test-secret-key-for-jwt-signing-minimum-32-chars";

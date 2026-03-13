@@ -11,7 +11,7 @@ import {
   bulkUpdateNotifications,
   bulkDeleteNotifications
 } from './notification.controller.js';
-import authMiddleware from '../auth/auth.middleware.js';
+import { authMiddleware } from '../core/middleware/auth.middleware.js';
 
 const router = express.Router();
 

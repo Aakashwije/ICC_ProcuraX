@@ -9,7 +9,7 @@ import {
   updateNote,
   deleteNote,
 } from "./notes.controller.js";
-import authMiddleware from "../auth/auth.middleware.js";
+import { authMiddleware } from "../core/middleware/auth.middleware.js";
 
 /*
   Router instance for notes module.
