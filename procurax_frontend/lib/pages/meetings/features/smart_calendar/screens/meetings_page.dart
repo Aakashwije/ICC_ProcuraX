@@ -229,6 +229,52 @@ class _MeetingsPageState extends State<MeetingsPage> {
     }
   }
 
+  Future<void> _markMeetingDone(Meeting meeting) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final newDoneStatus = !meeting.isDone;
+
+    try {
+      await MeetingsService.markMeetingDone(
+        meeting.id ?? '',
+        done: newDoneStatus,
+      );
+      if (!mounted) return;
+      await _loadMeetings();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                newDoneStatus ? Icons.check_circle : Icons.undo,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                newDoneStatus
+                    ? 'Meeting marked as done!'
+                    : 'Meeting marked as pending',
+              ),
+            ],
+          ),
+          backgroundColor: newDoneStatus ? Colors.green : Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to update meeting: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -354,6 +400,7 @@ class _MeetingsPageState extends State<MeetingsPage> {
                                 meeting: m,
                                 onEdit: () => _editMeeting(m),
                                 onDelete: () => _deleteMeeting(m),
+                                onMarkDone: () => _markMeetingDone(m),
                               ),
                             )
                             .toList(),
