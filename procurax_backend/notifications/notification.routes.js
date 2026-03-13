@@ -25,6 +25,11 @@ router.get('/', getUserNotifications);
 // Get notification statistics
 router.get('/stats', getNotificationStats);
 
+// Mark all notifications as read (optionally filtered by type)
+// Query params: type
+// MUST come before /:id routes to avoid being matched as /:id
+router.patch('/mark-all/read', markAllAsRead);
+
 // Get a single notification by ID
 router.get('/:id', getNotificationById);
 
@@ -33,10 +38,6 @@ router.post('/', createNotification);
 
 // Mark a notification as read
 router.patch('/:id/read', markNotificationAsRead);
-
-// Mark all notifications as read (optionally filtered by type)
-// Query params: type
-router.patch('/mark-all/read', markAllAsRead);
 
 // Bulk update notifications
 // Body: { ids: [], isRead: true/false }

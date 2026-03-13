@@ -18,7 +18,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['projects', 'tasks', 'procurement', 'meetings', 'general'],
+    enum: ['projects', 'tasks', 'procurement', 'meetings', 'notes', 'communication', 'general'],
     required: true,
     index: true
   },
@@ -54,6 +54,10 @@ const notificationSchema = new mongoose.Schema({
   meetingId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Meeting'
+  },
+  noteId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Note'
   },
   procurementId: {
     type: String
