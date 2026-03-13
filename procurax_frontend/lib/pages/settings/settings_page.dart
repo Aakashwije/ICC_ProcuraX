@@ -23,7 +23,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String selectedTheme = "Light";
+  // REMOVED: selectedTheme - no longer needed
   String selectedTimezone = "UTC";
   String role = "Project Manager";
   String department = "Construction";
@@ -36,7 +36,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? profileImageUrl;
 
   bool isLoading = false;
-  bool _isSaving = false; // NEW: Track save state
+  bool _isSaving = false;
 
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
@@ -58,15 +58,12 @@ class _SettingsPageState extends State<SettingsPage> {
     emailController = TextEditingController(text: email);
     phoneController = TextEditingController(text: phone);
 
-    // REMOVED: Auto-save listeners
-
-    // CRITICAL: Load token into ApiService first
+    // Load token into ApiService first
     _initializeSettings();
   }
 
   @override
   void dispose() {
-    // REMOVED: Listener removals
     firstNameController.dispose();
     lastNameController.dispose();
     emailController.dispose();
@@ -82,8 +79,6 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final tokenFromPrefs = prefs.getString('auth_token');
-
-      // Also check if ApiService has token
       final apiServiceHasToken = ApiService.hasToken();
 
       if (kDebugMode) {
@@ -94,9 +89,6 @@ class _SettingsPageState extends State<SettingsPage> {
       return (tokenFromPrefs != null && tokenFromPrefs.isNotEmpty) ||
           apiServiceHasToken;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error checking login status: $e');
-      }
       return false;
     }
   }
@@ -108,16 +100,11 @@ class _SettingsPageState extends State<SettingsPage> {
       final token = prefs.getString('auth_token');
 
       if (token != null && token.isNotEmpty) {
-        // Manually set the token in ApiService
         await ApiService.setAuthToken(token);
         if (kDebugMode) {
           debugPrint(
             'Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
           );
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('No token found in SharedPreferences');
         }
       }
     } catch (e) {
@@ -129,30 +116,23 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Initialize settings - load token first, then load data
   Future<void> _initializeSettings() async {
-    // First, load token into ApiService
     await _loadTokenIntoApiService();
-
-    // Then check login status
     final isLoggedIn = await _isLoggedIn();
     if (kDebugMode) {
-      debugPrint('Final login status: $isLoggedIn');
+      debugPrint('🔑 Final login status: $isLoggedIn');
     }
-
-    // Load data
     _loadSettings();
     _loadUserProfile();
   }
 
-  // ===== NEW: SAVE PROFILE METHOD (called by button) =====
+  // ===== SAVE PROFILE METHOD =====
   Future<void> _saveProfile() async {
-    // Check if user is logged in
     final isLoggedIn = await _isLoggedIn();
     if (!isLoggedIn) {
       _showErrorSnackBar('You must be logged in to save changes');
       return;
     }
 
-    // Check if data actually changed
     if (firstNameController.text == firstName &&
         lastNameController.text == lastName &&
         emailController.text == email &&
@@ -164,10 +144,6 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _isSaving = true;
     });
-
-    if (kDebugMode) {
-      debugPrint('Saving profile changes...');
-    }
 
     try {
       final response = await ApiService.updateUserProfile({
@@ -184,17 +160,9 @@ class _SettingsPageState extends State<SettingsPage> {
           email = emailController.text;
           phone = phoneController.text;
         });
-
-        if (kDebugMode) {
-          debugPrint('Profile saved successfully');
-        }
-
         _showSuccessSnackBar('Profile saved successfully');
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Save failed: $e');
-      }
       _showErrorSnackBar('Failed to save profile: $e');
     } finally {
       if (mounted) {
@@ -364,16 +332,7 @@ Issue Description:
   // ===== PROFILE LOADING =====
   Future<void> _loadUserProfile() async {
     final isLoggedIn = await _isLoggedIn();
-    if (!isLoggedIn) {
-      if (kDebugMode) {
-        debugPrint('User not logged in - skipping profile load');
-      }
-      return;
-    }
-
-    if (kDebugMode) {
-      debugPrint('📡 Fetching user profile with token...');
-    }
+    if (!isLoggedIn) return;
 
     try {
       final userProfile = await ApiService.getUserProfile();
@@ -395,10 +354,6 @@ Issue Description:
           emailController.text = email;
           phoneController.text = phone;
         });
-
-        if (kDebugMode) {
-          debugPrint('📱 User profile loaded: $userProfile');
-        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -411,8 +366,6 @@ Issue Description:
   Future<bool> _ensurePhotoPermission() async {
     if (!Platform.isAndroid && !Platform.isIOS) return true;
 
-    // On Android 13+ this is READ_MEDIA_IMAGES; on older Android it maps to storage.
-    // Try the modern permission first, fall back to storage if needed.
     final primaryPermission = Platform.isIOS
         ? Permission.photos
         : Permission.photos;
@@ -473,9 +426,6 @@ Issue Description:
   Future<void> _pickImageFromGallery() async {
     try {
       if (!await _ensurePhotoPermission()) {
-        if (kDebugMode) {
-          debugPrint('Gallery permission not granted');
-        }
         _showErrorSnackBar('Permission required to access gallery');
         return;
       }
@@ -491,17 +441,9 @@ Issue Description:
         setState(() {
           _profileImage = File(image.path);
         });
-
         await _uploadProfileImage();
-
-        if (kDebugMode) {
-          debugPrint('Image selected: ${image.path}');
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error picking image: $e');
-      }
       _showErrorSnackBar('Failed to pick image: $e');
     }
   }
@@ -509,9 +451,6 @@ Issue Description:
   Future<void> _takePhotoWithCamera() async {
     try {
       if (!await _ensurePhotoPermission()) {
-        if (kDebugMode) {
-          debugPrint('Camera/photo permission not granted');
-        }
         _showErrorSnackBar('Permission required to use the camera');
         return;
       }
@@ -536,17 +475,9 @@ Issue Description:
         setState(() {
           _profileImage = File(image.path);
         });
-
         await _uploadProfileImage();
-
-        if (kDebugMode) {
-          debugPrint('Photo captured: ${image.path}');
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error taking photo: $e');
-      }
       _showErrorSnackBar('Failed to take photo: $e');
     }
   }
@@ -614,21 +545,13 @@ Issue Description:
       if (response['success'] == true) {
         if (mounted) {
           setState(() {
-            // Clear the local temp file reference so we load the persisted URL from the server
             _profileImage = null;
             profileImageUrl = response['data']?['profileImageUrl'];
           });
           _showSuccessSnackBar('Profile picture updated successfully');
         }
-
-        if (kDebugMode) {
-          debugPrint('Profile image uploaded: $response');
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error uploading image: $e');
-      }
       _showErrorSnackBar('Failed to upload image: $e');
     } finally {
       if (mounted) {
@@ -654,14 +577,7 @@ Issue Description:
         });
         _showSuccessSnackBar('Profile picture removed');
       }
-
-      if (kDebugMode) {
-        debugPrint('Profile image removed');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error removing image: $e');
-      }
       _showErrorSnackBar('Failed to remove image: $e');
     } finally {
       if (mounted) {
@@ -708,17 +624,11 @@ Issue Description:
 
       if (!mounted) return;
       setState(() {
-        selectedTheme = settings['theme'] ?? 'Light';
         selectedTimezone = settings['timezone'] ?? 'UTC';
         role = settings['role'] ?? 'Project Manager';
         department = settings['department'] ?? 'Construction';
         defaultProject = settings['defaultProject'] ?? 'Tower A - Downtown';
       });
-
-      if (mounted) {
-        final themeNotifier = context.read<ThemeNotifier>();
-        themeNotifier.setTheme(selectedTheme);
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error loading settings from backend: $e');
@@ -733,7 +643,6 @@ Issue Description:
   Future<void> _saveSettings() async {
     try {
       await ApiService.updateMultipleSettings({
-        'theme': selectedTheme,
         'timezone': selectedTimezone,
         'role': role,
         'department': department,
@@ -750,12 +659,7 @@ Issue Description:
     }
   }
 
-  void _handleThemeChange(String value) {
-    setState(() => selectedTheme = value);
-    final themeNotifier = context.read<ThemeNotifier>();
-    themeNotifier.setTheme(value);
-    _saveSettings();
-  }
+  // REMOVED: _handleThemeChange - no longer needed
 
   void _handleTimezoneChange(String value) {
     setState(() => selectedTimezone = value);
@@ -882,14 +786,13 @@ Issue Description:
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1F4CCF);
 
-    final themeNotifier = context.watch<ThemeNotifier>();
-    final isDark = themeNotifier.themeMode == ThemeMode.dark;
+    // REMOVED: ThemeNotifier usage - now using fixed light theme colors
 
-    final bg = isDark ? Colors.black : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? Colors.grey[900]! : Colors.white;
-    final fieldBg = isDark ? Colors.grey[800]! : const Color(0xFFDCE7F1);
-    final blue = isDark ? Colors.white : primaryBlue;
-    final lightBlue = isDark ? Colors.grey[400]! : const Color(0xFF769BC5);
+    final bg = const Color(0xFFF8FAFC);
+    final cardBg = Colors.white;
+    final fieldBg = const Color(0xFFDCE7F1);
+    final blue = primaryBlue;
+    final lightBlue = const Color(0xFF769BC5);
 
     return Scaffold(
       drawer: AppDrawer(currentRoute: AppRoutes.settings),
@@ -941,7 +844,7 @@ Issue Description:
                     : SingleChildScrollView(
                         child: Column(
                           children: [
-                            // Profile Card - WITH SAVE BUTTON
+                            // Profile Card
                             _card(
                               cardBg,
                               blue,
@@ -1075,23 +978,16 @@ Issue Description:
                               ),
                             ),
 
-                            // Display Preferences Card
+                            // Display Preferences Card - TIMEZONE ONLY
                             _card(
                               cardBg,
                               blue,
                               lightBlue,
-                              Icons.palette_outlined,
-                              "Display Preferences",
-                              "Customize appearance",
+                              Icons.tune_outlined,
+                              "App Preferences",
+                              "Customize your application experience",
                               Column(
                                 children: [
-                                  _dropdown(
-                                    "Theme",
-                                    selectedTheme,
-                                    ["Light", "Dark"],
-                                    fieldBg,
-                                    _handleThemeChange,
-                                  ),
                                   _dropdown(
                                     "Timezone",
                                     selectedTimezone,
