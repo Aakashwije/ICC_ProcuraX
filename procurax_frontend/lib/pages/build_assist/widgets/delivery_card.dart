@@ -11,9 +11,13 @@ class DeliveryCard extends StatelessWidget {
   String _detectDataType() {
     if (data == null) return 'unknown';
 
+    // Debug print
+    print('DeliveryCard data: $data');
+
     // Prefer explicit type hints from the backend
     final typeField = data!['type'];
     if (typeField is String) {
+      print('Type field: $typeField');
       switch (typeField.toLowerCase()) {
         case 'meeting':
           return 'meeting';

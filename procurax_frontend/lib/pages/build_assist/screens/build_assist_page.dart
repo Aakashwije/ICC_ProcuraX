@@ -10,6 +10,7 @@ import 'package:procurax_frontend/services/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 
 class BuildAssistPage extends StatefulWidget {
   const BuildAssistPage({super.key});
@@ -23,6 +24,13 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
   final TextEditingController _messageController = TextEditingController();
   bool isLoading = false;
   final ScrollController _scrollController = ScrollController();
+
+  String get baseUrl {
+    // Android emulator uses 10.0.2.2, others use localhost
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:5002'
+        : 'http://127.0.0.1:5002';
+  }
 
   @override
   void initState() {
@@ -83,9 +91,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       // Add timeout to prevent hanging
       final response = await http
           .post(
-            Uri.parse(
-              'http://10.0.2.2:5002/api/buildassist',
-            ), // Android emulator
+            Uri.parse('$baseUrl/api/buildassist'),
             headers: headers,
             body: jsonEncode({'message': userMessage}),
           )
@@ -186,7 +192,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       'Tasks': 'show pending tasks',
       'Notes': 'show all notes',
     };
-    
+
     final query = queryMap[action] ?? action;
     sendMessage(query);
   }
