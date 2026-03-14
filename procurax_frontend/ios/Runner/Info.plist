@@ -58,6 +58,10 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone for recording audio notes and meeting recordings.</string>
 	
+	<!-- Speech Recognition Permission (required by speech_to_text) -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need access to speech recognition for voice input in BuildAssist.</string>
+	
 	<!-- Photo Library Add Permission (iOS 11+) -->
 	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
 	<string>We need permission to save photos from our app to your photo library.</string>
