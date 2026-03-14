@@ -1,30 +1,30 @@
-/// ═══════════════════════════════════════════════════════════════════════════
-/// Note Model — Comprehensive Unit Test Suite (Dart/Flutter)
-/// ═══════════════════════════════════════════════════════════════════════════
-///
-/// @file test/models/note_model_test.dart
-/// @description
-///   Tests the Note data model for complete serialisation support:
-///   - JSON deserialisation (fromJson) with field mapping
-///   - Flexible ID field handling (_id or id)
-///   - DateTime parsing and timezone handling
-///   - JSON serialisation (toJson) for API submissions
-///   - copyWith method for immutable updates
-///   - Object equality and identity comparison
-///   - Edge cases and null safety
-///
-/// @coverage
-///   - fromJson: 5 test cases (complete data, id alternatives, missing fields)
-///   - toJson: 2 test cases (round-trip validation, date formatting)
-///   - copyWith: 3 test cases (single field updates, field preservation)
-///   - Equality: 2 test cases (identical objects, different objects)
-///   - Edge cases: 3 test cases (null values, empty strings, boundary dates)
-///
-/// @test_approach
-///   - Unit tests focus on data model logic independent of services
-///   - Mock Firebase Firestore JSON responses
-///   - Validate ISO8601 timestamp parsing
-///   - Test both API response formats (_id vs id)
+// ═══════════════════════════════════════════════════════════════════════════
+// Note Model — Comprehensive Unit Test Suite (Dart/Flutter)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// @file test/models/note_model_test.dart
+// @description
+//   Tests the Note data model for complete serialisation support:
+//   - JSON deserialisation (fromJson) with field mapping
+//   - Flexible ID field handling (_id or id)
+//   - DateTime parsing and timezone handling
+//   - JSON serialisation (toJson) for API submissions
+//   - copyWith method for immutable updates
+//   - Object equality and identity comparison
+//   - Edge cases and null safety
+//
+// @coverage
+//   - fromJson: 5 test cases (complete data, id alternatives, missing fields)
+//   - toJson: 2 test cases (round-trip validation, date formatting)
+//   - copyWith: 3 test cases (single field updates, field preservation)
+//   - Equality: 2 test cases (identical objects, different objects)
+//   - Edge cases: 3 test cases (null values, empty strings, boundary dates)
+//
+// @test_approach
+//   - Unit tests focus on data model logic independent of services
+//   - Mock Firebase Firestore JSON responses
+//   - Validate ISO8601 timestamp parsing
+//   - Test both API response formats (_id vs id)
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:procurax_frontend/models/note_model.dart';

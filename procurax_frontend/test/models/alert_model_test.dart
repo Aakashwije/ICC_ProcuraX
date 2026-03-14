@@ -1,36 +1,36 @@
-/// ═══════════════════════════════════════════════════════════════════════════
-/// Alert Model — Comprehensive Unit Test Suite (Dart/Flutter)
-/// ═══════════════════════════════════════════════════════════════════════════
-///
-/// @file test/models/alert_model_test.dart
-/// @description
-///   Tests the AlertModel data model and related enumerations:
-///   - AlertType enum (projects, tasks, procurement, meetings, notes, etc.)
-///   - AlertPriority enum (critical, high, medium, low)
-///   - ProjectStatus enum (active, completed, assigned, onHold, cancelled)
-///   - AlertModel JSON serialisation/deserialisation
-///   - Time-ago formatting (1 minute ago, 2 hours ago, etc.)
-///   - Model copying and equality
-///
-/// @coverage
-///   - Enum validation: 21 test cases (all enum values present)
-///   - fromJson serialisation: 8 test cases (valid, edge cases)
-///   - toJson deserialisation: 2 test cases (round-trip validation)
-///   - timeAgo formatting: 6 test cases (various time ranges)
-///   - copyWith method: 2 test cases (field updates, immutability)
-///   - equality: 1 test case (model comparison)
-///   - edge cases: 8 test cases (null handling, boundary conditions)
-///
-/// @testing_approach
-///   - Unit tests focus on data transformation logic
-///   - Mock JSON responses from API
-///   - Test round-trip serialisation (Object → JSON → Object)
-///   - Verify enum safety and error handling
-///
-/// @test_data
-///   - Realistic Firebase Firestore document structures
-///   - Current timestamp and historical timestamps
-///   - All enum combinations
+// ═══════════════════════════════════════════════════════════════════════════
+// Alert Model — Comprehensive Unit Test Suite (Dart/Flutter)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// @file test/models/alert_model_test.dart
+// @description
+//   Tests the AlertModel data model and related enumerations:
+//   - AlertType enum (projects, tasks, procurement, meetings, notes, etc.)
+//   - AlertPriority enum (critical, high, medium, low)
+//   - ProjectStatus enum (active, completed, assigned, onHold, cancelled)
+//   - AlertModel JSON serialisation/deserialisation
+//   - Time-ago formatting (1 minute ago, 2 hours ago, etc.)
+//   - Model copying and equality
+//
+// @coverage
+//   - Enum validation: 21 test cases (all enum values present)
+//   - fromJson serialisation: 8 test cases (valid, edge cases)
+//   - toJson deserialisation: 2 test cases (round-trip validation)
+//   - timeAgo formatting: 6 test cases (various time ranges)
+//   - copyWith method: 2 test cases (field updates, immutability)
+//   - equality: 1 test case (model comparison)
+//   - edge cases: 8 test cases (null handling, boundary conditions)
+//
+// @testing_approach
+//   - Unit tests focus on data transformation logic
+//   - Mock JSON responses from API
+//   - Test round-trip serialisation (Object → JSON → Object)
+//   - Verify enum safety and error handling
+//
+// @test_data
+//   - Realistic Firebase Firestore document structures
+//   - Current timestamp and historical timestamps
+//   - All enum combinations
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:procurax_frontend/pages/notifications/models/alert_model.dart';

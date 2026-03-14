@@ -1,32 +1,32 @@
-/// ═══════════════════════════════════════════════════════════════════════════
-/// Theme Notifier — Unit Test Suite (Dart/Flutter)
-/// ═══════════════════════════════════════════════════════════════════════════
-///
-/// @file test/settings/theme_notifier_test.dart
-/// @description
-///   Tests the ThemeNotifier provider for theme management:
-///   - Theme mode state management (Light, Dark, System)
-///   - setTheme method for theme switching
-///   - Default theme initialisation
-///   - Listener notification for state changes
-///   - Graceful fallback for unknown theme values
-///
-/// @coverage
-///   - Default state: 1 test (light theme by default)
-///   - setTheme("Dark"): 1 test (switches to dark mode)
-///   - setTheme("Light"): 1 test (switches to light mode)
-///   - Unknown theme values: 1 test (fallback to light)
-///   - Listener notification: 2 test (state change callbacks)
-///
-/// @provider_pattern
-///   - Uses ChangeNotifier for state management
-///   - Listeners notified on setTheme() calls
-///   - Immutable theme mode enum
-///
-/// @ui_integration
-///   - Material Design theme switching
-///   - Respects Flutter's ThemeMode
-///   - Compatible with MaterialApp(themeMode)
+// ═══════════════════════════════════════════════════════════════════════════
+// Theme Notifier — Unit Test Suite (Dart/Flutter)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// @file test/settings/theme_notifier_test.dart
+// @description
+//   Tests the ThemeNotifier provider for theme management:
+//   - Theme mode state management (Light, Dark, System)
+//   - setTheme method for theme switching
+//   - Default theme initialisation
+//   - Listener notification for state changes
+//   - Graceful fallback for unknown theme values
+//
+// @coverage
+//   - Default state: 1 test (light theme by default)
+//   - setTheme("Dark"): 1 test (switches to dark mode)
+//   - setTheme("Light"): 1 test (switches to light mode)
+//   - Unknown theme values: 1 test (fallback to light)
+//   - Listener notification: 2 test (state change callbacks)
+//
+// @provider_pattern
+//   - Uses ChangeNotifier for state management
+//   - Listeners notified on setTheme() calls
+//   - Immutable theme mode enum
+//
+// @ui_integration
+//   - Material Design theme switching
+//   - Respects Flutter's ThemeMode
+//   - Compatible with MaterialApp(themeMode)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
