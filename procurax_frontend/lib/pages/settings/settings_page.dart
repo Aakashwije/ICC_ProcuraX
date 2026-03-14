@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 import 'theme_notifier.dart';
 import 'services/api_service.dart';
 
@@ -1041,29 +1042,34 @@ Issue Description:
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1F4CCF);
+    const Color primaryBlue = AppColors.primary;
 
-    final bg = const Color(0xFFF8FAFC);
+    final bg = AppColors.neutral50;
     final cardBg = Colors.white;
-    final fieldBg = const Color(0xFFDCE7F1);
+    final fieldBg = AppColors.primaryLight;
     final blue = primaryBlue;
-    final lightBlue = const Color(0xFF769BC5);
+    final lightBlue = AppColors.primaryLight;
 
     return Scaffold(
       drawer: AppDrawer(currentRoute: AppRoutes.settings),
       backgroundColor: bg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          padding: AppResponsive.pagePadding(context),
           child: Column(
             children: [
               // Header
               Row(
                 children: [
                   Builder(
-                    builder: (context) => IconButton(
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      icon: Icon(Icons.menu_rounded, size: 30, color: blue),
+                    builder: (context) => Semantics(
+                      label: 'Open navigation menu',
+                      button: true,
+                      child: IconButton(
+                        tooltip: 'Menu',
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        icon: Icon(Icons.menu_rounded, size: 30, color: blue),
+                      ),
                     ),
                   ),
                   const Spacer(),

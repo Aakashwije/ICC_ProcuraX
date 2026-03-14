@@ -142,10 +142,7 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
               onRefresh: () async => _reload(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 18,
-                ),
+                padding: AppResponsive.pagePadding(context),
                 /*
                   Main vertical layout for the page sections.
                 */
@@ -158,14 +155,19 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
                     Row(
                       children: [
                         Builder(
-                          builder: (context) => IconButton(
-                            onPressed: () {
-                              Scaffold.of(context).openDrawer();
-                            },
-                            icon: const Icon(
-                              Icons.menu_rounded,
-                              size: 30,
-                              color: primaryBlue,
+                          builder: (context) => Semantics(
+                            label: 'Open navigation menu',
+                            button: true,
+                            child: IconButton(
+                              tooltip: 'Menu',
+                              onPressed: () {
+                                Scaffold.of(context).openDrawer();
+                              },
+                              icon: const Icon(
+                                Icons.menu_rounded,
+                                size: 30,
+                                color: primaryBlue,
+                              ),
                             ),
                           ),
                         ),

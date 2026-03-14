@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/chat_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart';
 
 class AlertsScreen extends StatefulWidget {
   final String userId;
@@ -94,7 +95,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 221, 217, 217),
+                    color: AppColors.neutral100,
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(

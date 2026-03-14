@@ -636,19 +636,24 @@ class _DocumentsPageState extends State<DocumentsPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          padding: AppResponsive.pagePadding(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Builder(
-                    builder: (context) => IconButton(
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      icon: const Icon(
-                        Icons.menu_rounded,
-                        size: 30,
-                        color: DocumentsPage.primaryBlue,
+                    builder: (context) => Semantics(
+                      label: 'Open navigation menu',
+                      button: true,
+                      child: IconButton(
+                        tooltip: 'Menu',
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        icon: const Icon(
+                          Icons.menu_rounded,
+                          size: 30,
+                          color: DocumentsPage.primaryBlue,
+                        ),
                       ),
                     ),
                   ),

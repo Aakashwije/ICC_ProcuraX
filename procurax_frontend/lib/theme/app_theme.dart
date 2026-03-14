@@ -272,6 +272,7 @@ class AppBreakpoints {
   static const double mobile = 600;
   static const double tablet = 900;
   static const double desktop = 1200;
+  static const double widescreen = 1440;
 
   static bool isMobile(BuildContext context) =>
       MediaQuery.of(context).size.width < mobile;
@@ -283,6 +284,9 @@ class AppBreakpoints {
 
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width >= tablet;
+
+  static bool isWidescreen(BuildContext context) =>
+      MediaQuery.of(context).size.width >= widescreen;
 }
 
 /// Centralized ThemeData builder
@@ -477,4 +481,246 @@ class AppTheme {
       ),
     ),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Responsive Design System
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Responsive utilities for adaptive layouts
+class AppResponsive {
+  AppResponsive._();
+
+  /// Check device type
+  static bool isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width < AppBreakpoints.mobile;
+
+  static bool isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.width >= AppBreakpoints.mobile &&
+      MediaQuery.of(context).size.width < AppBreakpoints.tablet;
+
+  static bool isDesktop(BuildContext context) =>
+      MediaQuery.of(context).size.width >= AppBreakpoints.tablet;
+
+  static bool isWidescreen(BuildContext context) =>
+      MediaQuery.of(context).size.width >= AppBreakpoints.widescreen;
+
+  /// Get current device type
+  static DeviceType deviceType(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) return DeviceType.mobile;
+    if (width < AppBreakpoints.tablet) return DeviceType.tablet;
+    return DeviceType.desktop;
+  }
+
+  /// Responsive page padding - adjusts based on screen size
+  static EdgeInsets pagePadding(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) {
+      return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+    } else if (width < AppBreakpoints.tablet) {
+      return const EdgeInsets.symmetric(horizontal: 24, vertical: 16);
+    } else if (width < AppBreakpoints.desktop) {
+      return const EdgeInsets.symmetric(horizontal: 32, vertical: 20);
+    }
+    return const EdgeInsets.symmetric(horizontal: 48, vertical: 24);
+  }
+
+  /// Responsive horizontal padding only
+  static double horizontalPadding(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) return 16;
+    if (width < AppBreakpoints.tablet) return 24;
+    if (width < AppBreakpoints.desktop) return 32;
+    return 48;
+  }
+
+  /// Responsive grid column count
+  static int gridColumns(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) return 1;
+    if (width < AppBreakpoints.tablet) return 2;
+    if (width < AppBreakpoints.desktop) return 3;
+    return 4;
+  }
+
+  /// Responsive card width for grid layouts
+  static double cardWidth(BuildContext context, {double spacing = 16}) {
+    final width = MediaQuery.of(context).size.width;
+    final padding = horizontalPadding(context) * 2;
+    final columns = gridColumns(context);
+    final totalSpacing = spacing * (columns - 1);
+    return (width - padding - totalSpacing) / columns;
+  }
+
+  /// Responsive font size multiplier
+  static double fontScale(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) return 0.9;
+    if (width < AppBreakpoints.tablet) return 1.0;
+    return 1.1;
+  }
+
+  /// Responsive icon size
+  static double iconSize(BuildContext context, {double base = 24}) {
+    return base * fontScale(context);
+  }
+
+  /// Responsive spacing multiplier
+  static double spacingScale(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) return 0.85;
+    if (width < AppBreakpoints.tablet) return 1.0;
+    return 1.15;
+  }
+
+  /// Get responsive value based on device type
+  static T value<T>(
+    BuildContext context, {
+    required T mobile,
+    T? tablet,
+    T? desktop,
+  }) {
+    final type = deviceType(context);
+    switch (type) {
+      case DeviceType.mobile:
+        return mobile;
+      case DeviceType.tablet:
+        return tablet ?? mobile;
+      case DeviceType.desktop:
+        return desktop ?? tablet ?? mobile;
+    }
+  }
+
+  /// Maximum content width for readability
+  static double maxContentWidth(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < AppBreakpoints.mobile) return width;
+    if (width < AppBreakpoints.tablet) return width;
+    if (width < AppBreakpoints.desktop) return 800;
+    return 1000;
+  }
+
+  /// Constrain content to max width with centering
+  static Widget constrainWidth({
+    required Widget child,
+    required BuildContext context,
+    double? maxWidth,
+  }) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth ?? maxContentWidth(context),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Device type enum for responsive design
+enum DeviceType { mobile, tablet, desktop }
+
+/// Responsive builder widget for declarative responsive layouts
+class ResponsiveBuilder extends StatelessWidget {
+  final Widget Function(BuildContext context, DeviceType deviceType) builder;
+  final Widget? mobile;
+  final Widget? tablet;
+  final Widget? desktop;
+
+  const ResponsiveBuilder({super.key, required this.builder})
+    : mobile = null,
+      tablet = null,
+      desktop = null;
+
+  const ResponsiveBuilder.fromWidgets({
+    super.key,
+    required this.mobile,
+    this.tablet,
+    this.desktop,
+  }) : builder = _defaultBuilder;
+
+  static Widget _defaultBuilder(BuildContext context, DeviceType type) {
+    return const SizedBox.shrink();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final deviceType = AppResponsive.deviceType(context);
+
+    if (mobile != null) {
+      switch (deviceType) {
+        case DeviceType.mobile:
+          return mobile!;
+        case DeviceType.tablet:
+          return tablet ?? mobile!;
+        case DeviceType.desktop:
+          return desktop ?? tablet ?? mobile!;
+      }
+    }
+
+    return builder(context, deviceType);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Accessibility Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Accessibility utilities for proper semantic widgets
+class AppAccessibility {
+  AppAccessibility._();
+
+  /// Wrap an icon button with tooltip for accessibility
+  static Widget iconButtonWithTooltip({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+    Color? color,
+    double size = 24,
+    bool enabled = true,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        icon: Icon(icon, color: color, size: size),
+        onPressed: enabled ? onPressed : null,
+        tooltip: tooltip,
+      ),
+    );
+  }
+
+  /// Semantic label for icon-only widgets
+  static Widget semanticIcon({
+    required Widget child,
+    required String label,
+    bool excludeSemantics = false,
+  }) {
+    return Semantics(
+      label: label,
+      excludeSemantics: excludeSemantics,
+      child: child,
+    );
+  }
+
+  /// Check if high contrast mode is enabled
+  static bool isHighContrast(BuildContext context) {
+    return MediaQuery.of(context).highContrast;
+  }
+
+  /// Check if reduced motion is preferred
+  static bool prefersReducedMotion(BuildContext context) {
+    return MediaQuery.of(context).disableAnimations;
+  }
+
+  /// Get appropriate animation duration based on accessibility settings
+  static Duration animationDuration(
+    BuildContext context, {
+    Duration normal = const Duration(milliseconds: 300),
+  }) {
+    if (prefersReducedMotion(context)) {
+      return Duration.zero;
+    }
+    return normal;
+  }
 }
