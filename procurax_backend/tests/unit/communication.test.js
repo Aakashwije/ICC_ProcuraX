@@ -1,13 +1,48 @@
 /**
- * Communication Module — Unit Tests
+ * ============================================================================
+ * Communication Module — Comprehensive Unit Test Suite
+ * ============================================================================
  *
- * Tests: Chat controller logic, Message controller logic, Alerts controller logic
- * Mocks Firestore (db) to isolate business logic from external services.
+ * @file tests/unit/communication.test.js
+ * @description
+ *   Tests the communication system controllers in isolation:
+ *   - Chat management: create, retrieve, list user chats
+ *   - Message operations: send, retrieve, delete messages
+ *   - Alerts management: create, retrieve, mark as read
+ *   - Real-time features via Firestore integration
+ *
+ * @dependencies
+ *   - Firestore database (mocked)
+ *   - Chat controller
+ *   - Message controller
+ *   - Alerts controller
+ *
+ * @coverage
+ *   - createChat: 4 test cases (validation, duplicate handling, success)
+ *   - getUserChats: 1 test case (retrieval with user filtering)
+ *   - sendMessage: 5 test cases (validation, content checks, success)
+ *   - getMessagesByChat: 2 test cases (validation, retrieval)
+ *   - deleteMessage: 2 test cases (validation, deletion)
+ *   - getUserAlerts: 1 test case (retrieval with filtering)
+ *   - markAlertsRead: 1 test case (read status updates)
+ *
+ * @mock_strategy
+ *   - Mock Firestore database to avoid cloud operations
+ *   - Simulate Firestore query chains (.where().orderBy().limit())
+ *   - Test request validation independently of database
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-/* ── Firestore mock ──────────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * FIRESTORE MOCK CONFIGURATION
+ * ────────────────────────────────────────────────────────────────────────
+ * Mock Firebase Firestore database with full query API:
+ * - Collection operations: add, doc, where, orderBy, limit
+ * - Document operations: get, update, delete
+ * - Batch operations: set, commit
+ */
 const mockGet = jest.fn();
 const mockAdd = jest.fn();
 const mockUpdate = jest.fn();

@@ -1,12 +1,38 @@
 /**
- * Security Tests
+ * ============================================================================
+ * Security Tests — Non-Functional Test Suite
+ * ============================================================================
  *
- * Non-functional tests verifying security measures:
- * - Input sanitisation / injection prevention
- * - JWT token validation hardness
- * - Rate-limiting configurations
- * - CORS policy
- * - Header security
+ * @file tests/security/security.test.js
+ * @description
+ *   Tests application security measures against common attack vectors:
+ *   - JWT authentication hardness (algorithm confusion, tampering)
+ *   - Input sanitisation (NoSQL injection, XSS prevention)
+ *   - Password policies and validation
+ *   - Rate limiting configuration
+ *   - Error response sanitisation
+ *
+ * @coverage
+ *   - JWT Token Validation: 6 test cases (none algorithm, tampering, expiry)
+ *   - Input Sanitisation: 5 test cases (NoSQL injection, XSS, ObjectId)
+ *   - Authentication Hardening: 3 test cases (password strength, data exposure)
+ *   - Rate Limiting: 3 test cases (window, limits, tracking)
+ *
+ * @attack_vectors_tested
+ *   - Algorithm Confusion Attack (JWT alg: "none")
+ *   - Payload Tampering (modified signature)
+ *   - NoSQL Injection ($gt, $ne, $regex, $where operators)
+ *   - XSS Payload Injection (<script>, <img onerror>, <svg onload>)
+ *   - MongoDB ObjectId injection attacks
+ *   - Brute force password attacks (via rate limits)
+ *   - Information disclosure via error messages
+ *
+ * @security_best_practices
+ *   - Whitelist allowed JWT algorithms
+ *   - Validate input types before database queries
+ *   - Sanitise error messages for production
+ *   - Enforce password complexity requirements
+ *   - Implement rate limiting on sensitive endpoints
  */
 
 import { jest, describe, it, expect, beforeAll } from "@jest/globals";
@@ -15,9 +41,12 @@ import jwt from "jsonwebtoken";
 const SECRET =
   process.env.JWT_SECRET || "test-secret-key-for-jwt-signing-minimum-32-chars";
 
-/* ------------------------------------------------------------------ */
-/*  JWT Security Tests                                                 */
-/* ------------------------------------------------------------------ */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * JWT SECURITY TESTS
+ * ────────────────────────────────────────────────────────────────────────
+ * Verify JWT token validation against cryptographic attacks.
+ */
 describe("Security — JWT Token Validation", () => {
   it("should reject tokens with algorithm confusion (none algorithm)", () => {
     // An attacker might try to create a token with 'none' algorithm

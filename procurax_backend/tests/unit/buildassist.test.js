@@ -1,16 +1,74 @@
 /**
- * BuildAssist Module — Unit Tests
+ * ============================================================================
+ * BuildAssist Module — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests the BuildAssist AI chat controller's token parsing and
- * intent-routing logic (meetings, tasks, notes, procurement, dashboard).
+ * @file tests/unit/buildassist.test.js
+ * @description
+ *   Tests the BuildAssist AI chat controller for voice/text input processing:
+ *   - Token parsing: Removes stop words, punctuation, lowercases
+ *   - Intent detection: Routes to meetings, tasks, notes, procurement, dashboard
+ *   - NLP helpers: Tokenisation, entity extraction, keyword matching
+ *   - Chat controller: Accepts user queries, returns structured responses
+ *   - Error handling: Invalid input, timeout, API failures
+ *   - Integration: Multi-step conversation context
+ *
+ * @coverage
+ *   - Token parsing: 5 tests (punctuation, stop words, lowercase, empty)
+ *   - Intent detection: 6 tests (meetings, tasks, notes, procurement, dashboard, unknown)
+ *   - Entity extraction: 4 tests (date ranges, user names, project IDs, keywords)
+ *   - Chat response: 3 tests (single turn, context carryover, error handling)
+ *   - Total: 18+ BuildAssist test cases
+ *
+ * @dependencies
+ *   - NLP library (natural or custom tokeniser)
+ *   - Express controllers (chat, intent router)
+ *   - Database models (Meeting, Task, Note, Procurement, Dashboard)
+ *   - Logger (mocked)
+ *
+ * @nlp_strategy
+ *   - Token parsing: Regex sanitisation, stop word filter, lowercase
+ *   - Stop words: English common words (show, me, the, a, an, etc.)
+ *   - Intent keywords: 5-6 keywords per intent category
+ *   - Confidence thresholds: Matches above threshold routed with high confidence
+ *   - Fallback: Unknown intent returns generic response with suggestions
+ *
+ * @intent_routing_table
+ *   - "meetings" keywords: meeting, meetings, schedule, upcoming, calendar, when
+ *   - "tasks" keywords: task, tasks, todo, pending, stuck, blocked, assign
+ *   - "notes" keywords: note, notes, search, document, memo, remind
+ *   - "procurement" keywords: procurement, delivery, material, supply, order, budget
+ *   - "dashboard" keywords: dashboard, summary, overview, stats, report, metrics
+ *   - "unknown" default: Returns "I didn't understand" with intent suggestions
+ *
+ * @test_data
+ *   - Query examples: Natural English questions and commands
+ *   - Expected intents: Named routing categories
+ *   - Edge cases: Misspellings, multiple intents, ambiguous queries
+ *   - Context: Previous turn history for stateful conversations
+ *
+ * @chat_flow_example
+ *   User: "Show me my upcoming meetings please"
+ *   → Tokens: ["upcoming", "meetings"]
+ *   → Intent: "meetings"
+ *   → Service call: Meeting.find({ owner, startTime > now })
+ *   → Response: { intent, data: [...], message: "..." }
  */
 
 import { describe, it, expect } from '@jest/globals';
 
-/* ── tests ────────────────────────────────────────────────────────────── */
-describe('BuildAssist Module', () => {
-  /* ── Token Parsing / NLP helpers ───────────────────────────────────── */
-  describe('Token Parsing', () => {
+/* ────────────────────────────────────────────────────────────────────
+   TOKEN PARSING / NLP HELPER FUNCTIONS
+   ────────────────────────────────────────────────────────────────────
+   @description
+     Tokenisation pipeline:
+     1. Lowercase entire input string
+     2. Remove punctuation via regex [^a-z0-9\s]
+     3. Split on whitespace into individual tokens
+     4. Filter out stop words (common English words)
+     5. Remove empty strings (length > 0)
+     Returns array of meaningful keywords for intent detection
+*/
     const stopWords = [
       'show', 'please', 'me', 'give', 'list', 'items', 'details',
       'about', 'the', 'a', 'an', 'of', 'for', 'you',

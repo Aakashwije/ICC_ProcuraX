@@ -1,17 +1,51 @@
 /**
- * Procurement Service — Unit Tests
+ * ============================================================================
+ * Procurement Service — Comprehensive Unit Test Suite
+ * ============================================================================
  *
- * Tests the core procurement service logic:
- *  - calculateStatus()  → delivery date comparison
- *  - getProcurementView() → caching, filtering, sorting, slicing
- *  - extractSheetId() / extractGid() → URL parsing helpers
+ * @file tests/unit/procurement.service.test.js
+ * @description
+ *   Tests the procurement management service layer in isolation:
+ *   - URL parsing for Google Sheets integration
+ *   - Data extraction and transformation from sheets
+ *   - Delivery status calculation (On Time, Early, Delayed)
+ *   - Caching mechanisms and TTL expiration
+ *   - Filtering and sorting procurement items
+ *   - Pagination of results
+ *
+ * @dependencies
+ *   - googleSheets library (mocked)
+ *   - Cache service for performance optimisation
+ *
+ * @coverage
+ *   - extractSheetId(): 3 test cases (URL parsing, fallback)
+ *   - extractGid(): 4 test cases (URL params extraction, edge cases)
+ *   - getProcurementView(): 11 test cases (caching, filtering, sorting, status)
+ *
+ * @mock_strategy
+ *   - Mock fetchProcurementData to avoid API calls
+ *   - Test with realistic Google Sheets row data
+ *   - Isolate caching layer tests
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-/* ── mocks ────────────────────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * MOCKS CONFIGURATION
+ * ────────────────────────────────────────────────────────────────────────
+ * Mock Google Sheets API integration and helper functions.
+ * Provides URL parsing utilities without actual API calls.
+ */
 const mockFetchProcurementData = jest.fn();
 
+/**
+ * Mock Google Sheets Module
+ * Provides mock implementations of:
+ * - fetchProcurementData: Returns mock sheet rows
+ * - extractSheetId: Parses sheet ID from URL
+ * - extractGid: Parses sheet grid ID from URL
+ */
 jest.unstable_mockModule('../../procument/lib/googleSheets.js', () => ({
   fetchProcurementData: mockFetchProcurementData,
   extractSheetId: (url) => {
@@ -26,7 +60,12 @@ jest.unstable_mockModule('../../procument/lib/googleSheets.js', () => ({
   },
 }));
 
-/* ── import under test (must come AFTER mock registration) ───────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * IMPORTS UNDER TEST
+ * ────────────────────────────────────────────────────────────────────────
+ * Import procurement service and helpers after mock registration.
+ */
 const { getProcurementView } = await import(
   '../../procument/services/procurement.service.js'
 );
@@ -34,7 +73,18 @@ const { extractSheetId, extractGid } = await import(
   '../../procument/lib/googleSheets.js'
 );
 
-/* ── helpers ──────────────────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * TEST HELPER FUNCTIONS
+ * ────────────────────────────────────────────────────────────────────────
+ * Utilities for constructing realistic test data.
+ */
+
+/**
+ * Creates a mock procurement row from Google Sheets.
+ * @param {Object} overrides - Field overrides for customisation
+ * @returns {Object} Mock row with items and delivery data
+ */
 function makeRow(overrides = {}) {
   const future = new Date();
   future.setDate(future.getDate() + 5);

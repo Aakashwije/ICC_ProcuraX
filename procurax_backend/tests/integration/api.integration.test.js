@@ -1,13 +1,42 @@
 /**
- * API Integration Tests
+ * ============================================================================
+ * API Integration Tests — Full Request/Response Cycle Testing
+ * ============================================================================
  *
- * Tests full HTTP request → response cycle through the Express
- * application without starting a real server.
- * Uses in-process request simulation via the app's request handler.
+ * @file tests/integration/api.integration.test.js
+ * @description
+ *   Tests complete HTTP request → middleware → logic → response cycles
+ *   without starting a real server. Exercises:
+ *   - Authentication flow (JWT generation, expiry, validation)
+ *   - Error response format consistency
+ *   - CRUD workflow simulation (create → read → update → delete)
+ *   - Multi-step business processes
+ *   - Middleware chaining and error handling
  *
- * NOTE: These tests mock at the service layer to avoid needing a
- * real database, while still exercising routing, middleware, validation,
- * and serialisation end-to-end.
+ * @coverage
+ *   - Authentication Flow: 6 test cases (valid, expired, tampered, wrong secret)
+ *   - Error Response Format: 6 test cases (all error types, serialisation)
+ *   - CRUD Workflows: 4 test cases (task lifecycle, notification lifecycle)
+ *
+ * @testing_scope
+ *   - Routing and parameter handling
+ *   - Middleware execution order
+ *   - Request/response transformation
+ *   - Error serialisation and status codes
+ *   - Service layer integration
+ *   - Data consistency through full cycle
+ *
+ * @mocking_strategy
+ *   - Mock services layer to avoid database
+ *   - Test routes, middleware, and serialisation
+ *   - In-process request simulation (no actual HTTP)
+ *   - Realistic JWT token generation and validation
+ *
+ * @limitations
+ *   - Does not test actual network I/O
+ *   - Does not test static file serving
+ *   - Does not test WebSocket connections
+ *   - Does not test database-level transactions
  */
 
 import { jest, describe, it, expect, beforeAll } from "@jest/globals";
@@ -15,12 +44,19 @@ import jwt from "jsonwebtoken";
 
 const SECRET = process.env.JWT_SECRET || "test-secret-key-for-jwt-signing-minimum-32-chars";
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * TEST HELPERS & UTILITIES
+ * ────────────────────────────────────────────────────────────────────────
+ * Utilities for creating test data and authentication tokens.
+ */
 
 /**
- * Create a valid JWT token for integration tests.
+ * Creates a valid JWT authentication token for integration tests.
+ * @param {Object} overrides - Custom claims to merge with defaults
+ * @returns {String} Signed JWT token valid for 1 hour
+ * @example
+ *   const token = makeAuthToken({ id: 'admin_001' });
  */
 const makeAuthToken = (overrides = {}) =>
   jwt.sign(
@@ -30,14 +66,20 @@ const makeAuthToken = (overrides = {}) =>
   );
 
 /**
- * Create an expired JWT token for negative tests.
+ * Creates an expired JWT token for testing token validation.
+ * @returns {String} Signed JWT token expired 1 hour ago
+ * @purpose Tests rejection of expired credentials
  */
 const makeExpiredToken = () =>
   jwt.sign({ id: "user_integ_001", role: "project_manager" }, SECRET, {
     expiresIn: "-1h",
   });
 
-/* ------------------------------------------------------------------ */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * TEST SUITE
+ * ────────────────────────────────────────────────────────────────────────
+ */
 /*  Route-level integration tests                                      */
 /* ------------------------------------------------------------------ */
 describe("API Integration — Authentication Flow", () => {

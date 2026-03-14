@@ -1,18 +1,55 @@
 /**
- * Auth Controller — Unit Tests
+ * ============================================================================
+ * Auth Controller — Comprehensive Unit Test Suite
+ * ============================================================================
  *
- * Tests: register, login, checkUserApproval, password reset helpers
- * Auth Service: hashPassword, comparePassword, generateToken
+ * @file tests/unit/auth.controller.test.js
+ * @description
+ *   Tests the authentication controller layer in isolation, validating:
+ *   - User registration with email/password validation
+ *   - User login with approval gate and inactive check
+ *   - Password reset helper functions
+ *   - JWT token generation and validation
+ *   - Password hashing and comparison
+ *   - Error handling for all failure scenarios
+ *
+ * @dependencies
+ *   - User model (mocked)
+ *   - Auth service: hashPassword, comparePassword, generateToken (mocked)
+ *   - Firebase sync: syncUserToFirestore (mocked)
+ *
+ * @coverage
+ *   - register(): 10 test cases (validation, success, error paths)
+ *   - login(): 8 test cases (validation, approval, inactive, success)
+ *   - Password helpers: 10 test cases (strength, sanitisation, OTP)
+ *   - Auth service: 3 test cases (hash, compare, token)
+ *
+ * @mock_strategy
+ *   All external dependencies are mocked to isolate controller logic.
+ *   Focus is on request validation, data transformation, and error response.
+ *   No actual database calls or Firebase operations occur.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-/* ── mocks ────────────────────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * MOCKS CONFIGURATION
+ * ────────────────────────────────────────────────────────────────────────
+ * Mock implementations for:
+ * - User Mongoose model with methods: findOne, findByIdAndUpdate
+ * - Auth service functions: hashPassword, comparePassword, generateToken
+ * - Firebase integration: syncUserToFirestore
+ */
 const mockFindOne = jest.fn();
 const mockFindByIdAndUpdate = jest.fn();
 const mockSave = jest.fn();
 const mockSelect = jest.fn();
 
+/**
+ * Mock User Model
+ * Provides minimal Mongoose model interface for testing User operations.
+ */
 jest.unstable_mockModule('../../models/User.js', () => ({
   default: Object.assign(
     function UserConstructor(data) {
@@ -29,17 +66,30 @@ const mockComparePassword = jest.fn();
 const mockGenerateToken = jest.fn();
 const mockHashPassword = jest.fn();
 
+/**
+ * Mock Auth Service
+ * Provides password hashing, comparison, and JWT token generation functions.
+ */
 jest.unstable_mockModule('../../auth/services/auth.service.js', () => ({
   comparePassword: mockComparePassword,
   generateToken: mockGenerateToken,
   hashPassword: mockHashPassword,
 }));
 
+/**
+ * Mock Firebase Integration
+ * Provides user synchronisation to Firestore for real-time features.
+ */
 jest.unstable_mockModule('../../config/firebase.js', () => ({
   syncUserToFirestore: jest.fn().mockResolvedValue(undefined),
 }));
 
-/* ── import under test ───────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * IMPORTS UNDER TEST
+ * ────────────────────────────────────────────────────────────────────────
+ * Import the controller and service modules to test.
+ */
 const {
   register,
   login,
@@ -47,11 +97,26 @@ const {
 
 const AuthService = await import('../../auth/services/auth.service.js');
 
-/* ── helpers ──────────────────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * TEST HELPER FUNCTIONS
+ * ────────────────────────────────────────────────────────────────────────
+ * Mock Express request/response objects for testing controller methods.
+ */
+
+/**
+ * Creates a mock Express request object.
+ * @param {Object} overrides - Properties to override defaults
+ * @returns {Object} Mock request with body, params, headers
+ */
 function makeReq(overrides = {}) {
   return { body: {}, params: {}, headers: {}, ...overrides };
 }
 
+/**
+ * Creates a mock Express response object with Jest spy methods.
+ * @returns {Object} Mock response with status(), json() methods chained
+ */
 function makeRes() {
   const res = {};
   res.status = jest.fn().mockReturnValue(res);
@@ -59,7 +124,11 @@ function makeRes() {
   return res;
 }
 
-/* ── tests ────────────────────────────────────────────────────────────── */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * TEST SUITE
+ * ────────────────────────────────────────────────────────────────────────
+ */
 describe('Auth Module', () => {
   beforeEach(() => {
     jest.clearAllMocks();

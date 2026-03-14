@@ -1,18 +1,47 @@
 /**
- * Performance Tests
+ * ============================================================================
+ * Performance Tests — Non-Functional Benchmarks & Efficiency
+ * ============================================================================
  *
- * Non-functional tests verifying performance characteristics:
- * - Response time benchmarks
- * - Concurrent request handling
- * - Data structure efficiency
- * - Memory-safe pagination
+ * @file tests/performance/performance.test.js
+ * @description
+ *   Verifies application performance characteristics and efficiency:
+ *   - Response time benchmarks (sorting, filtering, serialisation)
+ *   - Concurrent request handling with multiple promises
+ *   - Pagination efficiency and memory footprint
+ *   - Data structure performance (Array vs Map lookup)
+ *   - Memory safety and efficient object handling
+ *
+ * @coverage
+ *   - Response Time: 4 test cases (sort, filter, serialise, deserialise)
+ *   - Pagination: 5 test cases (first/last page, limits, edge cases)
+ *   - Concurrency: 2 test cases (parallel requests, error batches)
+ *   - Memory Efficiency: 2 test cases (Map performance, O(1) vs O(n) lookup)
+ *
+ * @performance_targets
+ *   - Sort 10k items: < 50ms
+ *   - Filter 50k items: < 20ms
+ *   - Serialise large objects: < 10ms
+ *   - Pagination query: < 1ms
+ *   - 100 concurrent promises: < 5ms
+ *   - Map O(1) lookup: consistent performance
+ *   - Array O(n) lookup: acceptable degradation
+ *
+ * @methodology
+ *   - Tests use performance.now() for high-resolution timing
+ *   - Realistic data sizes (10k-50k items)
+ *   - Non-deterministic array ordering to test actual performance
+ *   - Memory allocation and garbage collection analysis
  */
 
 import { describe, it, expect } from "@jest/globals";
 
-/* ------------------------------------------------------------------ */
-/*  Response Time Benchmarks                                           */
-/* ------------------------------------------------------------------ */
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ * RESPONSE TIME BENCHMARKS
+ * ────────────────────────────────────────────────────────────────────────
+ * Tests critical operations that impact user experience latency.
+ */
 describe("Performance — Response Time Benchmarks", () => {
   it("should complete in-memory sort of 10,000 items in under 50ms", () => {
     const items = Array.from({ length: 10000 }, (_, i) => ({
