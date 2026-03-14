@@ -44,3 +44,5 @@ Academic Project
 Developed for the Software Development Group Project (5COSC021C)
 Informatics Institute of Technology (IIT)
 University of Westminster
+
+![CI](https://github.com/USERNAME/REPO/actions/workflows/ci.yml/badge.svg)
