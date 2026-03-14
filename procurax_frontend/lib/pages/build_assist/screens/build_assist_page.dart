@@ -384,7 +384,8 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                     children: [
                       _buildQuickAction("Schedule Meeting"),
                       _buildQuickAction("Material Status"),
-                      _buildQuickAction("Progress Report"),
+                      _buildQuickAction("Notes"),
+                      _buildQuickAction("Tasks"),
                       _buildQuickAction("Team"),
                     ],
                   ),

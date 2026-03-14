@@ -33,6 +33,38 @@ class BottomInput extends StatelessWidget {
             icon: const Icon(Icons.add),
             onPressed: isLoading ? null : () {},
           ),
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'Pick date/time',
+            onPressed: isLoading
+                ? null
+                : () async {
+                    // Date picker
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      // Time picker
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (time != null) {
+                        final dt = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                        controller.text = 'Scheduled for: ${dt.toString()}';
+                      }
+                    }
+                  },
+          ),
           Expanded(
             child: TextField(
               controller: controller,
