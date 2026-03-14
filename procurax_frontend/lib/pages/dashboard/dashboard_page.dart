@@ -124,7 +124,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: AppResponsive.pagePadding(context),
           child: Column(
             children: [
               // ================= TOP HEADER =================

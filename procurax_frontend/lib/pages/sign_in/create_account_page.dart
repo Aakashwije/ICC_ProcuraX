@@ -228,7 +228,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: AppResponsive.pagePadding(context),
             child: Form(
               key: _formKey,
               child: Column(

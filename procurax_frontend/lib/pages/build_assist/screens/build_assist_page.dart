@@ -7,6 +7,7 @@ import '../widgets/bottom_input.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/api_service.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -207,16 +208,23 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: theme.AppResponsive.pagePadding(
+                context,
+              ).copyWith(bottom: 0),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Builder(
-                      builder: (context) => IconButton(
-                        icon: Icon(Icons.menu, color: Colors.grey.shade700),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      builder: (context) => Semantics(
+                        label: 'Open navigation menu',
+                        button: true,
+                        child: IconButton(
+                          tooltip: 'Menu',
+                          icon: Icon(Icons.menu, color: Colors.grey.shade700),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        ),
                       ),
                     ),
                   ),

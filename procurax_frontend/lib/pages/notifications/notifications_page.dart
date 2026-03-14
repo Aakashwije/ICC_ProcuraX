@@ -138,8 +138,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final horizontal = theme.AppResponsive.pagePadding(context).horizontal / 2;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: EdgeInsets.fromLTRB(horizontal, 16, horizontal, 8),
       child: Stack(
         alignment: Alignment.center,
         children: [

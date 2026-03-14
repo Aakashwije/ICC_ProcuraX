@@ -312,7 +312,6 @@ class AppDrawer extends StatelessWidget {
             _DrawerTile(
               title: "Tasks",
               icon: Icons.check_box_outlined,
-              badge: "5",
               selected: currentRoute == AppRoutes.tasks,
               onTap: () => _go(context, AppRoutes.tasks),
             ),
@@ -326,7 +325,6 @@ class AppDrawer extends StatelessWidget {
             _DrawerTile(
               title: "BuildAssist",
               icon: Icons.support_agent_outlined,
-              badge: "5",
               selected: currentRoute == AppRoutes.buildAssist,
               onTap: () => _go(context, AppRoutes.buildAssist),
             ),
