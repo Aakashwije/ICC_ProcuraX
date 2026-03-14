@@ -123,6 +123,13 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
               'timestamp': _getCurrentTime(),
               'showSuggestions': false,
             });
+          } else if (responseType == 'meeting_scheduled') {
+            messages.add({
+              'type': 'success',
+              'message': reply,
+              'timestamp': _getCurrentTime(),
+              'showSuggestions': false,
+            });
           } else if (responseType == 'dashboard_data') {
             messages.add({
               'type': 'ai',
@@ -184,12 +191,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       'Schedule': 'show upcoming meetings',
       'Schedule Update': 'show upcoming meetings',
       'Schedule Meetings': 'show upcoming meetings',
-      'Materials': 'show concrete status',
-      'Material Status': 'show concrete status',
-      'Progress': 'show progress status',
-      'Progress Report': 'show progress status',
-      'Team': 'show team members',
-      'Meetings': 'show upcoming meetings',
+      'Schedule Meeting': 'schedule a new meeting',
       'Tasks': 'show pending tasks',
       'Notes': 'show all notes',
     };
@@ -313,6 +315,44 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         const SizedBox(height: 8),
                       ],
                     );
+                  } else if (msg['type'] == 'success') {
+                    return Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.green.shade200,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.green.shade600,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  msg['message'],
+                                  style: TextStyle(
+                                    color: Colors.green.shade800,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    );
                   } else {
                     return Column(
                       children: [
@@ -342,7 +382,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildQuickAction("Schedule Update"),
+                      _buildQuickAction("Schedule Meeting"),
                       _buildQuickAction("Material Status"),
                       _buildQuickAction("Progress Report"),
                       _buildQuickAction("Team"),
