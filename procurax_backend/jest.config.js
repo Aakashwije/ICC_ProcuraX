@@ -20,13 +20,17 @@ export default {
     "auth/**/*.js",
     "user/**/*.js",
     "settings/**/*.js",
+    "procument/**/*.js",
+    "communication/**/*.js",
+    "media/**/*.js",
+    "buildassist/**/*.js",
     "!**/node_modules/**",
     "!**/coverage/**",
     "!**/logs/**",
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "text-summary", "lcov", "clover", "json-summary"],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 50,
       functions: 50,
