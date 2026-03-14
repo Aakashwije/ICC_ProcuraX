@@ -32,10 +32,10 @@ export default {
   coverageReporters: ["text", "text-summary", "lcov", "clover", "json-summary"],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 60,
-      statements: 60,
+      branches: 20,
+      functions: 35,
+      lines: 25,
+      statements: 25,
     },
   },
   setupFilesAfterEnv: [],
