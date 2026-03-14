@@ -7,8 +7,13 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:unit": "npm test -- --testPathPatterns=tests/unit",
+    "test:integration": "npm test -- --testPathPatterns=tests/integration",
+    "test:security": "npm test -- --testPathPatterns=tests/security",
+    "test:performance": "npm test -- --testPathPatterns=tests/performance",
     "test:watch": "npm test -- --watch",
-    "test:coverage": "npm test -- --coverage"
+    "test:coverage": "npm test -- --coverage",
+    "test:ci": "npm test -- --coverage --ci --forceExit"
   },
   "keywords": [],
   "author": "",
