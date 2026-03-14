@@ -1,31 +1,31 @@
-/// ═══════════════════════════════════════════════════════════════════════════
-/// Meeting Model — Comprehensive Unit Test Suite (Dart/Flutter)
-/// ═══════════════════════════════════════════════════════════════════════════
-///
-/// @file test/models/meeting_model_test.dart
-/// @description
-///   Tests the Meeting data model for smart calendar integration:
-///   - JSON deserialisation (fromJson) with field validation
-///   - ID field flexibility (_id vs id)
-///   - DateTime parsing for meeting time ranges
-///   - Meeting status tracking (done/not done)
-///   - copyWith method for immutable updates
-///   - Time range calculation utilities
-///   - Object equality and identity
-///
-/// @coverage
-///   - fromJson: 4 test cases (complete data, id alternatives, edge cases)
-///   - toJson: 2 test cases (round-trip validation, date formatting)
-///   - copyWith: 4 test cases (field updates, multi-field updates)
-///   - timeRange: 2 test cases (time interval calculation)
-///   - Equality: 2 test cases (identical objects, different objects)
-///   - Edge cases: 2 test cases (null handling, datetime boundary)
-///
-/// @smart_calendar_features
-///   - Time conflict detection for scheduling
-///   - Meeting duration calculation
-///   - Timezone-aware datetime handling
-///   - Calendar view integration
+// ═══════════════════════════════════════════════════════════════════════════
+// Meeting Model — Comprehensive Unit Test Suite (Dart/Flutter)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// @file test/models/meeting_model_test.dart
+// @description
+//   Tests the Meeting data model for smart calendar integration:
+//   - JSON deserialisation (fromJson) with field validation
+//   - ID field flexibility (_id vs id)
+//   - DateTime parsing for meeting time ranges
+//   - Meeting status tracking (done/not done)
+//   - copyWith method for immutable updates
+//   - Time range calculation utilities
+//   - Object equality and identity
+//
+// @coverage
+//   - fromJson: 4 test cases (complete data, id alternatives, edge cases)
+//   - toJson: 2 test cases (round-trip validation, date formatting)
+//   - copyWith: 4 test cases (field updates, multi-field updates)
+//   - timeRange: 2 test cases (time interval calculation)
+//   - Equality: 2 test cases (identical objects, different objects)
+//   - Edge cases: 2 test cases (null handling, datetime boundary)
+//
+// @smart_calendar_features
+//   - Time conflict detection for scheduling
+//   - Meeting duration calculation
+//   - Timezone-aware datetime handling
+//   - Calendar view integration
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:procurax_frontend/pages/meetings/features/smart_calendar/models/meeting.dart';

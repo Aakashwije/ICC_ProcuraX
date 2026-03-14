@@ -57,18 +57,20 @@
 
 import { describe, it, expect } from '@jest/globals';
 
-/* ────────────────────────────────────────────────────────────────────
-   TOKEN PARSING / NLP HELPER FUNCTIONS
-   ────────────────────────────────────────────────────────────────────
-   @description
-     Tokenisation pipeline:
-     1. Lowercase entire input string
-     2. Remove punctuation via regex [^a-z0-9\s]
-     3. Split on whitespace into individual tokens
-     4. Filter out stop words (common English words)
-     5. Remove empty strings (length > 0)
-     Returns array of meaningful keywords for intent detection
-*/
+describe('BuildAssist', () => {
+  /* ────────────────────────────────────────────────────────────────────
+     TOKEN PARSING / NLP HELPER FUNCTIONS
+     ────────────────────────────────────────────────────────────────────
+     @description
+       Tokenisation pipeline:
+       1. Lowercase entire input string
+       2. Remove punctuation via regex [^a-z0-9\s]
+       3. Split on whitespace into individual tokens
+       4. Filter out stop words (common English words)
+       5. Remove empty strings (length > 0)
+       Returns array of meaningful keywords for intent detection
+  */
+  describe('Token Parsing', () => {
     const stopWords = [
       'show', 'please', 'me', 'give', 'list', 'items', 'details',
       'about', 'the', 'a', 'an', 'of', 'for', 'you',
