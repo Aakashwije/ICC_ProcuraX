@@ -82,13 +82,13 @@ class DeliveryCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.orange.shade50,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.orange.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
+                  color: Colors.orange.withOpacity(0.08),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -96,6 +96,26 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade600,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'MEETING',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 // Title
                 Text(
                   data!['title'] ?? 'Meeting',
@@ -204,13 +224,13 @@ class DeliveryCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.blue.shade50,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.blue.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
+                  color: Colors.blue.withOpacity(0.08),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -218,6 +238,26 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade600,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'TASK',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 // Title + Status
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -337,13 +377,13 @@ class DeliveryCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.purple.shade50,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.purple.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
+                  color: Colors.purple.withOpacity(0.08),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -351,6 +391,26 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade600,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'NOTE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 // Title + Tag
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -657,12 +717,39 @@ class DeliveryCard extends StatelessWidget {
   String _formatDateTime(dynamic dateValue) {
     if (dateValue == null) return '';
     try {
-      final DateTime date = dateValue is String
-          ? DateTime.parse(dateValue)
-          : DateTime.fromMillisecondsSinceEpoch(dateValue as int);
-      return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+      DateTime date;
+      if (dateValue is String) {
+        // Try multiple formats
+        final formats = [
+          'yyyy-MM-ddTHH:mm:ss',
+          'yyyy-MM-dd HH:mm:ss',
+          'yyyy-MM-ddTHH:mm',
+          'yyyy-MM-dd HH:mm',
+          'MM/dd/yyyy hh:mm a',
+          'MM/dd/yyyy',
+          'yyyy-MM-dd',
+        ];
+        for (final fmt in formats) {
+          try {
+            date = DateFormat(fmt).parse(dateValue);
+            return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+          } catch (_) {}
+        }
+        // Fallback to DateTime.parse
+        try {
+          date = DateTime.parse(dateValue);
+          return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+        } catch (_) {}
+        // If all parsing fails, show error
+        return 'Invalid date/time';
+      } else if (dateValue is int) {
+        date = DateTime.fromMillisecondsSinceEpoch(dateValue);
+        return DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+      } else {
+        return dateValue.toString();
+      }
     } catch (e) {
-      return dateValue.toString();
+      return 'Invalid date/time';
     }
   }
 

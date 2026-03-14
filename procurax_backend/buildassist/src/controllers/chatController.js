@@ -94,7 +94,8 @@ const parseMeetingDetails = (message) => {
 
   // Extract time - support 4pm, 4:30pm, 16:00, etc.
   let timeStr = null;
-  const timeMatch = message.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)/i);
+  // Only match time if it's followed by AM/PM or is in HH:MM format
+  const timeMatch = message.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?|\d{1,2}\s*(?:AM|PM|am|pm))/i);
   if (timeMatch) {
     timeStr = timeMatch[1].trim();
     // Normalize times like '4pm' -> '4:00 PM'
@@ -104,9 +105,9 @@ const parseMeetingDetails = (message) => {
     }
   }
 
-  // Extract location - look for "in" or "at" followed by location
+  // Extract location - look for "in" or "at" followed by location, but not if it contains a time
   let location = null;
-  const locationMatch = message.match(/(?:in|at)\s+(.+?)(?:\s+on|\s+at|$)/i);
+  const locationMatch = message.match(/(?:in|at)\s+([^\d]{2,}.+?)(?:\s+on|\s+at|$)/i);
   if (locationMatch) {
     location = locationMatch[1].trim();
   }
