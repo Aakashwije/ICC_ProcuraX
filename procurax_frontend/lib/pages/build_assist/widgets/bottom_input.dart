@@ -148,6 +148,8 @@ class _BottomInputState extends State<BottomInput> {
                             );
                         if (result != null && result.files.isNotEmpty) {
                           final file = result.files.first;
+                          // You can send file info or upload here
+                          // For demo, just show file name in input
                           widget.controller.text = 'Attachment: ${file.name}';
                         }
                       },
@@ -158,6 +160,7 @@ class _BottomInputState extends State<BottomInput> {
                 onPressed: widget.isLoading
                     ? null
                     : () async {
+                        // Date picker
                         final date = await showDatePicker(
                           context: context,
                           initialDate: DateTime.now(),
@@ -167,6 +170,7 @@ class _BottomInputState extends State<BottomInput> {
                           ),
                         );
                         if (date != null) {
+                          // Time picker
                           final time = await showTimePicker(
                             context: context,
                             initialTime: TimeOfDay.now(),
