@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../theme.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../../../../widgets/app_drawer.dart';
+import '../../../../../../theme/app_theme.dart';
 
 import '../models/meeting.dart';
 import '../widgets/tab_selector.dart';
@@ -291,7 +292,7 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          padding: AppResponsive.pagePadding(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -299,12 +300,17 @@ class _MeetingsPageState extends State<MeetingsPage> {
               Row(
                 children: [
                   Builder(
-                    builder: (context) => IconButton(
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      icon: const Icon(
-                        Icons.menu_rounded,
-                        size: 30,
-                        color: primaryBlue,
+                    builder: (context) => Semantics(
+                      label: 'Open navigation menu',
+                      button: true,
+                      child: IconButton(
+                        tooltip: 'Menu',
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        icon: const Icon(
+                          Icons.menu_rounded,
+                          size: 30,
+                          color: primaryBlue,
+                        ),
                       ),
                     ),
                   ),

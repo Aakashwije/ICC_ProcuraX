@@ -248,7 +248,7 @@ class _TasksPageState extends State<TasksPage> {
         backgroundColor: Colors.white,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            padding: AppResponsive.pagePadding(context),
             child: Column(
               children: [
                 SizedBox(
