@@ -92,12 +92,20 @@ class _BottomInputState extends State<BottomInput> {
             padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
             child: Row(
               children: [
-                Icon(Icons.record_voice_over, color: AppColors.primaryBlue, size: 18),
+                Icon(
+                  Icons.record_voice_over,
+                  color: AppColors.primaryBlue,
+                  size: 18,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     _voiceText,
-                    style: TextStyle(color: AppColors.primaryBlue, fontSize: 15, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: AppColors.primaryBlue,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -117,121 +125,114 @@ class _BottomInputState extends State<BottomInput> {
           ),
           child: Row(
             children: [
-          IconButton(
-            icon: const Icon(Icons.attach_file),
-            tooltip: 'Attach file/image',
-            onPressed: widget.isLoading
-                ? null
-                : () async {
-                    FilePickerResult? result = await FilePicker.platform
-                        .pickFiles(type: FileType.any, allowMultiple: false);
-                    if (result != null && result.files.isNotEmpty) {
-                      final file = result.files.first;
-                      // You can send file info or upload here
-                      // For demo, just show file name in input
-                      widget.controller.text = 'Attachment: ${file.name}';
-                    }
-                  },
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            tooltip: 'Pick date/time',
-            onPressed: widget.isLoading
-                ? null
-                : () async {
-                    // Date picker
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      // Time picker
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (time != null) {
-                        final dt = DateTime(
-                          date.year,
-                          date.month,
-                          date.day,
-                          time.hour,
-                          time.minute,
+              IconButton(
+                icon: const Icon(Icons.attach_file),
+                tooltip: 'Attach file/image',
+                onPressed: widget.isLoading
+                    ? null
+                    : () async {
+                        FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.any, allowMultiple: false);
+                        if (result != null && result.files.isNotEmpty) {
+                          final file = result.files.first;
+                          widget.controller.text = 'Attachment: ${file.name}';
+                        }
+                      },
+              ),
+              IconButton(
+                icon: const Icon(Icons.calendar_today),
+                tooltip: 'Pick date/time',
+                onPressed: widget.isLoading
+                    ? null
+                    : () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
                         );
-                        widget.controller.text =
-                            'Scheduled for: ${dt.toString()}';
-                      }
+                        if (date != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (time != null) {
+                            final dt = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                            widget.controller.text = 'Scheduled for: ${dt.toString()}';
+                          }
+                        }
+                      },
+              ),
+              Expanded(
+                child: TextField(
+                  controller: widget.controller,
+                  enabled: !widget.isLoading,
+                  decoration: InputDecoration(
+                    hintText: "Type a message...",
+                    filled: true,
+                    fillColor: AppColors.lightGrey,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty && !widget.isLoading) {
+                      widget.onSend(value);
+                      widget.controller.clear();
                     }
                   },
-          ),
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              enabled: !widget.isLoading,
-              decoration: InputDecoration(
-                hintText: "Type a message...",
-                filled: true,
-                fillColor: AppColors.lightGrey,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
                 ),
               ),
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty && !widget.isLoading) {
-                  widget.onSend(value);
-                  widget.controller.clear();
-                }
-              },
-            ),
+              IconButton(
+                icon: Icon(_isListening ? Icons.stop : Icons.mic),
+                tooltip: _isListening ? 'Stop listening' : 'Voice input',
+                onPressed: widget.isLoading
+                    ? null
+                    : () {
+                        if (_isListening) {
+                          _stopListening();
+                        } else {
+                          _startListening();
+                        }
+                      },
+              ),
+              Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: widget.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.send, color: Colors.white),
+                  onPressed: widget.isLoading
+                      ? null
+                      : () {
+                          if (widget.controller.text.trim().isNotEmpty) {
+                            widget.onSend(widget.controller.text);
+                            widget.controller.clear();
+                          }
+                        },
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(_isListening ? Icons.stop : Icons.mic),
-            tooltip: _isListening ? 'Stop listening' : 'Voice input',
-            onPressed: widget.isLoading
-                ? null
-                : () {
-                    if (_isListening) {
-                      _stopListening();
-                    } else {
-                      _startListening();
-                    }
-                  },
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.primaryBlue,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: widget.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(Icons.send, color: Colors.white),
-              onPressed: widget.isLoading
-                  ? null
-                  : () {
-                      if (widget.controller.text.trim().isNotEmpty) {
-                        widget.onSend(widget.controller.text);
-                        widget.controller.clear();
-                      }
-                    },
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
