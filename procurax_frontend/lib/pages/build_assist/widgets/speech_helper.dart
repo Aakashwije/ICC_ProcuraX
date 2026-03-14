@@ -8,7 +8,12 @@ class SpeechHelper {
   SpeechHelper() : _speech = stt.SpeechToText();
 
   Future<void> init() async {
-    _isAvailable = await _speech.initialize();
+    try {
+      _isAvailable = await _speech.initialize();
+    } catch (e) {
+      print('SpeechHelper init error: $e');
+      _isAvailable = false;
+    }
   }
 
   bool get isAvailable => _isAvailable;
