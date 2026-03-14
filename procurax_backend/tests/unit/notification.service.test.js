@@ -1,16 +1,59 @@
 /**
- * Notification Service Unit Tests
+ * ============================================================================
+ * Notification Service — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests the NotificationCoreService business logic layer in isolation.
- * All database calls are mocked to focus on logic, not I/O.
+ * @file tests/unit/notification.service.test.js
+ * @description
+ *   Tests the NotificationCoreService business logic layer in isolation:
+ *   - Create notification: Validates input, saves to database
+ *   - Read notifications: Filters by user, pagination, sorting
+ *   - Update notification: Mark as read, update fields
+ *   - Delete notification: Single and batch deletion
+ *   - Aggregation: Unread count, notification grouping
+ *   - Error handling: Invalid userId, missing fields, DB failures
+ *
+ * @coverage
+ *   - Create: 3 tests (valid, missing field, duplicate)
+ *   - Read: 4 tests (get all, by ID, filters, pagination)
+ *   - Update: 3 tests (mark read, update fields, not found)
+ *   - Delete: 2 tests (single, batch deletion)
+ *   - Aggregation: 3 tests (unread count, grouping, trending)
+ *   - Total: 15+ notification service test cases
+ *
+ * @dependencies
+ *   - Notification Mongoose model (mocked)
+ *   - AppError (custom error wrapper)
+ *   - Logger (mocked to prevent console output)
+ *   - Chainable query mocks (sort, skip, limit, populate, lean)
+ *
+ * @mock_strategy
+ *   - MockNotificationConstructor: ES6 class with save() instance method
+ *   - Chainable queries: sort()→skip()→limit()→populate()→lean()
+ *   - Methods: find, findOne, findOneAndUpdate, findOneAndDelete, countDocuments
+ *   - Jest.fn() for all database calls enabling assertions
+ *
+ * @test_data
+ *   - MOCK_NOTIFICATION: Standard notification document
+ *   - USER_ID: MongoDB ObjectId string for owner field
+ *   - Notification types: tasks, meetings, messages, alerts, projects
+ *   - Priority levels: low, medium, high
+ *   - isRead: boolean flag for read status
  */
 
 import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 import { AppError } from "../../core/errors/AppError.js";
 
-/* ------------------------------------------------------------------ */
-/*  Mock Mongoose model                                                */
-/* ------------------------------------------------------------------ */
+/* ────────────────────────────────────────────────────────────────────
+   MOCK MONGOOSE MODEL: Notification
+   ────────────────────────────────────────────────────────────────────
+   @description
+     Full mock implementation including:
+     - Instance constructor with auto-assigned _id and timestamps
+     - save() instance method (returns promise)
+     - Chainable static query methods
+     - Aggregation pipeline support
+*/
 const mockSave = jest.fn();
 
 const MockNotificationConstructor = jest.fn().mockImplementation(function (data) {

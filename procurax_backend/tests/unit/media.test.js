@@ -1,13 +1,66 @@
 /**
- * Media / Documents Module — Unit Tests
+ * ============================================================================
+ * Media / Documents Module — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests the Document model schema validation and the file-filter /
- * multer configuration logic used in document.routes.js.
+ * @file tests/unit/media.test.js
+ * @description
+ *   Tests the Document model schema validation and file handling:
+ *   - Schema validation: Required fields, enum constraints, types
+ *   - File type validation: image, video, document, blueprint, report, other
+ *   - Category validation: Site Photos, Blueprints, Progress Reports, Videos
+ *   - Multer file filter: Allowed MIME types and file extensions
+ *   - File size constraints: Maximum upload size (typically 50MB)
+ *   - File path handling: Secure path generation, sanitisation
+ *   - Metadata preservation: originalName, fileType, mimeType, size
+ *
+ * @coverage
+ *   - Schema validation: 4 tests (required fields, enums, types, constraints)
+ *   - File filter logic: 4 tests (allowed types, rejected types, size checks)
+ *   - File metadata: 3 tests (mimeType matching, originalName preservation)
+ *   - Upload routes: 3 tests (single upload, multiple, validation errors)
+ *   - Total: 14+ media/document test cases
+ *
+ * @dependencies
+ *   - Mongoose Schema (mocked)
+ *   - Multer (file upload middleware, mocked)
+ *   - fs/path utilities (file system operations)
+ *   - Logger (mocked)
+ *
+ * @mock_strategy
+ *   - Mongoose mock: Schema class with hooks, indexes, types
+ *   - DocumentModel mock: save(), find(), findById(), count() methods
+ *   - Multer mock: fileFilter callback with req, file, cb(error, accept) signature
+ *   - File objects: { fieldname, originalname, mimetype, size, buffer }
+ *
+ * @schema_constraints
+ *   - filename: String, required, auto-generated from date + random
+ *   - originalName: String, required, preserved from upload
+ *   - fileType: Enum (6 values), required, derived from MIME type
+ *   - mimeType: String, required, validated against whitelist
+ *   - size: Number, required, <50MB typically
+ *   - path: String, required, secure path within uploads directory
+ *   - category: Enum (5 values), required, used for file organisation
+ *   - uploadedBy: ObjectId, required, references User model
+ *   - createdAt: Date, auto-set on creation
+ *
+ * @allowed_file_types
+ *   - Images: jpg, jpeg, png, gif, webp (image/*)
+ *   - Videos: mp4, webm, avi (video/*)
+ *   - Documents: pdf, docx, xlsx, txt (application/*, text/*)
+ *   - Blueprints: pdf, dwg (application/*)
+ *   - Reports: pdf, docx, xlsx (application/*, text/*)
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-/* ── Mongoose mock ───────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────────────
+   MONGOOSE MOCK: Schema and Document Model
+   ────────────────────────────────────────────────────────────────────
+   @description
+     Mocks the entire Mongoose library to test schema validation
+     and document operations without a real database.
+*/
 const mockSave = jest.fn();
 const mockFind = jest.fn();
 const mockFindById = jest.fn();

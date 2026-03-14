@@ -1,7 +1,48 @@
 /**
- * Validation Middleware Unit Tests
+ * ============================================================================
+ * Joi Validation Middleware — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests Joi-based request validation middleware.
+ * @file tests/unit/validation.test.js
+ * @description
+ *   Tests the Joi-based request validation middleware:
+ *   - validateBody: Validates request body against Joi schema
+ *   - validateQuery: Validates query parameters against Joi schema
+ *   - validateObjectId: Validates MongoDB ObjectId in params/query
+ *   - Error handling: Joi.ValidationError formatting and error propagation
+ *   - Schema features: defaults, stripping, required fields, enum validation
+ *
+ * @coverage
+ *   - validateBody: 4 tests (valid data, defaults, strip unknown, invalid)
+ *   - validateQuery: 3 tests (valid query, defaults, validation errors)
+ *   - validateObjectId: 3 tests (valid ObjectId, invalid format, missing ID)
+ *   - Total: 10 validation test cases
+ *
+ * @dependencies
+ *   - Joi (schema validation library)
+ *   - AppError (custom error wrapper)
+ *   - MongoDB ObjectId format validation
+ *   - Express middleware (req, res, next)
+ *
+ * @validation_strategy
+ *   - Joi schemas define constraints: required, defaults, enums, min/max
+ *   - Middleware calls schema.validate(data, { stripUnknown: true })
+ *   - Joi errors converted to AppError (422 Unprocessable Entity)
+ *   - Validated data attached to req.validatedBody or req.validatedQuery
+ *   - ObjectId validation: 24-char hex string or MongoDB ObjectId instance
+ *
+ * @error_response_example
+ *   {
+ *     "success": false,
+ *     "error": {
+ *       "code": "VALIDATION_ERROR",
+ *       "message": "...",
+ *       "details": [{
+ *         "field": "title",
+ *         "message": "Title is required"
+ *       }]
+ *     }
+ *   }
  */
 
 import { jest, describe, it, expect } from "@jest/globals";
@@ -13,9 +54,10 @@ import {
 } from "../../core/validation/validate.middleware.js";
 import { AppError } from "../../core/errors/AppError.js";
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
+/* ────────────────────────────────────────────────────────────────────
+   HELPER FUNCTIONS
+   ────────────────────────────────────────────────────────────────────
+*/
 const mockReq = (overrides = {}) => ({
   body: {},
   query: {},

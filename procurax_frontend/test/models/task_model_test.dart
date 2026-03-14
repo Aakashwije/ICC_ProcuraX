@@ -1,7 +1,40 @@
+/// ═══════════════════════════════════════════════════════════════════════════
+/// Task Model — Comprehensive Unit Test Suite (Dart/Flutter)
+/// ═══════════════════════════════════════════════════════════════════════════
+///
+/// @file test/models/task_model_test.dart
+/// @description
+///   Tests the Task data model for comprehensive serialisation support:
+///   - TaskPriority enum parsing (low, medium, high, critical)
+///   - Task status enumeration (todo, in_progress, done, archived)
+///   - JSON deserialisation with field validation
+///   - JSON serialisation (toJson) with data preservation
+///   - copyWith method for immutable field updates
+///   - Object equality and identity
+///
+/// @coverage
+///   - Enum parsing: 6 test cases (all priority levels, unknown values)
+///   - fromJson: 5 test cases (valid data, edge cases, defaults)
+///   - toJson: 2 test cases (round-trip validation, field mapping)
+///   - copyWith: 3 test cases (field updates, immutability)
+///   - Equality: 2 test cases (same object, different objects)
+///   - Edge cases: 2 test cases (null handling, boundary conditions)
+///
+/// @test_strategy
+///   - Unit tests validate data transformation logic
+///   - Mock API responses with realistic Task objects
+///   - Test JSON round-trip (fromJson → toJson → equality)
+///   - Verify enum safety and default fallback values
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:procurax_frontend/models/task_model.dart';
 
 void main() {
+  /// ─────────────────────────────────────────────────────────────────
+  /// TASK PRIORITY ENUM TESTS
+  /// ─────────────────────────────────────────────────────────────────
+  /// Validate TaskPriority enum parsing from API responses.
+
   group('TaskPriority enum', () {
     test('should parse "low" priority', () {
       final task = Task.fromJson({
@@ -30,6 +63,8 @@ void main() {
       expect(task.priority, TaskPriority.critical);
     });
 
+    /// Tests fallback to medium priority for unknown values
+    /// Ensures graceful degradation when API sends unexpected values
     test('should default to medium for unknown priority', () {
       final task = Task.fromJson({
         'title': 'Test',

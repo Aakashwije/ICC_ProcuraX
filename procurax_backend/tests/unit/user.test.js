@@ -1,12 +1,75 @@
 /**
- * User Module — Unit Tests
+ * ============================================================================
+ * User Module — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests: getUserProfile, extractUserId, User model schema
+ * @file tests/unit/user.test.js
+ * @description
+ *   Tests the User module functionality:
+ *   - getUserProfile: Fetch user profile from database using extracted user ID
+ *   - extractUserId: Parse JWT from Authorization header, decode user ID
+ *   - User model schema: Validation of required fields (email, password, name)
+ *   - JWT verification: Token validation, expiry, signature checks
+ *   - Error handling: Missing auth header, invalid token, user not found
+ *   - Profile fields: name, email, role, settings, preferences
+ *
+ * @coverage
+ *   - extractUserId: 5 tests (missing header, empty, invalid, expired, valid)
+ *   - getUserProfile: 4 tests (valid user, not found, DB error, missing ID)
+ *   - User schema: 3 tests (required fields, field constraints, defaults)
+ *   - JWT handling: 3 tests (sign, verify, decode)
+ *   - Total: 15+ user module test cases
+ *
+ * @dependencies
+ *   - User Mongoose model (mocked)
+ *   - jsonwebtoken (mocked for sign/verify)
+ *   - JWT configuration (secret, expiry)
+ *   - Express req/res (mocked)
+ *
+ * @mock_strategy
+ *   - User.findById mocked to return user documents or null
+ *   - jwt.verify mocked to validate tokens or throw errors
+ *   - jwt.sign mocked to create test tokens
+ *   - req/res helpers: standard Express req/res shape
+ *
+ * @jwt_flow
+ *   - Authorization header format: "Bearer <token>"
+ *   - Token payload: { userId, email, role, iat, exp }
+ *   - Verification: jwt.verify(token, secret) returns decoded payload
+ *   - Expiry: Checked via exp field compared to current time
+ *   - Signature: HMAC-SHA256 with shared secret
+ *
+ * @user_schema
+ *   - _id: MongoDB ObjectId (auto)
+ *   - email: String, required, unique, lowercase, valid email format
+ *   - password: String, required, hashed (bcrypt), never returned in response
+ *   - name: String, required, 2-100 characters
+ *   - role: String, enum [admin, manager, user], default user
+ *   - phone: String, optional, international format
+ *   - avatar: String, optional, URL to profile image
+ *   - settings: Object, nested (notifications, privacy, etc.)
+ *   - createdAt: Date, auto-set on creation
+ *   - updatedAt: Date, auto-updated on modification
+ *
+ * @error_responses
+ *   - 401 Unauthorized: Missing or invalid token
+ *   - 403 Forbidden: Token valid but insufficient permissions
+ *   - 404 Not Found: User exists in JWT but deleted from DB
+ *   - 500 Internal: Database connection errors
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-/* ── mocks ────────────────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────────────
+   DATABASE AND AUTH MOCKS
+   ────────────────────────────────────────────────────────────────────
+   @description
+     Mocks for:
+     - User.findById() — returns user document or null
+     - jwt.verify() — validates JWT signature and expiry
+     - jwt.sign() — creates test tokens
+     - JWT config — secret key for HMAC-SHA256
+*/
 const mockFindById = jest.fn();
 
 jest.unstable_mockModule('../../models/User.js', () => ({

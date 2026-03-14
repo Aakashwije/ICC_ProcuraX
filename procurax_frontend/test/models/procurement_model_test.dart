@@ -1,10 +1,47 @@
+/// ═══════════════════════════════════════════════════════════════════════════
+/// Procurement Models — Comprehensive Unit Test Suite (Dart/Flutter)
+/// ═══════════════════════════════════════════════════════════════════════════
+///
+/// @file test/models/procurement_model_test.dart
+/// @description
+///   Tests procurement management models for Google Sheets integration:
+///   - ProcurementItem: individual material/supply line items
+///   - ProcurementView: aggregated view with filtering and sorting
+///   - UpcomingDelivery: delivery schedule items
+///   - JSON serialisation for API communication
+///   - Status calculation (On Time, Early, Delayed)
+///   - Date field mapping from Google Sheets
+///
+/// @models_covered
+///   - ProcurementItem: ~10 fields (materials, suppliers, dates, statuses)
+///   - ProcurementView: aggregated collection with statistics
+///   - UpcomingDelivery: delivery schedule entries
+///
+/// @coverage
+///   - ProcurementItem.fromJson: 3 test cases (complete data, edge cases)
+///   - ProcurementView.fromJson: 3 test cases (nested structures)
+///   - UpcomingDelivery.fromJson: 2 test cases (delivery data)
+///   - Round-trip serialisation: 2 test cases (toJson validation)
+///   - Edge cases: 8 test cases (null fields, date boundaries)
+///
+/// @google_sheets_integration
+///   - Field mapping from spreadsheet columns
+///   - Date format handling (various date formats)
+///   - Status computation from delivery dates
+///   - Filtering and sorting utilities
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:procurax_frontend/models/procurement_item.dart';
 import 'package:procurax_frontend/models/procurement_view.dart';
 
 void main() {
+  /// ─────────────────────────────────────────────────────────────────
+  /// PROCUREMENT ITEM MODEL TESTS
+  /// ─────────────────────────────────────────────────────────────────
+  /// Test parsing of individual procurement line items from API.
+
   /* ═══════════════════════════════════════════════════════════════════ */
-  /*  ProcurementItem                                                   */
+  /*  ProcurementItem — Supply line item with supplier and dates      */
   /* ═══════════════════════════════════════════════════════════════════ */
   group('ProcurementItem', () {
     test('fromJson parses complete JSON correctly', () {

@@ -1,16 +1,68 @@
 /**
- * Meeting Service Unit Tests
+ * ============================================================================
+ * Meeting Service — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests the MeetingService business logic layer in isolation.
- * Covers CRUD operations, conflict detection, and slot suggestion.
+ * @file tests/unit/meeting.service.test.js
+ * @description
+ *   Tests the MeetingService business logic layer in isolation:
+ *   - Create meeting: Validates time slots, prevents double-booking
+ *   - Read meetings: Filters by date range, user, status
+ *   - Update meeting: Modifies fields, detects rescheduling conflicts
+ *   - Delete meeting: Single and cascade deletion
+ *   - Conflict detection: Overlapping time slots identification
+ *   - Slot suggestion: Free time slots based on calendar
+ *
+ * @coverage
+ *   - Create: 4 tests (valid, missing fields, conflicts, duplicates)
+ *   - Read: 4 tests (get all, by date range, by user, pagination)
+ *   - Update: 3 tests (update fields, reschedule, conflict detection)
+ *   - Delete: 2 tests (single, cascade)
+ *   - Conflict detection: 3 tests (overlapping, same day, buffer time)
+ *   - Slot suggestion: 2 tests (available slots, next free)
+ *   - Total: 18+ meeting service test cases
+ *
+ * @dependencies
+ *   - Meeting Mongoose model (mocked)
+ *   - AppError (custom error wrapper)
+ *   - Logger (mocked)
+ *   - Date/time utilities for slot calculation
+ *   - Chainable query mocks
+ *
+ * @mock_strategy
+ *   - MockMeetingConstructor: ES6 class with timestamps
+ *   - Chainable queries: find→sort→skip→limit→select
+ *   - Database methods: find, findOne, findOneAndUpdate, findOneAndDelete
+ *   - Datetime handling: ISO 8601 format with Z timezone
+ *
+ * @scheduling_rules
+ *   - Minimum meeting duration: 15 minutes (900 seconds)
+ *   - Buffer between meetings: 5 minutes (300 seconds) to prevent back-to-back
+ *   - Working hours: 08:00-18:00 (timezone-aware)
+ *   - Conflicts detected within ±5 minute buffer
+ *   - Cancelled meetings excluded from conflict checks
+ *
+ * @test_data
+ *   - MOCK_MEETING: Standard meeting with all fields
+ *   - Time zone: UTC (Z suffix in ISO strings)
+ *   - Owner: Single user per meeting (no multi-person yet)
+ *   - Priority: high, medium, low with implicit ordering
+ *   - Status: done (boolean) instead of enum
  */
 
 import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 import { AppError } from "../../core/errors/AppError.js";
 
-/* ------------------------------------------------------------------ */
-/*  Mock Mongoose model                                                */
-/* ------------------------------------------------------------------ */
+/* ────────────────────────────────────────────────────────────────────
+   MOCK MONGOOSE MODEL: Meeting
+   ────────────────────────────────────────────────────────────────────
+   @description
+     Complete mock implementation with:
+     - Constructor assigning _id, createdAt, updatedAt
+     - save() instance method returning promise
+     - Static methods for querying (find, findOne, findOneAndUpdate)
+     - Chainable interface for complex queries
+*/
 const mockSave = jest.fn();
 
 const MockMeetingConstructor = jest.fn().mockImplementation(function (data) {

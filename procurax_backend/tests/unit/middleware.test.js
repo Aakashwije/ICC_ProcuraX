@@ -1,16 +1,55 @@
 /**
- * Middleware Unit Tests
+ * ============================================================================
+ * Express Middleware Suite — Comprehensive Unit Tests
+ * ============================================================================
  *
- * Tests the core middleware stack: error handler, async handler,
- * auth middleware, and request-ID middleware.
+ * @file tests/unit/middleware.test.js
+ * @description
+ *   Tests the core Express middleware stack components:
+ *   - errorHandler: Centralized error response formatting (AppError, Mongoose validation)
+ *   - asyncHandler: Wrapper for async route handlers (prevents unhandled rejections)
+ *   - notFoundHandler: 404 response for undefined routes
+ *   - Error type detection: CastError, ValidationError, DuplicateKey handling
+ *   - AppError custom error class (400, 401, 403, 404, 422, 500 status codes)
+ *
+ * @coverage
+ *   - Error handler: 6 tests (AppError, ValidationError, CastError, generic)
+ *   - Async handler: 2 tests (success, rejection propagation)
+ *   - NotFound handler: 1 test (404 response)
+ *   - Total: 9 middleware test cases
+ *
+ * @dependencies
+ *   - AppError (custom error class)
+ *   - Express req/res/next (mocked)
+ *   - Mongoose validation errors
+ *   - Jest spies for error handling verification
+ *
+ * @error_handling_strategy
+ *   - Detects error.name to classify: ValidationError, CastError, etc.
+ *   - Wraps errors in AppError for consistent response format
+ *   - Logs original errors before responding
+ *   - Distinguishes development vs production responses
+ *
+ * @response_format
+ *   {
+ *     "success": false,
+ *     "error": {
+ *       "code": "ERROR_CODE",
+ *       "message": "User-friendly message",
+ *       "details": {...} // dev only
+ *     }
+ *   }
  */
 
 import { jest, describe, it, expect, beforeAll, beforeEach } from "@jest/globals";
 import { AppError } from "../../core/errors/AppError.js";
 
-/* ------------------------------------------------------------------ */
-/*  Helpers: mock Express req / res / next                             */
-/* ------------------------------------------------------------------ */
+/* ────────────────────────────────────────────────────────────────────
+   HELPER FUNCTIONS: Express req/res/next Mocks
+   ────────────────────────────────────────────────────────────────────
+   @param {Object} overrides - Partial req overrides
+   @returns {Object} Mock Express request object
+*/
 const mockReq = (overrides = {}) => ({
   id: "req-123",
   path: "/test",
