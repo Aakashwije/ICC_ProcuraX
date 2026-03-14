@@ -131,9 +131,15 @@ class _BottomInputState extends State<BottomInput> {
                 onPressed: widget.isLoading
                     ? null
                     : () async {
-                        FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.any, allowMultiple: false);
+                        FilePickerResult? result = await FilePicker.platform
+                            .pickFiles(
+                              type: FileType.any,
+                              allowMultiple: false,
+                            );
                         if (result != null && result.files.isNotEmpty) {
                           final file = result.files.first;
+                          // You can send file info or upload here
+                          // For demo, just show file name in input
                           widget.controller.text = 'Attachment: ${file.name}';
                         }
                       },
@@ -144,13 +150,17 @@ class _BottomInputState extends State<BottomInput> {
                 onPressed: widget.isLoading
                     ? null
                     : () async {
+                        // Date picker
                         final date = await showDatePicker(
                           context: context,
                           initialDate: DateTime.now(),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
                         );
                         if (date != null) {
+                          // Time picker
                           final time = await showTimePicker(
                             context: context,
                             initialTime: TimeOfDay.now(),
@@ -163,7 +173,8 @@ class _BottomInputState extends State<BottomInput> {
                               time.hour,
                               time.minute,
                             );
-                            widget.controller.text = 'Scheduled for: ${dt.toString()}';
+                            widget.controller.text =
+                                'Scheduled for: ${dt.toString()}';
                           }
                         }
                       },
@@ -176,7 +187,10 @@ class _BottomInputState extends State<BottomInput> {
                     hintText: "Type a message...",
                     filled: true,
                     fillColor: AppColors.lightGrey,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
