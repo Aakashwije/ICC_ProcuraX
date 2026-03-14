@@ -40,7 +40,8 @@ class DeliveryCard extends StatelessWidget {
     if (data!.containsKey('content') && data!.containsKey('tag')) {
       return 'note';
     }
-    if (data!.containsKey('material') && data!.containsKey('category')) {
+    // Accept procurement if material OR category exists
+    if (data!.containsKey('material') || data!.containsKey('category')) {
       return 'procurement';
     }
     return 'unknown';
@@ -50,7 +51,55 @@ class DeliveryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Check if data is null or empty
     if (data == null || data!.isEmpty) {
-      return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primaryBlue.withOpacity(0.4),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryBlue.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.red.shade100,
+              child: const Icon(Icons.error_outline, color: Colors.red),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Procurement data unavailable',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'There was an error fetching or displaying procurement details. Please try again or contact support.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final dataType = _detectDataType();
@@ -116,6 +165,43 @@ class DeliveryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Attachment
+                if (data!['attachment'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child:
+                        data!['attachment'].toString().endsWith('.jpg') ||
+                            data!['attachment'].toString().endsWith('.png') ||
+                            data!['attachment'].toString().endsWith('.jpeg')
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              data!['attachment'],
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              Icon(
+                                Icons.attach_file,
+                                color: Colors.orange.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  data!['attachment'],
+                                  style: TextStyle(
+                                    color: Colors.orange.shade700,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 // Title
                 Text(
                   data!['title'] ?? 'Meeting',
@@ -238,6 +324,43 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Attachment
+                if (data!['attachment'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child:
+                        data!['attachment'].toString().endsWith('.jpg') ||
+                            data!['attachment'].toString().endsWith('.png') ||
+                            data!['attachment'].toString().endsWith('.jpeg')
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              data!['attachment'],
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              Icon(
+                                Icons.attach_file,
+                                color: Colors.blue.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  data!['attachment'],
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 // Badge
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -391,6 +514,43 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Attachment
+                if (data!['attachment'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child:
+                        data!['attachment'].toString().endsWith('.jpg') ||
+                            data!['attachment'].toString().endsWith('.png') ||
+                            data!['attachment'].toString().endsWith('.jpeg')
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              data!['attachment'],
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              Icon(
+                                Icons.attach_file,
+                                color: Colors.purple.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  data!['attachment'],
+                                  style: TextStyle(
+                                    color: Colors.purple.shade700,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 // Badge
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -483,6 +643,61 @@ class DeliveryCard extends StatelessWidget {
   }
 
   Widget _buildProcurementCard() {
+    // If both material and category are missing, show error card
+    if (!(data!['material']?.toString().isNotEmpty ?? false) &&
+        !(data!['category']?.toString().isNotEmpty ?? false)) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primaryBlue.withOpacity(0.4),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryBlue.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.red.shade100,
+              child: const Icon(Icons.error_outline, color: Colors.red),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No material details found',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Material information is missing or could not be displayed. Please try again or contact support.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ...existing code...
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -525,7 +740,9 @@ class DeliveryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      data!['category'],
+                      (data!['category']?.toString().isNotEmpty ?? false)
+                          ? data!['category']
+                          : "Category info unavailable",
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.primaryBlue,
@@ -537,10 +754,13 @@ class DeliveryCard extends StatelessWidget {
 
                 // Material
                 Text(
-                  data!['material'] ?? "Unknown Material",
+                  (data!['material']?.toString().isNotEmpty ?? false)
+                      ? data!['material']
+                      : "Material info unavailable",
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
+                    color: Color(0xFF2563EB),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -551,7 +771,10 @@ class DeliveryCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      'Source: ${data!['source']}',
+                      'Source: ' +
+                          ((data!['source']?.toString().isNotEmpty ?? false)
+                              ? data!['source']
+                              : "N/A"),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade700,
@@ -563,7 +786,11 @@ class DeliveryCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'Responsibility: ${data!['responsibility']}',
+                      'Responsibility: ' +
+                          ((data!['responsibility']?.toString().isNotEmpty ??
+                                  false)
+                              ? data!['responsibility']
+                              : "N/A"),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade700,
@@ -634,9 +861,18 @@ class DeliveryCard extends StatelessWidget {
   }
 
   Widget _buildGenericCard() {
-    final title =
-        data!['title'] ?? data!['material'] ?? data!['name'] ?? 'Item';
-    final description = data!['description'] ?? data!['content'] ?? '';
+    final title = (data!['title']?.toString().isNotEmpty ?? false)
+        ? data!['title']
+        : (data!['material']?.toString().isNotEmpty ?? false)
+        ? data!['material']
+        : (data!['name']?.toString().isNotEmpty ?? false)
+        ? data!['name']
+        : 'Item';
+    final description = (data!['description']?.toString().isNotEmpty ?? false)
+        ? data!['description']
+        : (data!['content']?.toString().isNotEmpty ?? false)
+        ? data!['content']
+        : '';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -652,10 +888,10 @@ class DeliveryCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: AppColors.primaryBlue.withOpacity(0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -664,11 +900,31 @@ class DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBlue,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'INFO',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
+                    color: Color(0xFF2563EB),
                   ),
                 ),
                 if (description.isNotEmpty) ...[
