@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
+import 'package:file_picker/file_picker.dart';
+import 'speech_helper.dart';
 
-class BottomInput extends StatelessWidget {
+class BottomInput extends StatefulWidget {
   final TextEditingController controller;
   final Function(String) onSend;
   final bool isLoading;
@@ -14,29 +16,127 @@ class BottomInput extends StatelessWidget {
   });
 
   @override
+  State<BottomInput> createState() => _BottomInputState();
+}
+
+class _BottomInputState extends State<BottomInput> {
+  late SpeechHelper _speechHelper;
+  bool _isListening = false;
+  String _voiceText = '';
+  bool _micError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _speechHelper = SpeechHelper();
+    _speechHelper.init().then((_) {
+      if (!_speechHelper.isAvailable) {
+        setState(() {
+          _micError = true;
+        });
+      }
+    });
+  }
+
+  void _startListening() {
+    if (!_speechHelper.isAvailable) {
+      setState(() {
+        _micError = true;
+      });
+      return;
+    }
+    setState(() {
+      _isListening = true;
+      _voiceText = '';
+      _micError = false;
+    });
+    _speechHelper.startListening((text) {
+      setState(() {
+        _voiceText = text;
+        widget.controller.text = text;
+      });
+    });
+  }
+
+  void _stopListening() {
+    setState(() {
+      _isListening = false;
+      _voiceText = '';
+    });
+    _speechHelper.stopListening();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_micError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Microphone unavailable or permission denied. Please enable mic access in settings.',
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
+        if (_isListening && _voiceText.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
+            child: Row(
+              children: [
+                Icon(Icons.record_voice_over, color: AppColors.primaryBlue, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _voiceText,
+                    style: TextStyle(color: AppColors.primaryBlue, fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: isLoading ? null : () {},
+            icon: const Icon(Icons.attach_file),
+            tooltip: 'Attach file/image',
+            onPressed: widget.isLoading
+                ? null
+                : () async {
+                    FilePickerResult? result = await FilePicker.platform
+                        .pickFiles(type: FileType.any, allowMultiple: false);
+                    if (result != null && result.files.isNotEmpty) {
+                      final file = result.files.first;
+                      // You can send file info or upload here
+                      // For demo, just show file name in input
+                      widget.controller.text = 'Attachment: ${file.name}';
+                    }
+                  },
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             tooltip: 'Pick date/time',
-            onPressed: isLoading
+            onPressed: widget.isLoading
                 ? null
                 : () async {
                     // Date picker
@@ -60,15 +160,16 @@ class BottomInput extends StatelessWidget {
                           time.hour,
                           time.minute,
                         );
-                        controller.text = 'Scheduled for: ${dt.toString()}';
+                        widget.controller.text =
+                            'Scheduled for: ${dt.toString()}';
                       }
                     }
                   },
           ),
           Expanded(
             child: TextField(
-              controller: controller,
-              enabled: !isLoading,
+              controller: widget.controller,
+              enabled: !widget.isLoading,
               decoration: InputDecoration(
                 hintText: "Type a message...",
                 filled: true,
@@ -83,16 +184,25 @@ class BottomInput extends StatelessWidget {
                 ),
               ),
               onSubmitted: (value) {
-                if (value.trim().isNotEmpty && !isLoading) {
-                  onSend(value);
-                  controller.clear();
+                if (value.trim().isNotEmpty && !widget.isLoading) {
+                  widget.onSend(value);
+                  widget.controller.clear();
                 }
               },
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.mic),
-            onPressed: isLoading ? null : () {},
+            icon: Icon(_isListening ? Icons.stop : Icons.mic),
+            tooltip: _isListening ? 'Stop listening' : 'Voice input',
+            onPressed: widget.isLoading
+                ? null
+                : () {
+                    if (_isListening) {
+                      _stopListening();
+                    } else {
+                      _startListening();
+                    }
+                  },
           ),
           Container(
             decoration: const BoxDecoration(
@@ -100,7 +210,7 @@ class BottomInput extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: isLoading
+              icon: widget.isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -110,12 +220,12 @@ class BottomInput extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.send, color: Colors.white),
-              onPressed: isLoading
+              onPressed: widget.isLoading
                   ? null
                   : () {
-                      if (controller.text.trim().isNotEmpty) {
-                        onSend(controller.text);
-                        controller.clear();
+                      if (widget.controller.text.trim().isNotEmpty) {
+                        widget.onSend(widget.controller.text);
+                        widget.controller.clear();
                       }
                     },
             ),

@@ -194,6 +194,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       'Schedule Meeting': 'schedule a new meeting',
       'Tasks': 'show pending tasks',
       'Notes': 'show all notes',
+      'Material Status': 'show procurement status',
     };
 
     final query = queryMap[action] ?? action;
