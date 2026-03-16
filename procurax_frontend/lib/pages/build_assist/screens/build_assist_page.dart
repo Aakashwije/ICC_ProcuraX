@@ -442,7 +442,6 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                       _buildQuickAction("Material Status"),
                       _buildQuickAction("Notes"),
                       _buildQuickAction("Tasks"),
-                      _buildQuickAction("Team"),
                     ],
                   ),
                 ),

@@ -65,10 +65,6 @@ class AIMessage extends StatelessWidget {
                             label: "Progress",
                             onTap: () => onSuggestionTap?.call("Progress"),
                           ),
-                          SuggestionChip(
-                            label: "Team",
-                            onTap: () => onSuggestionTap?.call("Team"),
-                          ),
                         ],
                       ),
                     ],
