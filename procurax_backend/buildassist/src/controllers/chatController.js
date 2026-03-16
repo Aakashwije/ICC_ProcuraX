@@ -15,6 +15,8 @@ import {
   getDashboardSummary
 } from "../services/dataFetchService.js";
 import Meeting from "../../../meetings/models/Meeting.js";
+import Note from "../../../notes/notes.model.js";
+import Task from "../../../tasks/tasks.model.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -191,6 +193,94 @@ export const parseMeetingDetails = (message) => {
   return { title, dateStr, timeStr, location, durationMinutes };
 };
 
+/**
+ * Parse note creation details (title and content)
+ */
+export const parseNoteDetails = (message) => {
+  const lowerMessage = message.toLowerCase();
+  
+  let title = 'Untitled Note';
+  let content = message;
+  let tag = 'Issue';
+  
+  // Extract title from quoted text (highest priority)
+  let titleMatch = message.match(/['"]([^'"]+)['"]/);
+  if (titleMatch && titleMatch[1]) {
+    title = titleMatch[1].trim();
+    // Content becomes the rest of the message minus the title
+    content = message.replace(/['"][^'"]+['"]\s*/i, '').trim();
+  } else {
+    // Try to extract title from "titled" or "named" patterns
+    let extractedTitle = message.match(/(?:titled|named|about)\s+([^\n.]+?)(?:\s+(?:content|saying|note:|says:)|\n|$)/i);
+    if (extractedTitle && extractedTitle[1]) {
+      title = extractedTitle[1].trim();
+      content = message.replace(new RegExp(`(?:titled|named|about)\s+${extractedTitle[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i'), '').trim();
+    }
+  }
+  
+  // Extract tag if mentioned (e.g., "bug", "feature", "issue", "idea", "urgent")
+  const tagMatch = message.match(/(?:tag:|tagged as|as\s+)\s*([\w-]+)/i);
+  if (tagMatch && tagMatch[1]) {
+    const potentialTag = tagMatch[1].trim();
+    if (['bug', 'feature', 'issue', 'idea', 'urgent', 'important', 'reminder', 'todo'].includes(potentialTag.toLowerCase())) {
+      tag = potentialTag.charAt(0).toUpperCase() + potentialTag.slice(1);
+    }
+  }
+  
+  // Ensure we have meaningful content
+  if (!content || content.length < 5) {
+    content = message;
+  }
+  
+  return { title, content, tag };
+};
+
+/**
+ * Parse task details (title, description, priority, due date)
+ */
+export const parseTaskDetails = (message) => {
+  const lowerMessage = message.toLowerCase();
+  
+  let title = 'New Task';
+  let description = message;
+  let priority = 'medium';
+  let dueDate = null;
+  let status = 'todo';
+  
+  // Extract title from quoted text
+  let titleMatch = message.match(/['"]([^'"]+)['"]/);
+  if (titleMatch && titleMatch[1]) {
+    title = titleMatch[1].trim();
+    description = message.replace(/['"][^'"]+['"]\s*/i, '').trim();
+  } else {
+    // Try patterns like "task <title>" or "add <title>"
+    let extractedTitle = message.match(/(?:task|add|create)\s+([^\n.]+?)(?:\s+(?:priority|due|by|with|urgent|high|low|medium|critical)|\n|$)/i);
+    if (extractedTitle && extractedTitle[1].length < 100) {
+      title = extractedTitle[1].trim();
+      description = message.replace(new RegExp(`(?:task|add|create)\s+${extractedTitle[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i'), '').trim();
+    }
+  }
+  
+  // Extract priority
+  if (lowerMessage.includes('critical') || lowerMessage.includes('asap') || lowerMessage.includes('urgent')) {
+    priority = 'critical';
+  } else if (lowerMessage.includes('high') || lowerMessage.includes('important')) {
+    priority = 'high';
+  } else if (lowerMessage.includes('low') || lowerMessage.includes('eventually')) {
+    priority = 'low';
+  }
+  
+  // Extract due date
+  dueDate = parseRelativeDate(message) || null;
+  
+  // Ensure we have meaningful title
+  if (!title || title === 'New Task' || title.length < 3) {
+    title = description.split(/\n|\.|,/)[0].substring(0, 100).trim() || 'New Task';
+  }
+  
+  return { title, description, priority, dueDate, status };
+};
+
 export const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
@@ -291,7 +381,94 @@ export const chatWithAI = async (req, res) => {
       }
     }
 
-    // ===== MEETINGS =====
+    // ===== CREATE NOTE =====
+    if (tokens.includes('note') && (tokens.includes('create') || tokens.includes('new') || tokens.includes('add') || tokens.includes('write'))) {
+      console.log('🔍 Create note branch triggered');
+      
+      const noteDetails = parseNoteDetails(message);
+      console.log('Parsed note details:', noteDetails);
+
+      try {
+        // Title is required for notes
+        if (!noteDetails.title || noteDetails.title === 'Untitled Note') {
+          return res.json({
+            reply: "I need a title for your note. Please say something like: 'Create a note titled \"Project Ideas\"' or 'Add note \"Meeting Notes: Q1 Planning\"'",
+          });
+        }
+
+        // Create the note
+        const newNote = new Note({
+          title: noteDetails.title,
+          content: noteDetails.content,
+          tag: noteDetails.tag,
+          owner: userId || mongoose.Types.ObjectId(),
+        });
+
+        await newNote.save();
+
+        return res.json({
+          reply: `✅ Note created successfully!\n\n📝 **${noteDetails.title}**\n🏷️ Tag: ${noteDetails.tag}\n\n${noteDetails.content.substring(0, 100)}${noteDetails.content.length > 100 ? '...' : ''}`,
+          type: "note_created",
+          data: newNote
+        });
+
+      } catch (error) {
+        console.error('Error creating note:', error);
+        return res.status(500).json({
+          reply: "Failed to create the note. Please try again or contact support.",
+          error: true
+        });
+      }
+    }
+
+    // ===== ADD TASK =====
+    if (tokens.includes('task') && (tokens.includes('add') || tokens.includes('create') || tokens.includes('new') || tokens.includes('assign'))) {
+      console.log('🔍 Add task branch triggered');
+      
+      const taskDetails = parseTaskDetails(message);
+      console.log('Parsed task details:', taskDetails);
+
+      try {
+        // Title is required for tasks
+        if (!taskDetails.title || taskDetails.title === 'New Task') {
+          return res.json({
+            reply: "I need a task description. Please say something like: 'Add task \"Review Q1 report\"' or 'Create task \"Fix login bug\" - high priority'",
+          });
+        }
+
+        // Convert dueDate if it's a date string
+        let dueDate = taskDetails.dueDate ? new Date(taskDetails.dueDate) : null;
+        
+        // Create the task
+        const newTask = new Task({
+          title: taskDetails.title,
+          description: taskDetails.description,
+          priority: taskDetails.priority,
+          dueDate: dueDate,
+          status: taskDetails.status,
+          owner: userId || mongoose.Types.ObjectId(),
+          tags: [],
+        });
+
+        await newTask.save();
+
+        const dueDateStr = dueDate ? dueDate.toLocaleDateString() : 'No due date';
+        return res.json({
+          reply: `✅ Task added successfully!\n\n✓ **${taskDetails.title}**\n🎯 Priority: ${taskDetails.priority}\n📅 Due: ${dueDateStr}\n\n${taskDetails.description.substring(0, 100)}${taskDetails.description.length > 100 ? '...' : ''}`,
+          type: "task_added",
+          data: newTask
+        });
+
+      } catch (error) {
+        console.error('Error adding task:', error);
+        return res.status(500).json({
+          reply: "Failed to create the task. Please try again or contact support.",
+          error: true
+        });
+      }
+    }
+
+    // ===== MEETINGS ====="
     if (tokens.includes('meeting') || tokens.includes('meetings') || tokens.includes('schedule') || tokens.includes('upcoming')) {
       console.log('🔍 Meeting branch triggered');
       const upcomingMeetings = await fetchUserMeetings(null);
