@@ -193,9 +193,10 @@ export const updateMeeting = async (req, res) => {
  */
 export const markMeetingDone = async (req, res) => {
   try {
+    const { done } = req.body;
     const meeting = await Meeting.findOneAndUpdate(
       { _id: req.params.id, owner: req.userId },
-      { done: true },
+      { done: done !== undefined ? done : true },
       { new: true }
     );
 

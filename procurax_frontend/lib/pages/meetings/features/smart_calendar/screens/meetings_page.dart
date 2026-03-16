@@ -120,9 +120,8 @@ class _MeetingsPageState extends State<MeetingsPage> {
     );
 
     if (!mounted) return;
-    if (action != null) {
-      await _loadMeetings();
-    }
+    // Always reload meetings after returning from add meeting page
+    await _loadMeetings();
 
     if (action == MeetingAddedAction.addAnother) {
       await _addMeeting();
