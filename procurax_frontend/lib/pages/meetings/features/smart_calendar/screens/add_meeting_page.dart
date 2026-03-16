@@ -63,10 +63,12 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       await MeetingsService.addMeeting(meeting);
 
       if (!mounted) return;
-      Navigator.pushReplacement(
+      final action = await Navigator.push<MeetingAddedAction>(
         context,
         MaterialPageRoute(builder: (_) => MeetingAddedPage(meeting: meeting)),
       );
+      if (!mounted) return;
+      Navigator.pop(context, action ?? MeetingAddedAction.viewMeetings);
     } catch (e) {
       if (!mounted) return;
       // Check if it's a conflict error
