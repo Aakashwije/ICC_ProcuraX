@@ -300,6 +300,31 @@ export const chatWithAI = async (req, res) => {
       return res.json({ reply: "Could not parse procurement data", error: true });
     }
 
+    const lowerMessage = message.toLowerCase();
+
+if (
+  lowerMessage.includes('procurement') ||
+  lowerMessage.includes('material') ||
+  lowerMessage.includes('materials') ||
+  lowerMessage.includes('show procurement status') ||
+  lowerMessage.includes('material status')
+) {
+  const enrichedItems = await enrichProcurementItems(
+    procurementItems.slice(0, 10),
+    userId
+  );
+
+  console.log('✅ Returning procurement_data');
+  console.log('Total procurement items:', procurementItems.length);
+  console.log('Sending first items:', enrichedItems.length);
+
+  return res.json({
+    reply: `Found ${procurementItems.length} procurement items. Showing first 10.`,
+    data: enrichedItems,
+    type: "procurement_data"
+  });
+}
+
     // Procurement queries
     console.log('🔍 Procurement tokens:', tokens);
     console.log('   Total items parsed:', procurementItems.length);

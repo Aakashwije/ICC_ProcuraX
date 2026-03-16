@@ -103,8 +103,15 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
 
       if (response.statusCode == 200 || response.statusCode == 401) {
         final data = jsonDecode(response.body);
+        print('Response type: ${data['type']}');
+        print('Response data type: ${data['data']?.runtimeType}');
+        print('Response data: ${data['data']}');
         print('Received data: $data');
-
+        print('type = ${data['type']}');
+        print('FULL RESPONSE: $data');
+        print('TYPE: ${data['type']}');
+        print('REPLY: ${data['reply']}');
+        print('data runtimeType = ${data['data']?.runtimeType}');
         setState(() {
           final responseType = data['type'] ?? 'ai';
           final reply = data['reply'] ?? 'No reply';
@@ -261,11 +268,59 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         const SizedBox(height: 20),
                       ],
                     );
-                  } else if (msg['type'] == 'ai_delivery' ||
-                      msg['type'] == 'procurement_data') {
+                  } else if (msg['type'] == 'procurement_data') {
                     return Column(
                       children: [
-                        DeliveryCard(data: msg['data']),
+                        AIMessage(
+                          message: msg['message'],
+                          timestamp: msg['timestamp'],
+                          showSuggestions: false,
+                          onSuggestionTap: handleQuickAction,
+                        ),
+                        const SizedBox(height: 12),
+                        if (msg['data'] is List)
+                          ...(msg['data'] as List)
+                              .map(
+                                (item) => Column(
+                                  children: [
+                                    DeliveryCard(
+                                      data: Map<String, dynamic>.from(
+                                        item is Map
+                                            ? item
+                                            : {'title': item.toString()},
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                ),
+                              )
+                              .toList()
+                        else if (msg['data'] != null)
+                          Column(
+                            children: [
+                              DeliveryCard(
+                                data: Map<String, dynamic>.from(
+                                  msg['data'] is Map
+                                      ? msg['data']
+                                      : {'title': msg['data'].toString()},
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        const SizedBox(height: 8),
+                      ],
+                    );
+                  } else if (msg['type'] == 'ai_delivery') {
+                    return Column(
+                      children: [
+                        DeliveryCard(
+                          data: Map<String, dynamic>.from(
+                            msg['data'] is Map
+                                ? msg['data']
+                                : {'title': msg['data'].toString()},
+                          ),
+                        ),
                         const SizedBox(height: 20),
                       ],
                     );
