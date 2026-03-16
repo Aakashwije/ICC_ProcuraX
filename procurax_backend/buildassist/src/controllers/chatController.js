@@ -48,7 +48,7 @@ const enrichProcurementItems = async (items, userId) => {
 /**
  * Parse relative date keywords (tomorrow, next monday, etc.)
  */
-const parseRelativeDate = (message) => {
+export const parseRelativeDate = (message) => {
   const lowerMessage = message.toLowerCase();
   const today = new Date();
   
@@ -81,14 +81,14 @@ const parseRelativeDate = (message) => {
   return null;
 };
 
-const formatDateStr = (date) => {
+export const formatDateStr = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
-const parseMeetingDetails = (message) => {
+export const parseMeetingDetails = (message) => {
   const lowerMessage = message.toLowerCase();
   
   // Extract title - careful not to include keywords like "titled"
