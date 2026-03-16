@@ -2,68 +2,78 @@ export const parseProcurementSheet = (rows) => {
   if (!rows || rows.length === 0) return [];
   
   const procurementItems = [];
-  let currentCategory = '';
-  let parentCategory = '';  // Track parent category
   
   console.log(`Processing ${rows.length} rows from sheet`);
+  
+  // Debug: log first 3 rows to see actual data structure
+  for (let d = 0; d < Math.min(3, rows.length); d++) {
+    console.log(`  Row ${d}: [${rows[d].map((c, idx) => idx + ':"' + c + '"').join(', ')}]`);
+  }
   
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     
     // Skip empty rows
-    if (!row || row.length === 0 || row.every(cell => !cell)) {
-      continue;
-    }
+    if (!row || row.length === 0) continue;
     
-    // Check if this is a category row (has category in column B, no number in column A)
-    if ((!row[0] || row[0] === '') && row[1] && row[1].trim() !== '') {
-      // This is a category (like "Electrical", "Low Voltage System")
-      currentCategory = row[1].trim();
-      
-      // Detect parent categories (top-level ones like "Electrical", "PLUMBING")
-      if (currentCategory.match(/^(Electrical|PLUMBING|HVAC|FIRE|CIVIL|Elevators|Generator|ELV)/i)) {
-        parentCategory = currentCategory.split(' ')[0];  // e.g., "Electrical" from "Electrical"
-      }
-      
-      console.log(`Found category: ${currentCategory} at row ${i}`);
-      continue;
-    }
+    const colA = row[0] ? row[0].toString().trim() : '';
     
-    // Check if this is a material row (has a number in column A)
-    const itemNumber = row[0] ? row[0].toString().trim() : '';
-    if (itemNumber.match(/^\d+$/)) {
-      const item = {
-        id: itemNumber,
-        category: currentCategory,
-        parentCategory: parentCategory,  // Add parent category
-        material: row[1] || '',          // Column B: Material
-        source: row[2] || '',             // Column C: Source (I/L)
-        responsibility: row[3] || '',      // Column D: Responsibility
-        initialSubmission: row[4] || '',   // Column E: Initial Submission
-        materialApplication: row[5] || '', // Column F: Submission of Material Application
-        approvedByConsultant: row[6] || '', // Column G: Approved by Consultant
-        shopDrawingSubmission: row[7] || '', // Column H: Shop drawing submission
-        proFormaInvoice: row[8] || '',     // Column I: Pro-forma Invoice
-        openingLC: row[9] || '',            // Column J: Opening L/C
-        etd: row[10] || '',                 // Column K: ETD
-        eta: row[11] || '',                  // Column L: ETA
-        boiApproval: row[12] || '',          // Column M: BOI Approval
-        clearingPort: row[13] || '',         // Column N: Clearing of Port
-        revisedDelivery: row[14] || '',      // Column O: Revised Delivery to Site
-        requiredDate: row[15] || '',         // Column P: Required Date
-        remarks: row[16] || '',              // Column Q: Remarks
-        draftLCAmount: row[17] || '',        // Column R: Draft LC amount
-        
-        status: parseStatus(row[16] || ''),  // Status from Remarks
-        type: row[2] === 'I' ? 'Import' : row[2] === 'L' ? 'Local' : 'Unknown'
-      };
-      
-      procurementItems.push(item);
-    }
+    // Skip if column A is empty (no material name)
+    if (!colA) continue;
+    
+    // Actual sheet structure:
+    // Column A: Material Name
+    // Column B: Quantity
+    // Column C: Order Date / ETD
+    // Column D: Delivery Date / ETA
+    // (additional columns if present)
+    const item = {
+      id: `item-${i + 1}`,
+      material: colA,                          // Column A: Material Name
+      quantity: row[1] || '',                   // Column B: Quantity
+      category: detectCategory(colA),           // Auto-detect category from material name
+      parentCategory: '',
+      source: '',
+      responsibility: '',
+      initialSubmission: '',
+      materialApplication: '',
+      approvedByConsultant: '',
+      shopDrawingSubmission: '',
+      proFormaInvoice: '',
+      openingLC: '',
+      etd: row[2] || '',                        // Column C: Order/ETD Date
+      eta: row[3] || '',                        // Column D: Delivery/ETA Date
+      boiApproval: '',
+      clearingPort: '',
+      revisedDelivery: row[3] || '',             // Use delivery date as revised delivery
+      requiredDate: row[4] || '',                // Column E: Required Date (if exists)
+      remarks: row[5] || '',                     // Column F: Remarks (if exists)
+      draftLCAmount: row[6] || '',               // Column G: Amount (if exists)
+      status: row[5] ? parseStatus(row[5]) : 'In Progress',
+      type: 'Local'
+    };
+    
+    console.log(`  Parsed item: material="${item.material}", qty=${item.quantity}, etd=${item.etd}, eta=${item.eta}`);
+    procurementItems.push(item);
   }
   
   console.log(`Parsed ${procurementItems.length} procurement items`);
   return procurementItems;
+};
+
+const detectCategory = (materialName) => {
+  if (!materialName) return 'General';
+  const name = materialName.toLowerCase();
+  if (name.includes('steel') || name.includes('reinforcement') || name.includes('bar')) return 'Steel & Reinforcement';
+  if (name.includes('cement') || name.includes('concrete')) return 'Cement & Concrete';
+  if (name.includes('sand') || name.includes('gravel') || name.includes('aggregate')) return 'Aggregates';
+  if (name.includes('brick') || name.includes('block')) return 'Masonry';
+  if (name.includes('pipe') || name.includes('plumbing') || name.includes('pvc')) return 'Plumbing';
+  if (name.includes('cable') || name.includes('electrical') || name.includes('wire')) return 'Electrical';
+  if (name.includes('glass') || name.includes('window')) return 'Glass & Windows';
+  if (name.includes('paint') || name.includes('finish')) return 'Finishes';
+  if (name.includes('tile') || name.includes('floor')) return 'Flooring';
+  return 'General';
 };
 
 const parseStatus = (remarks) => {
