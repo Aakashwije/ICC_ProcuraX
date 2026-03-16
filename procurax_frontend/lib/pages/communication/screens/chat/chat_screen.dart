@@ -501,56 +501,72 @@ class _ChatScreenState extends State<ChatScreen> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.attach_file, color: Colors.grey[600]),
+              child: TextField(
+                controller: _textController,
+                keyboardType: TextInputType.multiline,
+                maxLines: 5,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: "Type a message...",
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 4, right: 4),
+                    child: IconButton(
+                      icon: Icon(Icons.attach_file_rounded, color: Colors.grey.shade600),
                       onPressed: _pickAndSendFile,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        keyboardType: TextInputType.text,
-                        decoration: const InputDecoration(
-                          hintText: "Type a message",
-                          border: InputBorder.none,
-                        ),
-                        textCapitalization: TextCapitalization.sentences,
-                        onChanged: (value) {
-                          final typingNow = value.trim().isNotEmpty;
-                          setState(() {
-                            isUserTyping = typingNow;
-                          });
-                          _scheduleTypingUpdate(typingNow);
-                        },
-                      ),
-                    ),
-                  ],
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: AppColours.primary, width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  fillColor: Colors.grey.shade50,
+                  filled: true,
                 ),
+                textCapitalization: TextCapitalization.sentences,
+                onChanged: (value) {
+                  final typingNow = value.trim().isNotEmpty;
+                  setState(() {
+                    isUserTyping = typingNow;
+                  });
+                  _scheduleTypingUpdate(typingNow);
+                },
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Container(
-              height: 46,
-              width: 46,
+              height: 48,
+              width: 48,
+              margin: const EdgeInsets.only(bottom: 2),
               decoration: BoxDecoration(
-                color: isUserTyping ? AppColours.primary : Colors.grey.shade400,
+                color: isUserTyping ? AppColours.primary : AppColours.primary.withOpacity(0.4),
                 shape: BoxShape.circle,
+                boxShadow: isUserTyping 
+                    ? [
+                        BoxShadow(
+                          color: AppColours.primary.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ] 
+                    : null,
               ),
               child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
                 onPressed: isUserTyping ? _sendMessage : null,
               ),
             ),
