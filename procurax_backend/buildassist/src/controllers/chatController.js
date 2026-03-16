@@ -45,24 +45,88 @@ const enrichProcurementItems = async (items, userId) => {
   }));
 };
 
+/**
+ * Parse relative date keywords (tomorrow, next monday, etc.)
+ */
+const parseRelativeDate = (message) => {
+  const lowerMessage = message.toLowerCase();
+  const today = new Date();
+  
+  // Tomorrow
+  if (lowerMessage.includes('tomorrow')) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return formatDateStr(tomorrow);
+  }
+  
+  // Today
+  if (lowerMessage.includes('today')) {
+    return formatDateStr(today);
+  }
+  
+  // Next week keywords
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  for (const day of dayNames) {
+    if (lowerMessage.includes(`next ${day}`) || lowerMessage.includes(`upcoming ${day}`)) {
+      const targetDayIndex = dayNames.indexOf(day);
+      const nextDate = new Date(today);
+      const currentDayIndex = today.getDay();
+      let daysAhead = targetDayIndex - currentDayIndex;
+      if (daysAhead <= 0) daysAhead += 7;
+      nextDate.setDate(nextDate.getDate() + daysAhead);
+      return formatDateStr(nextDate);
+    }
+  }
+  
+  return null;
+};
+
+const formatDateStr = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const parseMeetingDetails = (message) => {
   const lowerMessage = message.toLowerCase();
   
-  // Extract title - look for "titled" or "called" or just the first part
+  // Extract title - careful not to include keywords like "titled"
   let title = 'New Meeting';
-  const titleMatch = message.match(/(?:titled|called|named)\s+['"]([^'"]+)['"]/i) || 
-                    message.match(/meeting\s+(.+?)(?:\s+on|\s+at|\s+in|$)/i);
-  if (titleMatch) {
+  
+  // First try: quoted text (highest priority)
+  let titleMatch = message.match(/['"]([^'"]+)['"]/);
+  if (titleMatch && titleMatch[1]) {
     title = titleMatch[1].trim();
+  } else {
+    // Second try: "titled <title>" or "called <title>" patterns (without quotes)
+    titleMatch = message.match(/(?:titled|called|named)\s+([^\s][^on]+?)(?:\s+(?:on|at|tomorrow|today|next|for)|\s*$)/i);
+    if (titleMatch && titleMatch[1]) {
+      let extractedTitle = titleMatch[1].trim();
+      // Remove any trailing date/time keywords
+      extractedTitle = extractedTitle.replace(/\s+(?:on|at|tomorrow|today|next|for).*/i, '');
+      if (extractedTitle.length > 0 && extractedTitle.length < 100 && !['titled', 'called', 'named'].includes(extractedTitle.toLowerCase())) {
+        title = extractedTitle;
+      }
+    }
   }
 
-  // Extract date - look for YYYY-MM-DD, MM/DD/YYYY, or day/month names (e.g., 23rd March)
+  // Extract date - try multiple approaches
   let dateStr = null;
-  const dateMatch = message.match(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/);
-  if (dateMatch) {
-    dateStr = dateMatch[1];
-  } else {
-    // Detect patterns like "23rd March" or "March 23"
+  
+  // First try relative dates (tomorrow, next monday, etc.)
+  dateStr = parseRelativeDate(message);
+  
+  // Then try standard formats
+  if (!dateStr) {
+    const dateMatch = message.match(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/);
+    if (dateMatch) {
+      dateStr = dateMatch[1];
+    }
+  }
+  
+  // Try day/month patterns (flexible)
+  if (!dateStr) {
     const monthNames = {
       jan: 1, january: 1,
       feb: 2, february: 2,
@@ -78,12 +142,13 @@ const parseMeetingDetails = (message) => {
       dec: 12, december: 12,
     };
 
-    const monthDayMatch = message.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s*(\d{4})?/i);
+    // More flexible month-day matching
+    const monthDayMatch = message.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December)\s*(\d{4})?/i);
     if (monthDayMatch) {
       const day = parseInt(monthDayMatch[1], 10);
       const monthName = monthDayMatch[2].toLowerCase();
       const year = monthDayMatch[3] ? parseInt(monthDayMatch[3], 10) : new Date().getFullYear();
-      const month = monthNames[monthName.toLowerCase()];
+      const month = monthNames[monthName];
       if (month) {
         const paddedDay = String(day).padStart(2, '0');
         const paddedMonth = String(month).padStart(2, '0');
@@ -92,33 +157,31 @@ const parseMeetingDetails = (message) => {
     }
   }
 
-  // Extract time - support 4pm, 4:30pm, 16:00, etc.
+  // Extract time - more flexible matching
   let timeStr = null;
-  // Only match time if it's followed by AM/PM or is in HH:MM format
-  const timeMatch = message.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?|\d{1,2}\s*(?:AM|PM|am|pm))/i);
+  // Match patterns like: 4pm, 4:30pm, 16:00, 4 pm, 4:30 pm, 2:00 PM, etc.
+  const timeMatch = message.match(/(\d{1,2})\s*:?\s*(\d{2})?\s*(am|pm|AM|PM)?/);
   if (timeMatch) {
-    timeStr = timeMatch[1].trim();
-    // Normalize times like '4pm' -> '4:00 PM'
-    const simpleTimeMatch = timeStr.match(/^(\d{1,2})\s*(am|pm)$/i);
-    if (simpleTimeMatch) {
-      timeStr = `${simpleTimeMatch[1]}:00 ${simpleTimeMatch[2].toUpperCase()}`;
-    }
+    const hour = timeMatch[1];
+    const minute = timeMatch[2] || '00';
+    const meridiem = timeMatch[3] ? timeMatch[3].toUpperCase() : 'AM';
+    timeStr = `${hour}:${minute} ${meridiem}`;
   }
 
-  // Extract location - look for "in" or "at" followed by location, but not if it contains a time
+  // Extract location - more flexible patterns
   let location = null;
-  const locationMatch = message.match(/(?:in|at)\s+([^\d]{2,}.+?)(?:\s+on|\s+at|$)/i);
-  if (locationMatch) {
-    location = locationMatch[1].trim();
+  const locationMatch = message.match(/(?:in|at|room)\s+([^.\n]+?)(?:\s+(?:on|at|time|tomorrow|today|next)|\.|\s*$)/i);
+  if (locationMatch && locationMatch[1]) {
+    location = locationMatch[1].trim().replace(/\s+on.*/i, '');
   }
 
-  // Extract duration if mentioned (e.g., "for 1 hour")
+  // Extract duration if mentioned
   let durationMinutes = 60; // default 1 hour
-  const durationMatch = message.match(/for\s+(\d+)\s*(hour|minute|min)/i);
+  const durationMatch = message.match(/(?:for|duration)\s+(\d+)\s*(hour|hr|minute|min)/i);
   if (durationMatch) {
     const num = parseInt(durationMatch[1]);
     const unit = durationMatch[2].toLowerCase();
-    if (unit.startsWith('hour')) {
+    if (unit.startsWith('hour') || unit === 'hr') {
       durationMinutes = num * 60;
     } else {
       durationMinutes = num;
@@ -158,28 +221,43 @@ export const chatWithAI = async (req, res) => {
       if (tokens.includes('meeting') || tokens.includes('meet')) {
         console.log('🔍 Schedule meeting branch triggered');
         
-        // Allow scheduling for all users (no authentication required).
-        // If userId is missing, owner will be left undefined.
-
-
         const meetingDetails = parseMeetingDetails(message);
         console.log('Parsed meeting details:', meetingDetails);
 
-        // Validate required fields
-        if (!meetingDetails.dateStr || !meetingDetails.timeStr) {
+        // Use smart defaults if date or time is missing
+        let dateStr = meetingDetails.dateStr;
+        let timeStr = meetingDetails.timeStr;
+
+        // Default to tomorrow if no date specified
+        if (!dateStr) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          dateStr = formatDateStr(tomorrow);
+        }
+
+        // Require time - ask user if not specified
+        if (!timeStr) {
           return res.json({
-            reply: "Please provide both date and time for the meeting. Example: 'schedule a meeting titled \"Project Review\" on 2026-03-15 at 2:00 PM in Conference Room'",
+            reply: `I can schedule a meeting on ${dateStr}. What time would you like? Please provide a time like '2pm', '2:30pm', '14:00', or '2:00 PM'`,
           });
         }
 
         try {
           // Parse date and time
-          const dateTimeStr = `${meetingDetails.dateStr} ${meetingDetails.timeStr}`;
+          const dateTimeStr = `${dateStr} ${timeStr}`;
           const startTime = new Date(dateTimeStr);
           
           if (isNaN(startTime.getTime())) {
             return res.json({
-              reply: "Invalid date or time format. Please use formats like '2026-03-15 2:00 PM' or '03/15/2026 14:00'",
+              reply: "I had trouble parsing the meeting details. Please specify the date and time more clearly. Example: 'schedule meeting \"Project Review\" on tomorrow at 2pm' or 'schedule meeting \"Team Sync\" on 2026-03-20 at 3:00 PM'",
+            });
+          }
+
+          // Validate that the meeting is not in the past
+          const now = new Date();
+          if (startTime < now) {
+            return res.json({
+              reply: `The meeting time (${startTime.toLocaleString()}) is in the past. Please pick a future date or time. Would you like to schedule it for tomorrow instead?`,
             });
           }
 
@@ -193,7 +271,6 @@ export const chatWithAI = async (req, res) => {
             startTime,
             endTime,
             priority: 'medium',
-            // If user is not authenticated, create meetings under a generic internal owner.
             owner: userId || mongoose.Types.ObjectId(),
           });
 
@@ -207,7 +284,7 @@ export const chatWithAI = async (req, res) => {
         } catch (error) {
           console.error('Error scheduling meeting:', error);
           return res.status(500).json({
-            reply: "Failed to schedule the meeting. Please try again.",
+            reply: "Failed to schedule the meeting. Please try again or contact support.",
             error: true
           });
         }
