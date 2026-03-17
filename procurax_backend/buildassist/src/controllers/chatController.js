@@ -385,6 +385,14 @@ export const chatWithAI = async (req, res) => {
     if (tokens.includes('note') && (tokens.includes('create') || tokens.includes('new') || tokens.includes('add') || tokens.includes('write'))) {
       console.log('🔍 Create note branch triggered');
       
+      // Require authentication for note creation
+      if (!userId) {
+        return res.status(401).json({
+          reply: "Please log in to create notes. You can still search notes using the BuildAssist chatbot without logging in.",
+          error: true
+        });
+      }
+      
       const noteDetails = parseNoteDetails(message);
       console.log('Parsed note details:', noteDetails);
 
@@ -396,12 +404,19 @@ export const chatWithAI = async (req, res) => {
           });
         }
 
+        // Validate content
+        if (!noteDetails.content || noteDetails.content.length < 3) {
+          return res.json({
+            reply: "Your note content is too short. Please provide more details.",
+          });
+        }
+
         // Create the note
         const newNote = new Note({
           title: noteDetails.title,
           content: noteDetails.content,
           tag: noteDetails.tag,
-          owner: userId || mongoose.Types.ObjectId(),
+          owner: userId,
         });
 
         await newNote.save();
@@ -414,6 +429,14 @@ export const chatWithAI = async (req, res) => {
 
       } catch (error) {
         console.error('Error creating note:', error);
+        // Check if it's a validation error from Mongoose
+        if (error.name === 'ValidationError') {
+          const messages = Object.values(error.errors).map(e => e.message);
+          return res.status(400).json({
+            reply: `Validation error: ${messages.join(', ')}. Please provide valid note details.`,
+            error: true
+          });
+        }
         return res.status(500).json({
           reply: "Failed to create the note. Please try again or contact support.",
           error: true
@@ -424,6 +447,14 @@ export const chatWithAI = async (req, res) => {
     // ===== ADD TASK =====
     if (tokens.includes('task') && (tokens.includes('add') || tokens.includes('create') || tokens.includes('new') || tokens.includes('assign'))) {
       console.log('🔍 Add task branch triggered');
+      
+      // Require authentication for task creation
+      if (!userId) {
+        return res.status(401).json({
+          reply: "Please log in to create tasks. You can still view tasks using the BuildAssist chatbot without logging in.",
+          error: true
+        });
+      }
       
       const taskDetails = parseTaskDetails(message);
       console.log('Parsed task details:', taskDetails);
@@ -436,8 +467,27 @@ export const chatWithAI = async (req, res) => {
           });
         }
 
+        // Validate title length
+        if (taskDetails.title.length < 3) {
+          return res.json({
+            reply: "Task title is too short. Please provide a more descriptive title.",
+          });
+        }
+
         // Convert dueDate if it's a date string
-        let dueDate = taskDetails.dueDate ? new Date(taskDetails.dueDate) : null;
+        let dueDate = null;
+        if (taskDetails.dueDate) {
+          try {
+            dueDate = new Date(taskDetails.dueDate);
+            // Validate the date is valid
+            if (isNaN(dueDate.getTime())) {
+              dueDate = null;
+            }
+          } catch (e) {
+            console.warn('Invalid date format:', taskDetails.dueDate);
+            dueDate = null;
+          }
+        }
         
         // Create the task
         const newTask = new Task({
@@ -446,7 +496,7 @@ export const chatWithAI = async (req, res) => {
           priority: taskDetails.priority,
           dueDate: dueDate,
           status: taskDetails.status,
-          owner: userId || mongoose.Types.ObjectId(),
+          owner: userId,
           tags: [],
         });
 
@@ -461,6 +511,14 @@ export const chatWithAI = async (req, res) => {
 
       } catch (error) {
         console.error('Error adding task:', error);
+        // Check if it's a validation error from Mongoose
+        if (error.name === 'ValidationError') {
+          const messages = Object.values(error.errors).map(e => e.message);
+          return res.status(400).json({
+            reply: `Validation error: ${messages.join(', ')}. Please provide valid task details.`,
+            error: true
+          });
+        }
         return res.status(500).json({
           reply: "Failed to create the task. Please try again or contact support.",
           error: true
