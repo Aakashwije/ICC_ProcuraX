@@ -1,29 +1,14 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { authMiddleware } from  "../../core/middleware/auth.middleware.js";
 import User from '../models/User.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../config/cloudinary.js';
 
 const router = express.Router();
 
-// Ensure upload directory exists
-const uploadDir = 'uploads/profile-images';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'profile-' + uniqueSuffix + ext);
-  }
-});
+// Use memory storage so we can upload the buffer to Cloudinary
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif/;
@@ -90,7 +75,7 @@ router.post(
       }
 
       const file = uploaded;
-      console.log('Resolved upload file:', file);
+      console.log('Resolved upload file:', file.originalname);
 
       // Get user
       const user = await User.findById(req.userId);
@@ -101,29 +86,38 @@ router.post(
         });
       }
 
-      // Delete old profile image if exists
-      if (user.profileImage) {
-        const oldImagePath = path.join(process.cwd(), user.profileImage);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
+      // Delete old profile image from Cloudinary if exists
+      if (user.cloudinaryPublicId) {
+        try {
+          await deleteFromCloudinary(user.cloudinaryPublicId, 'image');
+        } catch (delErr) {
+          console.error('Error deleting old Cloudinary image:', delErr);
         }
       }
 
-      // Update user with new profile image path
-      user.profileImage = file.path;
-      await user.save();
+      // Upload new image to Cloudinary from buffer
+      const cloudinaryResult = await uploadToCloudinary(
+        `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        {
+          resource_type: 'image',
+          folder: 'procurax/profile-images',
+          public_id: `profile-${req.userId}-${Date.now()}`,
+        }
+      );
 
-      // Expose a URL that can be used by the client to load the image.
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const relativePath = file.path.split(path.sep).join('/');
-      const profileImageUrl = `${baseUrl}/${relativePath}`;
+      console.log('Cloudinary profile upload result:', cloudinaryResult.secure_url);
+
+      // Update user with Cloudinary URL
+      user.profileImage = cloudinaryResult.secure_url;
+      user.cloudinaryPublicId = cloudinaryResult.public_id;
+      await user.save();
 
       res.json({
         success: true,
         message: 'Profile image uploaded successfully',
         data: {
-          profileImage: file.path,
-          profileImageUrl,
+          profileImage: cloudinaryResult.secure_url,
+          profileImageUrl: cloudinaryResult.secure_url,
           user: {
             id: user._id,
             name: user.name,
@@ -156,16 +150,18 @@ router.delete('/profile-image', authMiddleware, async (req, res) => {
       });
     }
     
-    // Delete image file if exists
-    if (user.profileImage) {
-      const imagePath = path.join(process.cwd(), user.profileImage);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
+    // Delete image from Cloudinary if exists
+    if (user.cloudinaryPublicId) {
+      try {
+        await deleteFromCloudinary(user.cloudinaryPublicId, 'image');
+      } catch (delErr) {
+        console.error('Error deleting Cloudinary image:', delErr);
       }
     }
     
     // Remove image reference from user
     user.profileImage = '';
+    user.cloudinaryPublicId = '';
     await user.save();
     
     res.json({

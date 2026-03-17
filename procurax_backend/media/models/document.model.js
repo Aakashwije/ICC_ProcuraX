@@ -24,7 +24,15 @@ const documentSchema = new mongoose.Schema({
   },
   path: {
     type: String,
-    required: true
+    default: ''
+  },
+  cloudinaryUrl: {
+    type: String,
+    default: ''
+  },
+  cloudinaryPublicId: {
+    type: String,
+    default: ''
   },
   category: {
     type: String,
