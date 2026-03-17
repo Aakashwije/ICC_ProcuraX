@@ -102,11 +102,13 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     else resourceType = 'raw'; // PDFs, docs, etc.
 
     // Upload to Cloudinary from buffer
+    // folder and public_id are sanitized inside uploadToCloudinary() to avoid "Display name cannot contain slashes" error
+    const sanitizedCategory = (category || 'Other').replaceAll(/\s+/g, '_');
     const cloudinaryResult = await uploadToCloudinary(
       `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
       {
         resource_type: resourceType,
-        folder: `procurax/${(category || 'Other').replace(/\s+/g, '_')}`,
+        folder: `procurax/${sanitizedCategory}`,
         public_id: `file-${Date.now()}`,
       }
     );
