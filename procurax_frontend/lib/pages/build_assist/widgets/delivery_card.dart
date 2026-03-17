@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import 'package:intl/intl.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class DeliveryCard extends StatelessWidget {
   final Map<String, dynamic>? data;
@@ -83,10 +84,9 @@ class DeliveryCard extends StatelessWidget {
                 children: [
                   Text(
                     'Procurement data unavailable',
-                    style: const TextStyle(
+                    style: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.primary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: Color(0xFF2563EB),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -205,10 +205,9 @@ class DeliveryCard extends StatelessWidget {
                 // Title
                 Text(
                   data!['title'] ?? 'Meeting',
-                  style: const TextStyle(
+                  style: theme.AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: Color(0xFF1A1A1A),
+                    color: theme.AppColors.neutral900,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -219,15 +218,14 @@ class DeliveryCard extends StatelessWidget {
                       Icon(
                         Icons.location_on,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: theme.AppColors.neutral700,
                       ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           data!['location'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
+                          style: theme.AppTextStyles.caption.copyWith(
+                            color: theme.AppColors.neutral700,
                           ),
                         ),
                       ),
@@ -388,10 +386,9 @@ class DeliveryCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         data!['title'] ?? 'Task',
-                        style: const TextStyle(
+                        style: theme.AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Color(0xFF1A1A1A),
+                          color: theme.AppColors.neutral900,
                         ),
                       ),
                     ),
@@ -578,10 +575,9 @@ class DeliveryCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         data!['title'] ?? 'Note',
-                        style: const TextStyle(
+                        style: theme.AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Color(0xFF1A1A1A),
+                          color: theme.AppColors.neutral900,
                         ),
                       ),
                     ),
@@ -678,10 +674,9 @@ class DeliveryCard extends StatelessWidget {
                 children: [
                   Text(
                     'No material details found',
-                    style: const TextStyle(
+                    style: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.primary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: Color(0xFF2563EB),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -921,10 +916,9 @@ class DeliveryCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: theme.AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: Color(0xFF2563EB),
+                    color: theme.AppColors.primary,
                   ),
                 ),
                 if (description.isNotEmpty) ...[
