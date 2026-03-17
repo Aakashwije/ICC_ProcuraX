@@ -3,6 +3,7 @@ import '../widgets/ai_message.dart';
 import '../widgets/user_message.dart';
 import '../widgets/delivery_card.dart';
 import '../widgets/bottom_input.dart';
+import '../widgets/suggestion_chip.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/api_service.dart';
@@ -41,6 +42,12 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
           "Hello! I'm your BuildAssist AI.\nHow can I help you with your construction project today?",
       'timestamp': _getCurrentTime(),
       'showSuggestions': true,
+      'suggestions': [
+        'Show my meetings',
+        'Show my tasks',
+        'Material status',
+        'Dashboard summary',
+      ],
     });
   }
 
@@ -66,8 +73,6 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
   Future<void> sendMessage(String userMessage) async {
     if (userMessage.trim().isEmpty) return;
 
-    print('Sending message: $userMessage');
-
     // Add user message to UI
     setState(() {
       messages.add({
@@ -88,29 +93,19 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
         if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       };
 
-      // Add timeout to prevent hanging
       final response = await http
           .post(
             Uri.parse('$baseUrl/api/buildassist'),
             headers: headers,
             body: jsonEncode({'message': userMessage}),
           )
-          .timeout(const Duration(seconds: 10));
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200 || response.statusCode == 401) {
         final data = jsonDecode(response.body);
-        print('Response type: ${data['type']}');
-        print('Response data type: ${data['data']?.runtimeType}');
-        print('Response data: ${data['data']}');
-        print('Received data: $data');
-        print('type = ${data['type']}');
-        print('FULL RESPONSE: $data');
-        print('TYPE: ${data['type']}');
-        print('REPLY: ${data['reply']}');
-        print('data runtimeType = ${data['data']?.runtimeType}');
+        final List<String> suggestions = data['suggestions'] != null
+            ? List<String>.from(data['suggestions'])
+            : [];
         setState(() {
           final responseType = data['type'] ?? 'ai';
           final reply = data['reply'] ?? 'No reply';
@@ -121,35 +116,49 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
               responseType == 'tasks_data' ||
               responseType == 'notes_data' ||
               responseType == 'procurement_data') {
-            // Add message with data
             messages.add({
               'type': responseType,
               'message': reply,
               'data': responseData,
               'timestamp': _getCurrentTime(),
-              'showSuggestions': false,
+              'showSuggestions': suggestions.isNotEmpty,
+              'suggestions': suggestions,
             });
-          } else if (responseType == 'meeting_scheduled') {
+          } else if (responseType == 'meeting_scheduled' ||
+              responseType == 'note_created' ||
+              responseType == 'task_added') {
             messages.add({
               'type': 'success',
               'message': reply,
+              'successType': responseType,
+              'timestamp': _getCurrentTime(),
+              'showSuggestions': suggestions.isNotEmpty,
+              'suggestions': suggestions,
+            });
+          } else if (responseType == 'guide') {
+            messages.add({
+              'type': 'ai',
+              'message': reply,
               'timestamp': _getCurrentTime(),
               'showSuggestions': false,
+              'suggestions': [],
             });
           } else if (responseType == 'dashboard_data') {
             messages.add({
               'type': 'ai',
               'message': reply,
               'timestamp': _getCurrentTime(),
-              'showSuggestions': false,
+              'showSuggestions': suggestions.isNotEmpty,
+              'suggestions': suggestions,
             });
           } else {
-            // Default AI message
             messages.add({
               'type': 'ai',
               'message': reply,
               'timestamp': _getCurrentTime(),
-              'showSuggestions': responseType == 'help',
+              'showSuggestions':
+                  responseType == 'help' || suggestions.isNotEmpty,
+              'suggestions': suggestions,
             });
           }
           isLoading = false;
@@ -160,26 +169,24 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
         throw Exception('Failed to get response: ${response.statusCode}');
       }
     } on TimeoutException catch (_) {
-      print('Timeout error');
       setState(() {
         messages.add({
-          'type': 'ai',
+          'type': 'error',
           'message':
-              'The request timed out. Please check if the backend server is running.',
+              'The request timed out. Please check your connection and try again.',
           'timestamp': _getCurrentTime(),
-          'showSuggestions': true,
+          'showSuggestions': false,
         });
         isLoading = false;
       });
     } catch (e) {
-      print('Error: $e');
       setState(() {
         messages.add({
-          'type': 'ai',
+          'type': 'error',
           'message':
-              'Connection error. Make sure the backend is running on port 5002.',
+              'Something went wrong. Please make sure the backend server is running.',
           'timestamp': _getCurrentTime(),
-          'showSuggestions': true,
+          'showSuggestions': false,
         });
         isLoading = false;
       });
@@ -188,7 +195,10 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
 
   String _getCurrentTime() {
     final now = DateTime.now();
-    return '${now.hour}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
+    final hour = now.hour > 12
+        ? now.hour - 12
+        : (now.hour == 0 ? 12 : now.hour);
+    return '$hour:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
   }
 
   void handleQuickAction(String action) {
@@ -201,6 +211,9 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       'Tasks': 'show pending tasks',
       'Notes': 'show all notes',
       'Material Status': 'show procurement status',
+      'Create Note': 'create a new note',
+      'Create Task': 'add a new task',
+      'Dashboard': 'dashboard summary',
     };
 
     final query = queryMap[action] ?? action;
@@ -256,8 +269,61 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: messages.length,
+                itemCount: messages.length + (isLoading ? 1 : 0),
                 itemBuilder: (context, index) {
+                  // Typing indicator at the end
+                  if (index == messages.length && isLoading) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: theme.AppColors.primary,
+                            child: const Text(
+                              "BA",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: theme.AppShadows.card,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: theme.AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  "Thinking...",
+                                  style: theme.AppTextStyles.caption.copyWith(
+                                    color: theme.AppColors.neutral500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   final msg = messages[index];
                   if (msg['type'] == 'user') {
                     return Column(
@@ -269,13 +335,72 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         const SizedBox(height: 20),
                       ],
                     );
+                  } else if (msg['type'] == 'error') {
+                    return Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: theme.AppColors.errorLight,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: theme.AppColors.error.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: theme.AppColors.error,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  msg['message'],
+                                  style: theme.AppTextStyles.bodySmall.copyWith(
+                                    color: theme.AppColors.error,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.refresh,
+                                  color: theme.AppColors.error,
+                                  size: 20,
+                                ),
+                                tooltip: 'Retry',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  // Retry last user message
+                                  final lastUserMsg = messages.reversed
+                                      .firstWhere(
+                                        (m) => m['type'] == 'user',
+                                        orElse: () => <String, dynamic>{},
+                                      );
+                                  if (lastUserMsg.isNotEmpty) {
+                                    sendMessage(lastUserMsg['message']);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
                   } else if (msg['type'] == 'procurement_data') {
                     return Column(
                       children: [
                         AIMessage(
                           message: msg['message'],
                           timestamp: msg['timestamp'],
-                          showSuggestions: false,
+                          showSuggestions: msg['showSuggestions'] ?? false,
+                          suggestions: msg['suggestions'] != null
+                              ? List<String>.from(msg['suggestions'])
+                              : [],
                           onSuggestionTap: handleQuickAction,
                         ),
                         const SizedBox(height: 12),
@@ -334,7 +459,10 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         AIMessage(
                           message: msg['message'],
                           timestamp: msg['timestamp'],
-                          showSuggestions: false,
+                          showSuggestions: msg['showSuggestions'] ?? false,
+                          suggestions: msg['suggestions'] != null
+                              ? List<String>.from(msg['suggestions'])
+                              : [],
                           onSuggestionTap: handleQuickAction,
                         ),
                         const SizedBox(height: 12),
@@ -373,37 +501,72 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                       ],
                     );
                   } else if (msg['type'] == 'success') {
+                    final successType = msg['successType'] ?? '';
+                    IconData successIcon;
+                    Color successColor;
+                    if (successType == 'note_created') {
+                      successIcon = Icons.note_add;
+                      successColor = Colors.purple;
+                    } else if (successType == 'task_added') {
+                      successIcon = Icons.task_alt;
+                      successColor = Colors.blue;
+                    } else {
+                      successIcon = Icons.check_circle;
+                      successColor = Colors.green;
+                    }
                     return Column(
                       children: [
                         Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade50,
+                            color: successColor.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.green.shade200,
+                              color: successColor.withOpacity(0.2),
                               width: 1,
                             ),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: Colors.green.shade600,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  msg['message'],
-                                  style: TextStyle(
-                                    color: Colors.green.shade800,
-                                    fontSize: 14,
-                                    height: 1.4,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    successIcon,
+                                    color: successColor,
+                                    size: 24,
                                   ),
-                                ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      msg['message'],
+                                      style: theme.AppTextStyles.bodySmall
+                                          .copyWith(
+                                            color: theme.AppColors.neutral900,
+                                            height: 1.5,
+                                          ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              if (msg['suggestions'] != null &&
+                                  (msg['suggestions'] as List).isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 6,
+                                  children: (msg['suggestions'] as List<String>)
+                                      .map(
+                                        (s) => SuggestionChip(
+                                          label: s,
+                                          onTap: () => handleQuickAction(s),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -417,6 +580,9 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                           message: msg['message'],
                           timestamp: msg['timestamp'],
                           showSuggestions: msg['showSuggestions'] ?? false,
+                          suggestions: msg['suggestions'] != null
+                              ? List<String>.from(msg['suggestions'])
+                              : [],
                           onSuggestionTap: handleQuickAction,
                         ),
                         const SizedBox(height: 20),
@@ -439,10 +605,19 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildQuickAction("Schedule Meeting"),
-                      _buildQuickAction("Material Status"),
-                      _buildQuickAction("Notes"),
-                      _buildQuickAction("Tasks"),
+                      _buildQuickAction(
+                        "Schedule Meeting",
+                        Icons.calendar_month,
+                      ),
+                      _buildQuickAction(
+                        "Material Status",
+                        Icons.inventory_2_outlined,
+                      ),
+                      _buildQuickAction("Notes", Icons.note_outlined),
+                      _buildQuickAction("Tasks", Icons.checklist),
+                      _buildQuickAction("Create Note", Icons.note_add_outlined),
+                      _buildQuickAction("Create Task", Icons.add_task),
+                      _buildQuickAction("Dashboard", Icons.dashboard_outlined),
                     ],
                   ),
                 ),
@@ -460,7 +635,7 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
     );
   }
 
-  Widget _buildQuickAction(String text) {
+  Widget _buildQuickAction(String text, [IconData? icon]) {
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
@@ -470,8 +645,20 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
           decoration: BoxDecoration(
             color: theme.AppColors.neutral100,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.AppColors.neutral300.withOpacity(0.5),
+            ),
           ),
-          child: Text(text, style: theme.AppTextStyles.labelSmall),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: theme.AppColors.primary),
+                const SizedBox(width: 6),
+              ],
+              Text(text, style: theme.AppTextStyles.labelSmall),
+            ],
+          ),
         ),
       ),
     );

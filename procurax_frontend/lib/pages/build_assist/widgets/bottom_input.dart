@@ -195,7 +195,12 @@ class _BottomInputState extends State<BottomInput> {
                   controller: widget.controller,
                   enabled: !widget.isLoading,
                   decoration: InputDecoration(
-                    hintText: "Type a message...",
+                    hintText: widget.isLoading
+                        ? "Waiting for response..."
+                        : "Ask me anything about your project...",
+                    hintStyle: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.neutral500,
+                    ),
                     filled: true,
                     fillColor: theme.AppColors.neutral100,
                     contentPadding: const EdgeInsets.symmetric(
