@@ -13,6 +13,7 @@ export default {
   testMatch: ["**/__tests__/**/*.test.js", "**/?(*.)+(spec|test).js"],
   collectCoverageFrom: [
     "core/**/*.js",
+    "config/**/*.js",
     "tasks/**/*.js",
     "notes/**/*.js",
     "notifications/**/*.js",

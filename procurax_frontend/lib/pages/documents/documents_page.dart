@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
@@ -833,7 +832,11 @@ class _CategoryCardState extends State<CategoryCard> {
 
   Future<void> _openFile(String url, String filename) async {
     try {
-      final fullUrl = 'http://10.0.2.2:5002$url';
+      // If url is already a full URL (Cloudinary), use it directly;
+      // otherwise prepend the backend base URL.
+      final fullUrl = url.startsWith('http')
+          ? url
+          : '${ApiService.baseUrl}$url';
 
       final response = await http.get(Uri.parse(fullUrl));
 
@@ -1170,7 +1173,11 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
 
   Future<void> _openFile(String url, String filename) async {
     try {
-      final fullUrl = 'http://10.0.2.2:5002$url';
+      // If url is already a full URL (Cloudinary), use it directly;
+      // otherwise prepend the backend base URL.
+      final fullUrl = url.startsWith('http')
+          ? url
+          : '${ApiService.baseUrl}$url';
 
       final response = await http.get(Uri.parse(fullUrl));
 
