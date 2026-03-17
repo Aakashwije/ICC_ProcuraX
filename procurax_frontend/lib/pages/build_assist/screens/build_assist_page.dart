@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
 import '../widgets/ai_message.dart';
 import '../widgets/user_message.dart';
 import '../widgets/delivery_card.dart';
@@ -232,18 +231,20 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         button: true,
                         child: IconButton(
                           tooltip: 'Menu',
-                          icon: Icon(Icons.menu, color: Colors.grey.shade700),
+                          icon: Icon(
+                            Icons.menu_rounded,
+                            size: 30,
+                            color: theme.AppColors.primary,
+                          ),
                           onPressed: () => Scaffold.of(context).openDrawer(),
                         ),
                       ),
                     ),
                   ),
-                  const Text(
+                  Text(
                     "BuildAssist",
-                    style: TextStyle(
-                      color: Color(0xFF2563EB),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                    style: theme.AppTextStyles.h2.copyWith(
+                      color: theme.AppColors.primary,
                     ),
                   ),
                 ],
@@ -467,10 +468,10 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.lightGrey,
+            color: theme.AppColors.neutral100,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(text, style: const TextStyle(fontSize: 13)),
+          child: Text(text, style: theme.AppTextStyles.labelSmall),
         ),
       ),
     );

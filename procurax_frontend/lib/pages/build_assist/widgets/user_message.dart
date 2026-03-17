@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class UserMessage extends StatelessWidget {
   final String message;
@@ -22,18 +22,22 @@ class UserMessage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             constraints: const BoxConstraints(maxWidth: 280),
             decoration: BoxDecoration(
-              color: AppColors.primaryBlue,
+              color: theme.AppColors.primary,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Text(
               message,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: theme.AppTextStyles.bodyMedium.copyWith(
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             timestamp,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
+            style: theme.AppTextStyles.caption.copyWith(
+              color: theme.AppColors.neutral700,
+            ),
           ),
         ],
       ),

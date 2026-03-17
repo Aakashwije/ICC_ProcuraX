@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class SuggestionChip extends StatelessWidget {
   final String label;
@@ -12,12 +12,15 @@ class SuggestionChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.lightGrey,
-          borderRadius: BorderRadius.circular(20),
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.AppSpacing.md,
+          vertical: theme.AppSpacing.xs,
         ),
-        child: Text(label, style: const TextStyle(fontSize: 13)),
+        decoration: BoxDecoration(
+          color: theme.AppColors.neutral100,
+          borderRadius: BorderRadius.circular(theme.AppRadius.lg),
+        ),
+        child: Text(label, style: theme.AppTextStyles.labelSmall),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
 import 'package:file_picker/file_picker.dart';
 import 'speech_helper.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class BottomInput extends StatefulWidget {
   final TextEditingController controller;
@@ -91,7 +91,9 @@ class _BottomInputState extends State<BottomInput> {
                 Expanded(
                   child: Text(
                     'Microphone unavailable or permission denied. Please enable mic access in settings.',
-                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                    style: theme.AppTextStyles.caption.copyWith(
+                      color: Colors.red,
+                    ),
                   ),
                 ),
               ],
@@ -104,16 +106,15 @@ class _BottomInputState extends State<BottomInput> {
               children: [
                 Icon(
                   Icons.record_voice_over,
-                  color: AppColors.primaryBlue,
+                  color: theme.AppColors.primary,
                   size: 18,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     _voiceText,
-                    style: TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontSize: 15,
+                    style: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -196,7 +197,7 @@ class _BottomInputState extends State<BottomInput> {
                   decoration: InputDecoration(
                     hintText: "Type a message...",
                     filled: true,
-                    fillColor: AppColors.lightGrey,
+                    fillColor: theme.AppColors.neutral100,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 14,
@@ -228,8 +229,8 @@ class _BottomInputState extends State<BottomInput> {
                       },
               ),
               Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryBlue,
+                decoration: BoxDecoration(
+                  color: theme.AppColors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
