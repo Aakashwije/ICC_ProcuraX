@@ -385,7 +385,7 @@ export const chatWithAI = async (req, res) => {
     // remove punctuation
     const sanitized = rawQuery.replace(/[^a-z0-9\s]/g, '').trim();
     // drop common filler words
-    const stopWords = ['show','please','me','give','list','items','details','about','the','a','an','of','for','you'];
+    const stopWords = ['show','please','me','my','give','list','items','details','about','the','a','an','of','for','you','all','get','fetch','view','our'];
     const tokens = sanitized
       .split(/\s+/)
       .filter(w => w.length > 0 && !stopWords.includes(w));
@@ -723,7 +723,7 @@ export const chatWithAI = async (req, res) => {
         });
       }
       
-      const keywords = tokens.filter(w => !['note','notes','search','find'].includes(w));
+      const keywords = tokens.filter(w => !['note','notes','search','find','my','all','our','get','fetch','view'].includes(w));
       const searchKeyword = keywords[0] || '';
       const noteResults = await fetchUserNotes(userId);
       const filtered = searchKeyword 
