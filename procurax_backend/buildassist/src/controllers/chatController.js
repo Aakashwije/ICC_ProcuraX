@@ -253,37 +253,52 @@ export const parseNoteDetails = (message) => {
   let content = message;
   let tag = 'Issue';
   
+  // Extract tag FIRST so we can strip it before title extraction
+  const validTags = ['bug', 'feature', 'issue', 'idea', 'urgent', 'important', 'reminder', 'todo'];
+  const tagMatch = message.match(/(?:tag:|tagged as|as)\s+([\w-]+)/i);
+  if (tagMatch && tagMatch[1]) {
+    const potentialTag = tagMatch[1].trim();
+    if (validTags.includes(potentialTag.toLowerCase())) {
+      tag = potentialTag.charAt(0).toUpperCase() + potentialTag.slice(1);
+    }
+  }
+
   // Extract title from quoted text (highest priority)
   let titleMatch = message.match(/['"]([^'"]+)['"]/);
   if (titleMatch && titleMatch[1]) {
     title = titleMatch[1].trim();
-    // Content becomes the rest of the message minus the title
     content = message.replace(/['"][^'"]+['"]\s*/i, '').trim();
   } else {
-    // Try to extract title from "titled" or "named" patterns
-    let extractedTitle = message.match(/(?:titled|named|about)\s+([^\n.]+?)(?:\s+(?:content|saying|note:|says:)|\n|$)/i);
+    // Try "titled" or "named" or "about" patterns
+    let extractedTitle = message.match(/(?:titled|named|about)\s+([^\n.]+?)(?:\s+(?:content|saying|note:|says:|tag:|tagged|as\s+\w+)|\n|$)/i);
     if (extractedTitle && extractedTitle[1]) {
       title = extractedTitle[1].trim();
-      content = message.replace(new RegExp(`(?:titled|named|about)\s+${extractedTitle[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i'), '').trim();
-    }
-  }
-  
-  // Extract tag if mentioned (e.g., "bug", "feature", "issue", "idea", "urgent")
-  const tagMatch = message.match(/(?:tag:|tagged as|as\s+)\s*([\w-]+)/i);
-  if (tagMatch && tagMatch[1]) {
-    const potentialTag = tagMatch[1].trim();
-    if (['bug', 'feature', 'issue', 'idea', 'urgent', 'important', 'reminder', 'todo'].includes(potentialTag.toLowerCase())) {
-      tag = potentialTag.charAt(0).toUpperCase() + potentialTag.slice(1);
+      // Keep original message as content for context
+      content = message;
+    } else if (/\bnote\b/i.test(message)) {
+      // Fallback ONLY when "note" is in the message: strip command words and use remaining text
+      let remaining = message
+        .replace(/\b(create|add|write|new|make|a|an)\s+(a\s+)?(new\s+)?note\b/gi, '')
+        .replace(/\bnote\b/gi, '')
+        .replace(/\btag:\s*\w+/gi, '')
+        .replace(/\btagged\s+as\s+\w+/gi, '')
+        .replace(/\bas\s+\w+/gi, '')
+        .replace(/^\s*[-:,]\s*/, '')
+        .trim();
+      if (remaining.length >= 3) {
+        title = remaining.split(/[\n.,;]/)[0].substring(0, 100).trim() || remaining.substring(0, 100).trim();
+        content = remaining;
+      }
     }
   }
   
   // Clean content by stripping command syntax
-  const cleanupPatterns = /\b(create|add|write|new|a|make)\s+(a\s+)?note\b/gi;
-  content = content.replace(cleanupPatterns, '').replace(/^\s*[-:,]\s*/, '').trim();
+  const cleanupPatterns = /\b(create|add|write|new|a|make)\s+(a\s+)?(new\s+)?note\b/gi;
+  content = content.replace(cleanupPatterns, '').replace(/\btag:\s*\w+/gi, '').replace(/^\s*[-:,]\s*/, '').trim();
   
   // Ensure we have meaningful content
-  if (!content || content.length < 5) {
-    content = title; // Use title as content if nothing meaningful remains
+  if (!content || content.length < 3) {
+    content = title;
   }
   
   return { title, content, tag };
@@ -301,21 +316,7 @@ export const parseTaskDetails = (message) => {
   let dueDate = null;
   let status = 'todo';
   
-  // Extract title from quoted text
-  let titleMatch = message.match(/['"]([^'"]+)['"]/);
-  if (titleMatch && titleMatch[1]) {
-    title = titleMatch[1].trim();
-    description = message.replace(/['"][^'"]+['"]\s*/i, '').trim();
-  } else {
-    // Try patterns like "task <title>" or "add <title>"
-    let extractedTitle = message.match(/(?:task|add|create)\s+([^\n.]+?)(?:\s+(?:priority|due|by|with|urgent|high|low|medium|critical)|\n|$)/i);
-    if (extractedTitle && extractedTitle[1].length < 100) {
-      title = extractedTitle[1].trim();
-      description = message.replace(new RegExp(`(?:task|add|create)\s+${extractedTitle[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i'), '').trim();
-    }
-  }
-  
-  // Extract priority
+  // Extract priority FIRST so we can strip it before extracting title
   if (lowerMessage.includes('critical') || lowerMessage.includes('asap') || lowerMessage.includes('urgent')) {
     priority = 'critical';
   } else if (lowerMessage.includes('high') || lowerMessage.includes('important')) {
@@ -327,11 +328,37 @@ export const parseTaskDetails = (message) => {
   // Extract due date
   dueDate = parseRelativeDate(message) || null;
   
+  // Extract title from quoted text (highest priority)
+  let titleMatch = message.match(/['"]([^'"]+)['"]/);
+  if (titleMatch && titleMatch[1]) {
+    title = titleMatch[1].trim();
+    description = message.replace(/['"][^'"]+['"]\s*/i, '').trim();
+  } else {
+    // Try patterns like "task <title>" or "add task <title>"
+    let extractedTitle = message.match(/(?:task|add\s+task|create\s+task|new\s+task|add|create)\s+([^\n.]+?)(?:\s+(?:priority|due|by|with|urgent|high|low|medium|critical|tomorrow|today|next)|\n|$)/i);
+    if (extractedTitle && extractedTitle[1].length >= 3 && extractedTitle[1].length < 100) {
+      title = extractedTitle[1].trim();
+      description = message.replace(new RegExp(`(?:task|add\\s+task|create\\s+task|new\\s+task|add|create)\\s+${extractedTitle[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'i'), '').trim();
+    } else {
+      // Fallback: strip command words and use remaining text as title
+      let remaining = message
+        .replace(/\b(create|add|assign|new|make|a|an)\s+(a\s+)?(new\s+)?task\b/gi, '')
+        .replace(/\b(high|low|medium|critical|urgent|important)\s*(priority)?\b/gi, '')
+        .replace(/\bdue\s+(today|tomorrow|next\s+\w+|\d{4}-\d{2}-\d{2})\b/gi, '')
+        .replace(/^\s*[-:,]\s*/, '')
+        .trim();
+      if (remaining.length >= 3) {
+        title = remaining.split(/[\n.,;]/)[0].substring(0, 100).trim() || remaining.substring(0, 100).trim();
+        description = remaining;
+      }
+    }
+  }
+  
   // Clean description by stripping command syntax
-  const cleanupPatterns = /\b(create|add|assign|new|a|make)\s+(a\s+)?task\b/gi;
+  const cleanupPatterns = /\b(create|add|assign|new|a|make)\s+(a\s+)?(new\s+)?task\b/gi;
   description = description.replace(cleanupPatterns, '').replace(/^\s*[-:,]\s*/, '').trim();
   
-  // Ensure we have meaningful title
+  // Final safety: ensure we have meaningful title
   if (!title || title === 'New Task' || title.length < 3) {
     title = description.split(/\n|\.|,/)[0].substring(0, 100).trim() || 'New Task';
   }
