@@ -165,7 +165,7 @@ async function deleteMessage(req, res) {
 
 
     // Delete file from Storage if it's a file message
-if (msgData.type === 'file' && msgData.fileUrl) {
+if (msgData.type === 'file' && msgData.fileUrl && bucket) {
   try {
     const filePath = msgData.fileUrl.split(`${bucket.name}/`)[1]; // ← backticks, not quotes
     if (filePath) {
