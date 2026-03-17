@@ -104,11 +104,11 @@ describe("Cloudinary Service — uploadToCloudinary", () => {
     expect(result.public_id).toBe("procurax/Site_Photos/file-1710000000");
     expect(mockUpload).toHaveBeenCalledTimes(1);
 
-    // Verify the upload_preset is included by default
+    // Verify the upload options (no upload_preset in signed uploads, but folder/public_id are sanitized)
     const callOptions = mockUpload.mock.calls[0][1];
-    expect(callOptions.upload_preset).toBe("procurax");
     expect(callOptions.resource_type).toBe("image");
     expect(callOptions.folder).toBe("procurax/Site_Photos");
+    expect(callOptions.public_id).toBe("file-1710000000");
   });
 
   it("should upload a video successfully", async () => {
@@ -150,7 +150,7 @@ describe("Cloudinary Service — uploadToCloudinary", () => {
     ).rejects.toThrow("Upload failed: file too large");
   });
 
-  it("should merge custom options with the default upload_preset", async () => {
+  it("should merge custom options with sanitized folder and public_id", async () => {
     mockUpload.mockImplementation((_path, _opts, cb) => cb(null, MOCK_UPLOAD_RESULT));
 
     await uploadToCloudinary("data:image/jpeg;base64,abc", {
@@ -161,7 +161,8 @@ describe("Cloudinary Service — uploadToCloudinary", () => {
     });
 
     const callOptions = mockUpload.mock.calls[0][1];
-    expect(callOptions.upload_preset).toBe("procurax");
+    // No upload_preset in signed uploads
+    expect(callOptions.upload_preset).toBeUndefined();
     expect(callOptions.folder).toBe("procurax/custom_folder");
     expect(callOptions.public_id).toBe("custom-id");
     expect(callOptions.transformation).toEqual({ width: 200, crop: "scale" });
