@@ -10,6 +10,7 @@ class MessageBubble extends StatelessWidget {
   final String time;
   final ValueChanged<String?>? onOpenFile;
   final bool isDeleted;
+  final bool isUploading;
 
   const MessageBubble({
     super.key,
@@ -21,6 +22,7 @@ class MessageBubble extends StatelessWidget {
     required this.time,
     this.onOpenFile,
     this.isDeleted = false,
+    this.isUploading = false,
   });
 
   @override
@@ -38,8 +40,8 @@ class MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: bubbleColor,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(isMe ? 18 : 6),
             bottomRight: Radius.circular(isMe ? 6 : 18),
           ),
@@ -60,36 +62,60 @@ class MessageBubble extends StatelessWidget {
                 style: TextStyle(
                   color: isMe ? Colors.white70 : Colors.grey,
                   fontStyle: FontStyle.italic,
-                ),  
-              )
-
-            else if (type == 'file')
-              InkWell(
-                onTap: () => onOpenFile?.call(fileUrl),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.attach_file,
-                      size: 18,
-                      color: isMe ? Colors.white : Colors.black54,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        fileName?.isNotEmpty == true ? fileName! : message,
-                        style: TextStyle(
-                          color: textColor,
-                          decoration: TextDecoration.underline,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
                 ),
               )
+            else if (type == 'file')
+              isUploading
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isMe ? Colors.white70 : Colors.black45,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Uploading...',
+                          style: TextStyle(
+                            color: isMe ? Colors.white70 : Colors.black54,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    )
+                  : InkWell(
+                      onTap: () => onOpenFile?.call(fileUrl),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.attach_file,
+                            size: 18,
+                            color: isMe ? Colors.white : Colors.black54,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              fileName?.isNotEmpty == true ? fileName! : message,
+                              style: TextStyle(
+                                color: textColor,
+                                decoration: TextDecoration.underline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
             else
-              Text(message, style: TextStyle(color: textColor, fontSize: 15, height: 1.35)),
+              Text(
+                message,
+                style: TextStyle(color: textColor, fontSize: 15, height: 1.35),
+              ),
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.bottomRight,
