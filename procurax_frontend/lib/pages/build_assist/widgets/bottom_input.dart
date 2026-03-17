@@ -137,7 +137,7 @@ class _BottomInputState extends State<BottomInput> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.attach_file),
+                icon: const Icon(Icons.add_circle_outline_rounded),
                 tooltip: 'Attach file/image',
                 onPressed: widget.isLoading
                     ? null
@@ -156,7 +156,7 @@ class _BottomInputState extends State<BottomInput> {
                       },
               ),
               IconButton(
-                icon: const Icon(Icons.calendar_today),
+                icon: const Icon(Icons.event_note_outlined),
                 tooltip: 'Pick date/time',
                 onPressed: widget.isLoading
                     ? null
