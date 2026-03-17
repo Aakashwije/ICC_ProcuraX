@@ -1,4 +1,5 @@
-import { db } from '../config/firebase.js';
+
+import { db, bucket } from '../config/firebase.js'; 
 
 
 async function sendMessage(req, res) {
@@ -41,7 +42,7 @@ async function sendMessage(req, res) {
     const messageData = {
       chatId: trimmedChatId,
       senderId: trimmedSenderId,
-      content: content || fileName || fileUrl || '',
+      content: content ||  fileName  || fileUrl || '',
       type,
       fileUrl: fileUrl || null,
       fileName: fileName || null,
@@ -75,7 +76,7 @@ async function sendMessage(req, res) {
           chatId: trimmedChatId,
           senderId: trimmedSenderId,
           title: `New message from ${trimmedSenderId}`,
-          message: content,
+          message: content || fileName || 'File Attachment',
           isRead: false,
           createdAt: now,
         });
@@ -84,7 +85,7 @@ async function sendMessage(req, res) {
 
     //Update chat metadata
     await chatRef.update({
-      lastMessage: content,
+      lastMessage: content || fileName || 'File Attachment',
       lastMessageSenderId: trimmedSenderId,
       updatedAt: now,
       unreadCounts,
@@ -162,15 +163,32 @@ async function deleteMessage(req, res) {
       return res.status(403).json({ error: 'You can only delete your own messages' });
     }
 
-    //Delete the message
-    await msgRef.delete();
 
-    // Optionally, you could also delete related alerts or update chat metadata here
-    return res.status(200).json({ success: true, id });
+    // Delete file from Storage if it's a file message
+if (msgData.type === 'file' && msgData.fileUrl && bucket) {
+  try {
+    const filePath = msgData.fileUrl.split(`${bucket.name}/`)[1]; // ← backticks, not quotes
+    if (filePath) {
+      await bucket.file(filePath).delete();
+      console.log(`File ${filePath} deleted successfully.`);
+    } else {
+      console.warn('Could not extract file path from URL:', msgData.fileUrl);
+    }
+  } catch (e) {
+    console.warn('Storage file delete failed (non-critical):', e.message);
+  }
+}
+
+// Delete the message
+await msgRef.delete();
+
+return res.status(200).json({ success: true, id });
   } catch (err) {
     console.error('ERROR IN deleteMessage:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+    
+
 
 export { sendMessage, getMessagesByChat, deleteMessage };

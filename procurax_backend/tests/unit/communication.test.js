@@ -32,6 +32,8 @@
  *   - Test request validation independently of database
  */
 
+jest.mock('../../communication/config/firebase.js');
+
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 /**
@@ -77,6 +79,29 @@ jest.unstable_mockModule('../../communication/config/firebase.js', () => ({
   db: {
     collection: mockCollection,
     batch: mockBatch,
+  },
+  bucket: {
+    name: 'mock-bucket',
+    file: jest.fn(() => ({
+      save: jest.fn(),
+      delete: jest.fn().mockResolvedValue(undefined),
+    })),
+    upload: jest.fn(),
+  },
+  admin: {
+    initializeApp: jest.fn(),
+    firestore: jest.fn(() => ({
+      collection: mockCollection,
+      batch: mockBatch,
+    })),
+    storage: jest.fn(() => ({ bucket: {
+      name: 'mock-bucket',
+      file: jest.fn(() => ({
+        save: jest.fn(),
+        delete: jest.fn().mockResolvedValue(undefined),
+      })),
+      upload: jest.fn(),
+    }})),
   },
 }));
 
@@ -451,3 +476,6 @@ describe('Communication Module', () => {
     });
   });
 });
+  afterAll(() => {
+    jest.clearAllMocks();
+  });

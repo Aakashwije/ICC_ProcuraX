@@ -15,7 +15,6 @@ class ChatScreen extends StatefulWidget {
   final String currentUserId;
   final String otherUserId;
   final VoidCallback? onChatRead;
-  
   final String userName;
   final String userRole;
   final String avatarUrl;
@@ -31,7 +30,6 @@ class ChatScreen extends StatefulWidget {
     required this.userRole,
     required this.avatarUrl,
     this.isOnline = false,
-    
   });
 
   @override
@@ -43,14 +41,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ChatService _chatService = ChatService();
 
-  bool isUserTyping = false; // for send button
-  bool isOtherTyping = false; // for typing other
+  bool isUserTyping = false;
+  bool isOtherTyping = false;
   bool isOtherOnline = false;
   bool _lastSentTyping = false;
   Timer? _typingDebounce;
   Timer? _typingPollTimer;
   Timer? _presenceTimer;
- 
   bool _showScrollToBottom = false;
 
   final List<Message> messages = [];
@@ -96,18 +93,15 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> fetchMessages() async {
     try {
       final data = await _chatService.getMessagesByChat(widget.chatId);
-
       if (!mounted) return;
       setState(() {
         messages.clear();
-
         for (var msg in data) {
           final createdAt = msg['createdAt'];
           final createdAtDate = _parseMessageDate(createdAt);
-
           messages.add(
             Message(
-              id: msg['id'].toString(), // messageId from backend
+              id: msg['id'].toString(),
               senderId: (msg['senderId'] ?? '').toString(),
               text: (msg['content'] ?? '').toString(),
               type: (msg['type'] ?? 'text').toString(),
@@ -119,10 +113,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           );
         }
-
         loadError = null;
       });
-
       _scrollToBottom(force: true);
     } catch (e) {
       debugPrint('Failed to load messages: $e');
@@ -135,87 +127,55 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // to get same colour in the avatar
   Color _getColorForUser(String value) {
     if (value.isEmpty) return AppColours.primary;
-
     final int hash = value.hashCode;
-
     const List<Color> colors = [
-      Color(0xFF0D47A1),
-      Color(0xFF1565C0),
-      Color(0xFF1976D2),
-      Color(0xFF1E88E5),
-      Color(0xFF2196F3),
-      Color(0xFF42A5F5),
-      Color(0xFF64B5F6),
-      Color(0xFF90CAF9),
-      Color(0xFF01579B),
-      Color(0xFF0277BD),
-      Color(0xFF0288D1),
-      Color(0xFF039BE5),
+      Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2),
+      Color(0xFF1E88E5), Color(0xFF2196F3), Color(0xFF42A5F5),
+      Color(0xFF64B5F6), Color(0xFF90CAF9), Color(0xFF01579B),
+      Color(0xFF0277BD), Color(0xFF0288D1), Color(0xFF039BE5),
       Color(0xFF03A9F4),
     ];
-
     return colors[hash.abs() % colors.length];
   }
 
   String _formatMessageTime(dynamic createdAt) {
     if (createdAt == null) return '';
-
     if (createdAt is DateTime) {
       return TimeOfDay.fromDateTime(createdAt.toLocal()).format(context);
     }
-
     if (createdAt is Map) {
       final seconds = createdAt['_seconds'] ?? createdAt['seconds'];
       if (seconds is int) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(
-          seconds * 1000,
-          isUtc: true,
-        ).toLocal();
+        final dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
         return TimeOfDay.fromDateTime(dt).format(context);
       }
     }
-
     if (createdAt is String) {
       final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(createdAt);
       final normalized = hasTz ? createdAt : '${createdAt}Z';
       final parsed = DateTime.tryParse(normalized);
-      if (parsed != null) {
-        return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
-      }
+      if (parsed != null) return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
     }
-
     return '';
   }
 
   DateTime? _parseMessageDate(dynamic createdAt) {
     if (createdAt == null) return null;
-
-    if (createdAt is DateTime) {
-      return createdAt.toLocal();
-    }
-
+    if (createdAt is DateTime) return createdAt.toLocal();
     if (createdAt is Map) {
       final seconds = createdAt['_seconds'] ?? createdAt['seconds'];
       if (seconds is int) {
-        return DateTime.fromMillisecondsSinceEpoch(
-          seconds * 1000,
-          isUtc: true,
-        ).toLocal();
+        return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
       }
     }
-
     if (createdAt is String) {
       final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(createdAt);
       final normalized = hasTz ? createdAt : '${createdAt}Z';
       final parsed = DateTime.tryParse(normalized);
-      if (parsed != null) {
-        return parsed.toLocal();
-      }
+      if (parsed != null) return parsed.toLocal();
     }
-
     return null;
   }
 
@@ -227,29 +187,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(date.year, date.month, date.day);
-
     if (_isSameDay(target, today)) return 'Today';
-    if (_isSameDay(target, today.subtract(const Duration(days: 1)))) {
-      return 'Yesterday';
-    }
-
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    final month = months[target.month - 1];
-    return '$month ${target.day}, ${target.year}';
+    if (_isSameDay(target, today.subtract(const Duration(days: 1)))) return 'Yesterday';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[target.month - 1]} ${target.day}, ${target.year}';
   }
 
   Widget _buildDateSeparator(String label) {
@@ -264,34 +205,23 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
           ),
         ),
       ),
     );
   }
 
-  //to make the header role as Project Manager
   String _formatRole(String role) {
     if (role.trim().isEmpty) return 'Member';
-    return role
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) {
-          if (word.isEmpty) return word;
-          return word[0].toUpperCase() + word.substring(1).toLowerCase();
-        })
-        .join(' ');
+    return role.replaceAll('_', ' ').split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 
-  //  Long-press delete menu (only for my messages)
   Future<void> _showDeleteMessageSheet(Message message) async {
     if (!message.isMe) return;
-
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       builder: (_) => SafeArea(
@@ -311,18 +241,13 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
-
-    if (confirmed == true) {
-      await _deleteMessage(message.id);
-    }
+    if (confirmed == true) await _deleteMessage(message.id);
   }
 
-  //  Calls backend + optimistic UI
   Future<void> _deleteMessage(String messageId) async {
     final old = List<Message>.from(messages);
-
     setState(() {
-     final index = messages.indexWhere((m) => m.id == messageId);
+      final index = messages.indexWhere((m) => m.id == messageId);
       if (index != -1) {
         final m = messages[index];
         messages[index] = Message(
@@ -332,11 +257,10 @@ class _ChatScreenState extends State<ChatScreen> {
           isMe: m.isMe,
           time: m.time,
           createdAt: m.createdAt,
-          isDeleted: true, // 
+          isDeleted: true,
         );
       }
     });
-
     try {
       await _chatService.deleteMessage(
         messageId: messageId,
@@ -345,13 +269,9 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Delete failed: $e');
       if (!mounted) return;
-
       setState(() {
-        messages
-          ..clear()
-          ..addAll(old);
+        messages..clear()..addAll(old);
       });
-
       CustomToast.error(
         context,
         'Unable to delete message. Please try again.',
@@ -367,9 +287,7 @@ class _ChatScreenState extends State<ChatScreen> {
     for (int i = messages.length - 1; i >= 0; i--) {
       final message = messages[i];
       final date = message.createdAt;
-      final dateOnly = date != null
-          ? DateTime(date.year, date.month, date.day)
-          : null;
+      final dateOnly = date != null ? DateTime(date.year, date.month, date.day) : null;
 
       items.add(
         GestureDetector(
@@ -383,6 +301,7 @@ class _ChatScreenState extends State<ChatScreen> {
             time: message.time,
             onOpenFile: _openAttachment,
             isDeleted: message.isDeleted,
+            isUploading: message.isUploading, // ipassed here
           ),
         ),
       );
@@ -394,7 +313,6 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       }
     }
-
     return items;
   }
 
@@ -457,7 +375,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _refreshOtherTyping() async {
-    
     try {
       final typing = await _chatService.getTyping(
         chatId: widget.chatId,
@@ -470,7 +387,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  
   void _scheduleTypingUpdate(bool typingNow) {
     _typingDebounce?.cancel();
     if (!typingNow) {
@@ -496,7 +412,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Message Input
   Widget _buildMessageInput() {
     return SafeArea(
       top: false,
@@ -540,9 +455,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 onChanged: (value) {
                   final typingNow = value.trim().isNotEmpty;
-                  setState(() {
-                    isUserTyping = typingNow;
-                  });
+                  setState(() => isUserTyping = typingNow);
                   _scheduleTypingUpdate(typingNow);
                 },
               ),
@@ -555,14 +468,8 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: BoxDecoration(
                 color: isUserTyping ? AppColours.primary : AppColours.primary.withOpacity(0.4),
                 shape: BoxShape.circle,
-                boxShadow: isUserTyping 
-                    ? [
-                        BoxShadow(
-                          color: AppColours.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ] 
+                boxShadow: isUserTyping
+                    ? [BoxShadow(color: AppColours.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
                     : null,
               ),
               child: IconButton(
@@ -582,20 +489,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final createdAt = DateTime.now();
     final time = TimeOfDay.fromDateTime(createdAt).format(context);
-
     final tempId = 'temp_${createdAt.microsecondsSinceEpoch}';
 
     setState(() {
-      messages.add(
-        Message(
-          id: tempId,
-          senderId: widget.currentUserId,
-          text: text,
-          isMe: true,
-          time: time,
-          createdAt: createdAt,
-        ),
-      );
+      messages.add(Message(
+        id: tempId,
+        senderId: widget.currentUserId,
+        text: text,
+        isMe: true,
+        time: time,
+        createdAt: createdAt,
+      ));
       _textController.clear();
       isUserTyping = false;
     });
@@ -610,7 +514,6 @@ class _ChatScreenState extends State<ChatScreen> {
         content: text,
         type: 'text',
       );
-
       final realId = res['id']?.toString();
       if (realId != null && mounted) {
         setState(() {
@@ -643,6 +546,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  //  Updated with spinner + file size check
   Future<void> _pickAndSendFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -655,6 +559,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       final file = result.files.first;
       final bytes = file.bytes;
+
       if (bytes == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -663,11 +568,32 @@ class _ChatScreenState extends State<ChatScreen> {
         return;
       }
 
-      final fileName = file.name;
-      final mimeType =
-          lookupMimeType(fileName, headerBytes: bytes) ??
-          'application/octet-stream';
+      
 
+      final fileName = file.name;
+      final mimeType = lookupMimeType(fileName, headerBytes: bytes) ?? 'application/octet-stream';
+      final createdAt = DateTime.now();
+      final time = TimeOfDay.fromDateTime(createdAt).format(context);
+      final tempId = 'temp_${createdAt.microsecondsSinceEpoch}';
+
+      // Show bubble with spinner BEFORE upload starts
+      setState(() {
+        messages.add(Message(
+          id: tempId,
+          senderId: widget.currentUserId,
+          text: fileName,
+          type: 'file',
+          fileName: fileName,
+          isMe: true,
+          time: time,
+          createdAt: createdAt,
+          isUploading: true,
+        ));
+      });
+
+      _scrollToBottom(force: true);
+
+      // Upload file
       final upload = await _chatService.uploadFile(
         bytes: bytes,
         fileName: fileName,
@@ -675,35 +601,31 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 
       final fileUrl = upload['url']?.toString() ?? '';
+      if (fileUrl.isEmpty) throw Exception('Upload failed: missing url');
       final originalName = upload['originalName']?.toString() ?? fileName;
 
-      if (fileUrl.isEmpty) {
-        throw Exception('Upload failed: missing url');
+      // Upload done — remove spinner
+      if (mounted) {
+        setState(() {
+          final index = messages.indexWhere((m) => m.id == tempId);
+          if (index != -1) {
+            messages[index] = Message(
+              id: tempId,
+              senderId: widget.currentUserId,
+              text: originalName,
+              type: 'file',
+              fileUrl: fileUrl,
+              fileName: originalName,
+              isMe: true,
+              time: time,
+              createdAt: createdAt,
+              isUploading: false,
+            );
+          }
+        });
       }
 
-      final createdAt = DateTime.now();
-      final time = TimeOfDay.fromDateTime(createdAt).format(context);
-
-      final tempId = 'temp_${createdAt.microsecondsSinceEpoch}';
-
-      setState(() {
-        messages.add(
-          Message(
-            id: tempId,
-            senderId: widget.currentUserId,
-            text: originalName,
-            type: 'file',
-            fileUrl: fileUrl,
-            fileName: originalName,
-            isMe: true,
-            time: time,
-            createdAt: createdAt,
-          ),
-        );
-      });
-
-      _scrollToBottom(force: true);
-
+      // Send message to backend
       final res = await _chatService.sendMessage(
         chatId: widget.chatId,
         senderId: widget.currentUserId,
@@ -713,6 +635,7 @@ class _ChatScreenState extends State<ChatScreen> {
         fileName: originalName,
       );
 
+      // Replace temp ID with real ID
       final realId = res['id']?.toString();
       if (realId != null && mounted) {
         setState(() {
@@ -729,6 +652,7 @@ class _ChatScreenState extends State<ChatScreen> {
               type: old.type,
               fileUrl: old.fileUrl,
               fileName: old.fileName,
+              isUploading: false,
             );
           }
         });
@@ -736,15 +660,17 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Failed to send file: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to send file')));
+      setState(() {
+        messages.removeWhere((m) => m.id.startsWith('temp_'));
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send file')),
+      );
     }
   }
 
   Future<void> _openAttachment(String? url) async {
     if (url == null || url.isEmpty) return;
-    // Only allow http/https URLs
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       debugPrint('Invalid URL scheme: $url');
       return;
@@ -753,9 +679,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (uri == null || !uri.hasAuthority) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to open file')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to open file')),
+      );
     }
   }
 
@@ -774,23 +700,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: _getColorForUser(widget.otherUserId),
-                  backgroundImage:
-                      widget.avatarUrl.isNotEmpty &&
-                          widget.avatarUrl.startsWith('http')
+                  backgroundImage: widget.avatarUrl.isNotEmpty && widget.avatarUrl.startsWith('http')
                       ? NetworkImage(widget.avatarUrl)
                       : null,
-                  child:
-                      widget.avatarUrl.isEmpty ||
-                          !widget.avatarUrl.startsWith('http')
+                  child: widget.avatarUrl.isEmpty || !widget.avatarUrl.startsWith('http')
                       ? Text(
-                          widget.userName.isNotEmpty
-                              ? widget.userName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                          widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                         )
                       : null,
                 ),
@@ -817,18 +733,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     widget.userName,
-                    style: const TextStyle(
-                      color: AppColours.neutral,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                    style: const TextStyle(color: AppColours.neutral, fontWeight: FontWeight.bold, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                   Text(
-                    _formatRole(
-                      widget.userRole,
-                    ), // to make the header role as Project Manager
+                    _formatRole(widget.userRole),
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -839,15 +749,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          
-          IconButton(
-            icon: const Icon(Icons.video_call, color: AppColours.neutral),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.call, color: AppColours.neutral),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.video_call, color: AppColours.neutral), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.call, color: AppColours.neutral), onPressed: () {}),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColours.neutral),
             itemBuilder: (_) => const [
@@ -863,52 +766,45 @@ class _ChatScreenState extends State<ChatScreen> {
             child: loading
                 ? const Center(child: CircularProgressIndicator())
                 : loadError != null
-                ? Center(child: Text(loadError!))
-                : messages.isEmpty
-                ? const Center(child: Text('No messages yet'))
-                : Builder(
-                    builder: (context) {
-                      final items = _buildMessageItems();
-                      final listView = NotificationListener<ScrollNotification>(
-                        onNotification: (notification) {
-                          final shouldShow = !_isNearBottom();
-                          if (shouldShow != _showScrollToBottom) {
-                            setState(() {
-                              _showScrollToBottom = shouldShow;
-                            });
-                          }
-                          return false;
-                        },
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          reverse: true,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: items.length,
-                          itemBuilder: (context, index) => items[index],
-                        ),
-                      );
-
-                      return Stack(
-                        children: [
-                          listView,
-                          if (_showScrollToBottom)
-                            Positioned(
-                              right: 16,
-                              bottom: 16,
-                              child: FloatingActionButton.small(
-                                onPressed: () => _scrollToBottom(force: true),
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppColours.primary,
-                                child: const Icon(
-                                  Icons.arrow_downward,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+                    ? Center(child: Text(loadError!))
+                    : messages.isEmpty
+                        ? const Center(child: Text('No messages yet'))
+                        : Builder(
+                            builder: (context) {
+                              final items = _buildMessageItems();
+                              return Stack(
+                                children: [
+                                  NotificationListener<ScrollNotification>(
+                                    onNotification: (notification) {
+                                      final shouldShow = !_isNearBottom();
+                                      if (shouldShow != _showScrollToBottom) {
+                                        setState(() => _showScrollToBottom = shouldShow);
+                                      }
+                                      return false;
+                                    },
+                                    child: ListView.builder(
+                                      controller: _scrollController,
+                                      reverse: true,
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      itemCount: items.length,
+                                      itemBuilder: (context, index) => items[index],
+                                    ),
+                                  ),
+                                  if (_showScrollToBottom)
+                                    Positioned(
+                                      right: 16,
+                                      bottom: 16,
+                                      child: FloatingActionButton.small(
+                                        onPressed: () => _scrollToBottom(force: true),
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: AppColours.primary,
+                                        child: const Icon(Icons.arrow_downward, size: 18),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
           ),
           if (isOtherTyping) const TypingIndicator(),
           Container(
@@ -916,11 +812,7 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 209, 221, 234),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 6,
-                  offset: const Offset(0, -3),
-                ),
+                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, -3)),
               ],
             ),
             child: Column(
@@ -935,8 +827,8 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class Message {
-  final String id; //  messageId
-  final String senderId; //  sender
+  final String id;
+  final String senderId;
   final String text;
   final bool isMe;
   final String time;
@@ -945,6 +837,7 @@ class Message {
   final String? fileUrl;
   final String? fileName;
   final bool isDeleted;
+  final bool isUploading;
 
   Message({
     required this.id,
@@ -957,5 +850,6 @@ class Message {
     this.fileUrl,
     this.fileName,
     this.isDeleted = false,
+    this.isUploading = false,
   });
 }
