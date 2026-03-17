@@ -33,9 +33,56 @@ try {
   });
   
   sheets = google.sheets({ version: "v4", auth });
+  console.log("✅ Google Sheets initialized successfully");
+  if (process.env.GOOGLE_SHEET_ID) {
+    console.log(`✅ Google Sheet ID configured: ${process.env.GOOGLE_SHEET_ID.slice(0, 8)}...`);
+  } else {
+    console.warn("⚠️ GOOGLE_SHEET_ID not set in environment variables — procurement features will be unavailable");
+  }
 } catch (error) {
   console.error("❌ Failed to initialize Google Sheets:", error.message);
 }
+
+/**
+ * Levenshtein distance between two strings (edit distance).
+ * Used for fuzzy matching user input against known keywords.
+ */
+const levenshtein = (a, b) => {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+};
+
+/**
+ * Find the closest match for a token from a list of known words.
+ * Returns { match, distance } or null if no close match found.
+ * Threshold: max 2 edits for words >=5 chars, max 1 for shorter words.
+ */
+const fuzzyMatch = (token, knownWords) => {
+  let bestMatch = null;
+  let bestDist = Infinity;
+  for (const word of knownWords) {
+    const dist = levenshtein(token, word.toLowerCase());
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestMatch = word;
+    }
+  }
+  const maxDist = token.length >= 5 ? 2 : 1;
+  if (bestDist > 0 && bestDist <= maxDist) {
+    return { match: bestMatch.toLowerCase(), original: token, distance: bestDist };
+  }
+  return null;
+};
 
 const enrichProcurementItems = async (items, userId) => {
   return await Promise.all(items.map(async (item) => {
@@ -304,11 +351,36 @@ export const chatWithAI = async (req, res) => {
       .split(/\s+/)
       .filter(w => w.length > 0 && !stopWords.includes(w));
     console.log('Parsed tokens:', tokens);
+
+    // Auto-correct misspelled intent keywords (meeting, task, note, etc.)
+    const intentKeywords = [
+      'meeting', 'meetings', 'schedule', 'upcoming', 'create', 'new', 'add',
+      'task', 'tasks', 'todo', 'pending', 'stuck', 'blocked', 'assign',
+      'note', 'notes', 'search', 'write',
+      'summary', 'dashboard',
+      'procurement', 'material', 'materials', 'delivery',
+      'concrete', 'electrical', 'plumbing', 'hvac', 'civil', 'fire',
+      'elevator', 'glass', 'steel', 'generator', 'lightning', 'detection',
+      'system', 'protection'
+    ];
+    const correctedIntentTokens = tokens.map(token => {
+      if (intentKeywords.includes(token)) return token;
+      const fuzzy = fuzzyMatch(token, intentKeywords);
+      if (fuzzy) {
+        console.log(`   🔧 Intent auto-corrected "${token}" → "${fuzzy.match}"`);
+        return fuzzy.match;
+      }
+      return token;
+    });
+    // Use corrected tokens for intent detection, keep original for content extraction
+    const intentTokens = correctedIntentTokens;
+    console.log('Intent tokens (after correction):', intentTokens);
+
     const query = tokens.join(' ');
 
     // ===== SCHEDULE MEETING =====
-    if (tokens.includes('schedule') || tokens.includes('create') || tokens.includes('new')) {
-      if (tokens.includes('meeting') || tokens.includes('meet')) {
+    if (intentTokens.includes('schedule') || intentTokens.includes('create') || intentTokens.includes('new')) {
+      if (intentTokens.includes('meeting') || intentTokens.includes('meet')) {
         console.log('🔍 Schedule meeting branch triggered');
         
         const meetingDetails = parseMeetingDetails(message);
@@ -382,7 +454,7 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== CREATE NOTE =====
-    if (tokens.includes('note') && (tokens.includes('create') || tokens.includes('new') || tokens.includes('add') || tokens.includes('write'))) {
+    if (intentTokens.includes('note') && (intentTokens.includes('create') || intentTokens.includes('new') || intentTokens.includes('add') || intentTokens.includes('write'))) {
       console.log('🔍 Create note branch triggered');
       
       // Require authentication for note creation
@@ -445,7 +517,7 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== ADD TASK =====
-    if (tokens.includes('task') && (tokens.includes('add') || tokens.includes('create') || tokens.includes('new') || tokens.includes('assign'))) {
+    if (intentTokens.includes('task') && (intentTokens.includes('add') || intentTokens.includes('create') || intentTokens.includes('new') || intentTokens.includes('assign'))) {
       console.log('🔍 Add task branch triggered');
       
       // Require authentication for task creation
@@ -527,7 +599,7 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== MEETINGS ====="
-    if (tokens.includes('meeting') || tokens.includes('meetings') || tokens.includes('schedule') || tokens.includes('upcoming')) {
+    if (intentTokens.includes('meeting') || intentTokens.includes('meetings') || intentTokens.includes('schedule') || intentTokens.includes('upcoming')) {
       console.log('🔍 Meeting branch triggered');
       const upcomingMeetings = await fetchUserMeetings(null);
       console.log('   → meetings count', upcomingMeetings.length);
@@ -541,7 +613,7 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== TASKS =====
-    if (tokens.includes('task') || tokens.includes('tasks') || tokens.includes('todo') || tokens.includes('pending') || tokens.includes('stuck') || tokens.includes('blocked')) {
+    if (intentTokens.includes('task') || intentTokens.includes('tasks') || intentTokens.includes('todo') || intentTokens.includes('pending') || intentTokens.includes('stuck') || intentTokens.includes('blocked')) {
       console.log('🔍 Task branch triggered');
       const pendingTasks = await fetchUserTasks(null);
       console.log('   → pendingTasks count', pendingTasks.length);
@@ -555,7 +627,7 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== NOTES =====
-    if (tokens.includes('note') || tokens.includes('notes') || tokens.includes('search')) {
+    if (intentTokens.includes('note') || intentTokens.includes('notes') || intentTokens.includes('search')) {
       console.log('🔍 Notes branch triggered');
       const keywords = tokens.filter(w => !['note','notes','search','find'].includes(w));
       const searchKeyword = keywords[0] || '';
@@ -574,7 +646,7 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== DASHBOARD =====
-    if (tokens.includes('summary') || tokens.includes('dashboard')) {
+    if (intentTokens.includes('summary') || intentTokens.includes('dashboard')) {
       console.log('🔍 Dashboard branch triggered');
       const summary = await getDashboardSummary(null);
       console.log('   → dashboard summary', summary);
@@ -614,106 +686,162 @@ export const chatWithAI = async (req, res) => {
 
     const lowerMessage = message.toLowerCase();
 
-if (
-  lowerMessage.includes('procurement') ||
-  lowerMessage.includes('material') ||
-  lowerMessage.includes('materials') ||
-  lowerMessage.includes('show procurement status') ||
-  lowerMessage.includes('material status')
-) {
-  const enrichedItems = await enrichProcurementItems(
-    procurementItems.slice(0, 10),
-    userId
-  );
-
-  console.log('✅ Returning procurement_data');
-  console.log('Total procurement items:', procurementItems.length);
-  console.log('Sending first items:', enrichedItems.length);
-
-  return res.json({
-    reply: `Found ${procurementItems.length} procurement items. Showing first 10.`,
-    data: enrichedItems,
-    type: "procurement_data"
-  });
-}
-
-    // Procurement queries
+    // Procurement queries - check for SPECIFIC material keywords FIRST
     console.log('🔍 Procurement tokens:', tokens);
     console.log('   Total items parsed:', procurementItems.length);
     if (procurementItems.length > 0) {
       console.log('   First item sample:', JSON.stringify(procurementItems[0], null, 2));
     }
 
-    if (tokens.includes('concrete')) {
-      const items = procurementItems.filter(item => item.material?.toLowerCase().includes('concrete'));
-      console.log('   concrete items count', items.length);
-      if (items.length > 0) {
-        const enrichedItems = await enrichProcurementItems(items.slice(0, 10), userId);
-        return res.json({
-          reply: `Found ${items.length} concrete items:`,
-          data: enrichedItems,
-          type: "procurement_data"
-        });
-      }
-    }
+    // Check if user is asking for procurement/material data
+    const isProcurementQuery = 
+      intentTokens.includes('procurement') ||
+      intentTokens.includes('material') ||
+      intentTokens.includes('materials') ||
+      lowerMessage.includes('show procurement status') ||
+      lowerMessage.includes('material status');
 
-    if (tokens.includes('delivery')) {
-      const items = procurementItems.filter(item => item.revisedDelivery).slice(0, 10);
-      console.log('   delivery items count', items.length);
-      if (items.length > 0) {
-        const enrichedItems = await enrichProcurementItems(items, userId);
-        return res.json({
-          reply: `Found ${items.length} deliveries:`,
-          data: enrichedItems,
-          type: "procurement_data"
-        });
-      }
-    }
-
-    const categories = [
-      'electrical', 'low voltage', 'protection', 'plumbing', 'hvac', 'civil', 
-      'fire', 'elevator', 'concrete', 'glass', 'steel', 'generator', 'elv',
-      'lightning', 'detection', 'system'
-    ];
-    for (const cat of categories) {
-      if (tokens.includes(cat)) {
-        const items = procurementItems.filter(item => 
-          item.category?.toLowerCase().includes(cat) ||
-          item.parentCategory?.toLowerCase().includes(cat) ||
-          item.material?.toLowerCase().includes(cat)
-        );
-        console.log(`   category/material "${cat}" matched, count`, items.length);
-        if (items.length > 0) {
-          const enrichedItems = await enrichProcurementItems(items.slice(0, 10), userId);
-          return res.json({
-            reply: `Found ${items.length} ${cat} items:`,
-            data: enrichedItems,
-            type: "procurement_data"
-          });
-        }
-      }
-    }
-
-    // generic search using any remaining token(s) – include both material and category
-    const searchResults = procurementItems.filter(item =>
-      tokens.some(term =>
-        item.material?.toLowerCase().includes(term) ||
-        item.category?.toLowerCase().includes(term)
-      )
-    );
-    console.log('   generic search results count', searchResults.length);
-    if (searchResults.length > 0) {
-      const enrichedItems = await enrichProcurementItems(searchResults.slice(0, 10), userId);
+    if (!isProcurementQuery) {
+      // Not a procurement query at all - return help
       return res.json({
-        reply: `Found ${searchResults.length} items:`,
+        reply: `I can help with:\n• Meetings\n• Tasks\n• Notes\n• Procurement items\nWhat would you like?`,
+        type: "help"
+      });
+    }
+
+    // Strip generic procurement keywords to find the actual search terms
+    const genericWords = ['procurement', 'material', 'materials', 'status', 'schedule', 'all', 'get', 'what', 'whats', 'check', 'find', 'search', 'look', 'up', 'my', 'our', 'is', 'are', 'have', 'has', 'do', 'does', 'can', 'i', 'we', 'any', 'available', 'current', 'update', 'latest'];
+    const searchTokens = intentTokens.filter(t => !genericWords.includes(t));
+    console.log('   Search tokens (after removing generic words):', searchTokens);
+
+    // If no specific material/category keyword was provided, show all available materials
+    if (searchTokens.length === 0) {
+      const enrichedItems = await enrichProcurementItems(procurementItems.slice(0, 10), userId);
+      const allCategories = [...new Set(
+        procurementItems.map(item => item.category).filter(Boolean)
+      )];
+      let replyMsg = `Here are the available procurement materials (${procurementItems.length} total):`;
+      if (allCategories.length > 0) {
+        replyMsg += `\n\nCategories: ${allCategories.join(', ')}`;
+      }
+      console.log('✅ Returning all procurement items for generic query');
+      return res.json({
+        reply: replyMsg,
         data: enrichedItems,
         type: "procurement_data"
       });
     }
 
+    // Build list of all known keywords for fuzzy matching
+    const knownCategories = [
+      'electrical', 'low voltage', 'protection', 'plumbing', 'hvac', 'civil', 
+      'fire', 'elevator', 'concrete', 'glass', 'steel', 'generator', 'elv',
+      'lightning', 'detection', 'system', 'delivery'
+    ];
+    const knownMaterials = [...new Set(
+      procurementItems.map(item => item.material?.toLowerCase()).filter(Boolean)
+    )];
+    const allKnownWords = [...new Set([...knownCategories, ...knownMaterials])];
+
+    // Auto-correct misspelled tokens using fuzzy matching
+    const corrections = [];
+    const correctedTokens = searchTokens.map(token => {
+      // If token already matches exactly, keep it
+      if (allKnownWords.some(w => w.includes(token) || token.includes(w))) {
+        return token;
+      }
+      const fuzzy = fuzzyMatch(token, allKnownWords);
+      if (fuzzy) {
+        corrections.push({ from: token, to: fuzzy.match });
+        console.log(`   🔧 Auto-corrected "${token}" → "${fuzzy.match}" (distance: ${fuzzy.distance})`);
+        return fuzzy.match;
+      }
+      return token;
+    });
+
+    const correctionNote = corrections.length > 0
+      ? `(Did you mean: ${corrections.map(c => `"${c.to}"` ).join(', ')}?)\n\n`
+      : '';
+
+    console.log('   Corrected tokens:', correctedTokens);
+
+    // Now search with the corrected tokens
+    let filteredItems = null;
+
+    // Check for specific material keywords (first match only)
+    if (!filteredItems && correctedTokens.includes('concrete')) {
+      filteredItems = procurementItems.filter(item => item.material?.toLowerCase().includes('concrete'));
+      console.log('   concrete items count', filteredItems.length);
+    }
+
+    if (!filteredItems && correctedTokens.includes('delivery')) {
+      filteredItems = procurementItems.filter(item => item.revisedDelivery);
+      console.log('   delivery items count', filteredItems.length);
+    }
+
+    // Check for category keywords (only if no specific keyword matched yet)
+    if (!filteredItems) {
+      for (const cat of knownCategories) {
+        if (correctedTokens.includes(cat)) {
+          filteredItems = procurementItems.filter(item => 
+            item.category?.toLowerCase().includes(cat) ||
+            item.parentCategory?.toLowerCase().includes(cat) ||
+            item.material?.toLowerCase().includes(cat)
+          );
+          console.log(`   category/material "${cat}" matched, count`, filteredItems.length);
+          break;
+        }
+      }
+    }
+
+    // Generic search using corrected tokens
+    if (!filteredItems) {
+      filteredItems = procurementItems.filter(item =>
+        correctedTokens.some(term =>
+          item.material?.toLowerCase().includes(term) ||
+          item.category?.toLowerCase().includes(term)
+        )
+      );
+      console.log('   generic search results count', filteredItems.length);
+    }
+
+    // Return filtered results
+    if (filteredItems && filteredItems.length > 0) {
+      const enrichedItems = await enrichProcurementItems(filteredItems.slice(0, 10), userId);
+      console.log('✅ Returning procurement_data');
+      console.log('Sending items:', enrichedItems.length);
+      return res.json({
+        reply: `${correctionNote}Found ${filteredItems.length} matching items:`,
+        data: enrichedItems,
+        type: "procurement_data"
+      });
+    }
+
+    // No matching items found - show available categories/materials
+    const availableCategories = [...new Set(
+      procurementItems
+        .map(item => item.category)
+        .filter(Boolean)
+    )];
+    const sampleMaterials = [...new Set(
+      procurementItems
+        .slice(0, 30)
+        .map(item => item.material)
+        .filter(Boolean)
+    )].slice(0, 10);
+
+    let replyMsg = `No procurement items found matching "${searchTokens.join(' ')}".`;
+    if (availableCategories.length > 0) {
+      replyMsg += `\n\nAvailable categories:\n${availableCategories.map(c => `• ${c}`).join('\n')}`;
+    }
+    if (sampleMaterials.length > 0) {
+      replyMsg += `\n\nSome available materials:\n${sampleMaterials.map(m => `• ${m}`).join('\n')}`;
+    }
+    replyMsg += `\n\nTry asking for one of these instead.`;
+
     return res.json({
-      reply: `I can help with:\n• Meetings\n• Tasks\n• Notes\n• Procurement items\nWhat would you like?`,
-      type: "help"
+      reply: replyMsg,
+      type: "text"
     });
 
   } catch (error) {
