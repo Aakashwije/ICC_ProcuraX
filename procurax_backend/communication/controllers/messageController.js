@@ -1,4 +1,4 @@
-import { db } from '../config/firebase.js';
+
 import { db, bucket } from '../config/firebase.js'; 
 
 
@@ -42,7 +42,7 @@ async function sendMessage(req, res) {
     const messageData = {
       chatId: trimmedChatId,
       senderId: trimmedSenderId,
-      content: content || { fileName } || fileUrl || '',
+      content: content ||  fileName  || fileUrl || '',
       type,
       fileUrl: fileUrl || null,
       fileName: fileName || null,
@@ -76,7 +76,7 @@ async function sendMessage(req, res) {
           chatId: trimmedChatId,
           senderId: trimmedSenderId,
           title: `New message from ${trimmedSenderId}`,
-          message: content || {fileName} || 'File Attachment',
+          message: content || fileName || 'File Attachment',
           isRead: false,
           createdAt: now,
         });
