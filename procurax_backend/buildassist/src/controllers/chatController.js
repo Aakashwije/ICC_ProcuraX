@@ -17,6 +17,9 @@ import {
 import Meeting from "../../../meetings/models/Meeting.js";
 import Note from "../../../notes/notes.model.js";
 import Task from "../../../tasks/tasks.model.js";
+import NoteService from "../../../core/services/note.service.js";
+import TaskService from "../../../core/services/task.service.js";
+import NotificationService from "../../../notifications/notification.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -274,9 +277,13 @@ export const parseNoteDetails = (message) => {
     }
   }
   
+  // Clean content by stripping command syntax
+  const cleanupPatterns = /\b(create|add|write|new|a|make)\s+(a\s+)?note\b/gi;
+  content = content.replace(cleanupPatterns, '').replace(/^\s*[-:,]\s*/, '').trim();
+  
   // Ensure we have meaningful content
   if (!content || content.length < 5) {
-    content = message;
+    content = title; // Use title as content if nothing meaningful remains
   }
   
   return { title, content, tag };
@@ -320,6 +327,10 @@ export const parseTaskDetails = (message) => {
   // Extract due date
   dueDate = parseRelativeDate(message) || null;
   
+  // Clean description by stripping command syntax
+  const cleanupPatterns = /\b(create|add|assign|new|a|make)\s+(a\s+)?task\b/gi;
+  description = description.replace(cleanupPatterns, '').replace(/^\s*[-:,]\s*/, '').trim();
+  
   // Ensure we have meaningful title
   if (!title || title === 'New Task' || title.length < 3) {
     title = description.split(/\n|\.|,/)[0].substring(0, 100).trim() || 'New Task';
@@ -341,7 +352,35 @@ export const chatWithAI = async (req, res) => {
     }
 
     const rawQuery = message.toLowerCase();
-    console.log('BuildAssist query received:', rawQuery);
+    console.log('BuildAssist query received:', rawQuery, '| userId:', userId || 'NOT AUTHENTICATED');
+
+    // ===== GREETINGS & CONVERSATIONAL =====
+    const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'howdy', 'whats up'];
+    if (greetings.some(g => rawQuery.includes(g)) && rawQuery.length < 30) {
+      return res.json({
+        reply: `Hello! I'm your BuildAssist AI assistant. Here's what I can help you with:\n\n📅 **Meetings** — View, search, or schedule meetings\n✅ **Tasks** — View, create, or track tasks\n📝 **Notes** — View, create, or search notes\n🏗️ **Materials** — Check procurement status & schedules\n📊 **Dashboard** — Get a project summary\n\nJust type what you need, or tap a quick action below!`,
+        type: "help",
+        suggestions: ["Show my meetings", "Create a task", "Material status", "Dashboard summary"]
+      });
+    }
+
+    const thankYouWords = ['thank', 'thanks', 'thx', 'appreciate', 'great job', 'awesome', 'perfect'];
+    if (thankYouWords.some(w => rawQuery.includes(w)) && rawQuery.length < 40) {
+      return res.json({
+        reply: "You're welcome! Is there anything else I can help you with?",
+        type: "ai",
+        suggestions: ["Show my tasks", "Create a note", "Material status"]
+      });
+    }
+
+    const helpWords = ['help', 'what can you do', 'how to', 'guide', 'tutorial', 'instructions'];
+    if (helpWords.some(w => rawQuery.includes(w)) && !rawQuery.includes('task') && !rawQuery.includes('note') && !rawQuery.includes('meeting')) {
+      return res.json({
+        reply: `Here's everything I can do:\n\n📅 **Meetings**\n• "Show my meetings" — view upcoming meetings\n• "Schedule meeting titled Review at 2pm tomorrow" — create a meeting\n\n✅ **Tasks**\n• "Show my tasks" — view pending tasks\n• "Add task \"Review plans\" high priority due tomorrow"\n\n📝 **Notes**\n• "Show my notes" — view all notes\n• "Create note \"Site Report\" tag: important"\n\n🏗️ **Materials**\n• "Show materials" — view all procurement items\n• "Concrete status" — search specific materials\n\n📊 "Dashboard summary" — quick project overview`,
+        type: "help",
+        suggestions: ["Show my meetings", "Show my tasks", "Show materials", "Dashboard summary"]
+      });
+    }
 
     // remove punctuation
     const sanitized = rawQuery.replace(/[^a-z0-9\s]/g, '').trim();
@@ -382,6 +421,15 @@ export const chatWithAI = async (req, res) => {
     if (intentTokens.includes('schedule') || intentTokens.includes('create') || intentTokens.includes('new')) {
       if (intentTokens.includes('meeting') || intentTokens.includes('meet')) {
         console.log('🔍 Schedule meeting branch triggered');
+        
+        // Require authentication for meeting scheduling
+        if (!userId) {
+          return res.status(401).json({
+            reply: "Please log in to schedule meetings. Your session may have expired — try logging in again.",
+            error: true,
+            suggestions: ["Show materials", "Material status"]
+          });
+        }
         
         const meetingDetails = parseMeetingDetails(message);
         console.log('Parsed meeting details:', meetingDetails);
@@ -433,14 +481,15 @@ export const chatWithAI = async (req, res) => {
             startTime,
             endTime,
             priority: 'medium',
-            owner: userId || mongoose.Types.ObjectId(),
+            owner: userId,
           });
 
           await newMeeting.save();
 
           return res.json({
             reply: `✅ Meeting scheduled successfully!\n\n📅 **${meetingDetails.title}**\n🕐 ${startTime.toLocaleString()} - ${endTime.toLocaleString()}\n📍 ${meetingDetails.location || 'No location specified'}`,
-            type: "meeting_scheduled"
+            type: "meeting_scheduled",
+            suggestions: ["Show my meetings", "Create a task", "Create a note"]
           });
 
         } catch (error) {
@@ -469,10 +518,11 @@ export const chatWithAI = async (req, res) => {
       console.log('Parsed note details:', noteDetails);
 
       try {
-        // Title is required for notes
+        // If no title provided, guide the user with examples
         if (!noteDetails.title || noteDetails.title === 'Untitled Note') {
           return res.json({
-            reply: "I need a title for your note. Please say something like: 'Create a note titled \"Project Ideas\"' or 'Add note \"Meeting Notes: Q1 Planning\"'",
+            reply: `I'd love to create a note for you! Just include a title.\n\nHere are some ways you can do it:\n• Create note "Site Inspection Report"\n• Add note titled Foundation Review\n• New note "Safety Checklist" tag: urgent\n\nAvailable tags: Bug, Feature, Issue, Idea, Urgent, Important, Reminder, Todo`,
+            type: "guide",
           });
         }
 
@@ -483,20 +533,26 @@ export const chatWithAI = async (req, res) => {
           });
         }
 
-        // Create the note
-        const newNote = new Note({
+        // Create through NoteService for proper user association & logging
+        const newNote = await NoteService.createNote({
           title: noteDetails.title,
           content: noteDetails.content,
           tag: noteDetails.tag,
-          owner: userId,
-        });
+        }, userId);
 
-        await newNote.save();
+        // Fire notification (same as REST endpoint)
+        NotificationService.createNoteNotification(userId, {
+          noteTitle: newNote.title,
+          noteId: newNote.id,
+          action: 'created',
+          tag: newNote.tag,
+        }).catch(() => {});
 
         return res.json({
-          reply: `✅ Note created successfully!\n\n📝 **${noteDetails.title}**\n🏷️ Tag: ${noteDetails.tag}\n\n${noteDetails.content.substring(0, 100)}${noteDetails.content.length > 100 ? '...' : ''}`,
+          reply: `✅ Note created successfully!\n\n📝 **${newNote.title}**\n🏷️ Tag: ${newNote.tag}\n\n${noteDetails.content.substring(0, 100)}${noteDetails.content.length > 100 ? '...' : ''}`,
           type: "note_created",
-          data: newNote
+          data: newNote,
+          suggestions: ["Show my notes", "Create another note", "Show my tasks"]
         });
 
       } catch (error) {
@@ -532,10 +588,11 @@ export const chatWithAI = async (req, res) => {
       console.log('Parsed task details:', taskDetails);
 
       try {
-        // Title is required for tasks
+        // If no title provided, guide the user with examples
         if (!taskDetails.title || taskDetails.title === 'New Task') {
           return res.json({
-            reply: "I need a task description. Please say something like: 'Add task \"Review Q1 report\"' or 'Create task \"Fix login bug\" - high priority'",
+            reply: `I'd love to create a task for you! Just include a title.\n\nHere are some ways you can do it:\n• Add task "Review foundation plans"\n• Create task "Order steel beams" high priority\n• New task "Inspect wiring" due tomorrow\n• Add task "Safety audit" critical due next monday\n\nPriority options: low, medium, high, critical\nDue dates: today, tomorrow, next monday-saturday, or YYYY-MM-DD`,
+            type: "guide",
           });
         }
 
@@ -551,7 +608,6 @@ export const chatWithAI = async (req, res) => {
         if (taskDetails.dueDate) {
           try {
             dueDate = new Date(taskDetails.dueDate);
-            // Validate the date is valid
             if (isNaN(dueDate.getTime())) {
               dueDate = null;
             }
@@ -561,24 +617,29 @@ export const chatWithAI = async (req, res) => {
           }
         }
         
-        // Create the task
-        const newTask = new Task({
+        // Create through TaskService for proper user association & logging
+        const newTask = await TaskService.createTask({
           title: taskDetails.title,
           description: taskDetails.description,
           priority: taskDetails.priority,
           dueDate: dueDate,
           status: taskDetails.status,
-          owner: userId,
           tags: [],
-        });
+        }, userId);
 
-        await newTask.save();
+        // Fire notification (same as REST endpoint)
+        NotificationService.createTaskNotification(userId, {
+          taskTitle: newTask.title,
+          taskId: newTask.id,
+          action: 'created',
+        }).catch(() => {});
 
         const dueDateStr = dueDate ? dueDate.toLocaleDateString() : 'No due date';
         return res.json({
-          reply: `✅ Task added successfully!\n\n✓ **${taskDetails.title}**\n🎯 Priority: ${taskDetails.priority}\n📅 Due: ${dueDateStr}\n\n${taskDetails.description.substring(0, 100)}${taskDetails.description.length > 100 ? '...' : ''}`,
+          reply: `✅ Task added successfully!\n\n✓ **${newTask.title}**\n🎯 Priority: ${taskDetails.priority}\n📅 Due: ${dueDateStr}\n\n${taskDetails.description.substring(0, 100)}${taskDetails.description.length > 100 ? '...' : ''}`,
           type: "task_added",
-          data: newTask
+          data: newTask,
+          suggestions: ["Show my tasks", "Create another task", "Show my notes"]
         });
 
       } catch (error) {
@@ -601,59 +662,107 @@ export const chatWithAI = async (req, res) => {
     // ===== MEETINGS ====="
     if (intentTokens.includes('meeting') || intentTokens.includes('meetings') || intentTokens.includes('schedule') || intentTokens.includes('upcoming')) {
       console.log('🔍 Meeting branch triggered');
-      const upcomingMeetings = await fetchUserMeetings(null);
+      
+      if (!userId) {
+        return res.status(401).json({
+          reply: "Please log in to view your meetings. Your session may have expired — try logging in again.",
+          error: true,
+          suggestions: ["Show materials", "Material status"]
+        });
+      }
+      
+      const upcomingMeetings = await fetchUserMeetings(userId);
       console.log('   → meetings count', upcomingMeetings.length);
       return res.json({
         reply: upcomingMeetings.length > 0 
-          ? `You have ${upcomingMeetings.length} upcoming meetings:`
-          : "You don't have any upcoming meetings.",
+          ? `📅 You have ${upcomingMeetings.length} upcoming meeting${upcomingMeetings.length > 1 ? 's' : ''}:`
+          : "You don't have any upcoming meetings. Would you like to schedule one?",
         data: upcomingMeetings,
-        type: "meetings_data"
+        type: "meetings_data",
+        suggestions: upcomingMeetings.length > 0 
+          ? ["Schedule a meeting", "Show my tasks", "Dashboard summary"]
+          : ["Schedule a meeting", "Show my tasks"]
       });
     }
 
     // ===== TASKS =====
     if (intentTokens.includes('task') || intentTokens.includes('tasks') || intentTokens.includes('todo') || intentTokens.includes('pending') || intentTokens.includes('stuck') || intentTokens.includes('blocked')) {
       console.log('🔍 Task branch triggered');
-      const pendingTasks = await fetchUserTasks(null);
+      
+      if (!userId) {
+        return res.status(401).json({
+          reply: "Please log in to view your tasks. Your session may have expired — try logging in again.",
+          error: true,
+          suggestions: ["Show materials", "Material status"]
+        });
+      }
+      
+      const pendingTasks = await fetchUserTasks(userId);
       console.log('   → pendingTasks count', pendingTasks.length);
       return res.json({
         reply: pendingTasks.length > 0 
-          ? `You have ${pendingTasks.length} pending tasks:`
-          : "No pending tasks. Great!",
+          ? `✅ You have ${pendingTasks.length} pending task${pendingTasks.length > 1 ? 's' : ''}:`
+          : "No pending tasks — you're all caught up! 🎉",
         data: pendingTasks,
-        type: "tasks_data"
+        type: "tasks_data",
+        suggestions: pendingTasks.length > 0 
+          ? ["Create a task", "Show my notes", "Dashboard summary"]
+          : ["Create a task", "Show my meetings"]
       });
     }
 
     // ===== NOTES =====
     if (intentTokens.includes('note') || intentTokens.includes('notes') || intentTokens.includes('search')) {
       console.log('🔍 Notes branch triggered');
+      
+      if (!userId) {
+        return res.status(401).json({
+          reply: "Please log in to view your notes. Your session may have expired — try logging in again.",
+          error: true,
+          suggestions: ["Show materials", "Material status"]
+        });
+      }
+      
       const keywords = tokens.filter(w => !['note','notes','search','find'].includes(w));
       const searchKeyword = keywords[0] || '';
-      const noteResults = await fetchUserNotes(null);
+      const noteResults = await fetchUserNotes(userId);
       const filtered = searchKeyword 
         ? noteResults.filter(note => note.title.toLowerCase().includes(searchKeyword) || note.content?.toLowerCase().includes(searchKeyword))
         : noteResults;
       console.log('   → noteResults count', filtered.length);
       return res.json({
         reply: filtered.length > 0 
-          ? `Found ${filtered.length} notes${searchKeyword ? ` matching "${searchKeyword}"` : ''}:`
-          : "No notes found.",
+          ? `📝 Found ${filtered.length} note${filtered.length > 1 ? 's' : ''}${searchKeyword ? ` matching "${searchKeyword}"` : ''}:`
+          : searchKeyword 
+            ? `No notes found matching "${searchKeyword}". Try a different keyword or create a new note.`
+            : "You don't have any notes yet. Would you like to create one?",
         data: filtered.slice(0, 10),
-        type: "notes_data"
+        type: "notes_data",
+        suggestions: filtered.length > 0 
+          ? ["Create a note", "Show my tasks", "Dashboard summary"]
+          : ["Create a note", "Show my tasks"]
       });
     }
 
     // ===== DASHBOARD =====
     if (intentTokens.includes('summary') || intentTokens.includes('dashboard')) {
       console.log('🔍 Dashboard branch triggered');
-      const summary = await getDashboardSummary(null);
+      
+      if (!userId) {
+        return res.status(401).json({
+          reply: "Please log in to view your dashboard. Your session may have expired — try logging in again.",
+          error: true,
+          suggestions: ["Show materials", "Material status"]
+        });
+      }
+      
+      const summary = await getDashboardSummary(userId);
       console.log('   → dashboard summary', summary);
       return res.json({
-        reply: `Dashboard Summary:\n• Meetings: ${summary?.summary?.totalMeetings || 0}\n• Notes: ${summary?.summary?.totalNotes || 0}\n• Pending: ${summary?.summary?.pendingTasks || 0}`,
+        reply: `📊 **Project Dashboard**\n\n📅 Meetings: ${summary?.summary?.totalMeetings || 0}\n✅ Pending Tasks: ${summary?.summary?.pendingTasks || 0}\n📝 Notes: ${summary?.summary?.totalNotes || 0}`,
         data: summary,
-        type: "dashboard_data"
+        type: "dashboard_data",
+        suggestions: ["Show my meetings", "Show my tasks", "Show my notes", "Material status"]
       });
     }
 
@@ -704,8 +813,9 @@ export const chatWithAI = async (req, res) => {
     if (!isProcurementQuery) {
       // Not a procurement query at all - return help
       return res.json({
-        reply: `I can help with:\n• Meetings\n• Tasks\n• Notes\n• Procurement items\nWhat would you like?`,
-        type: "help"
+        reply: `I'm not sure what you're looking for. Here's what I can help with:\n\n📅 Meetings — "show my meetings" or "schedule a meeting"\n✅ Tasks — "show my tasks" or "add a task"\n📝 Notes — "show my notes" or "create a note"\n🏗️ Materials — "material status" or "show concrete"\n📊 Dashboard — "dashboard summary"`,
+        type: "help",
+        suggestions: ["Show my meetings", "Show my tasks", "Material status", "Dashboard summary"]
       });
     }
 
