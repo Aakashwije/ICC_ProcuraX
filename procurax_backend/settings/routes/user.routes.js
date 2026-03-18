@@ -1,5 +1,6 @@
 // settings/routes/user.routes.js
 import express from "express";
+import path from "path";
 import { authMiddleware, generateToken } from "../../core/middleware/auth.middleware.js";
 import User from '../../models/User.js';
 import Setting from '../models/setting.js';
@@ -99,11 +100,16 @@ router.get("/me", authMiddleware, async (req, res) => {
       userObj.lastName = userObj.lastName || parts.slice(1).join(' ') || '';
     }
 
-    // Build a full URL for profile image so frontend can display it after reload
+    // If profileImage is already an absolute URL (e.g. Cloudinary), use it directly.
+    // Otherwise build a URL relative to this server (legacy local-file fallback).
     if (userObj.profileImage) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const relativePath = userObj.profileImage.split(path.sep).join('/');
-      userObj.profileImageUrl = `${baseUrl}/${relativePath}`;
+      if (userObj.profileImage.startsWith('http://') || userObj.profileImage.startsWith('https://')) {
+        userObj.profileImageUrl = userObj.profileImage;
+      } else {
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const relativePath = userObj.profileImage.split(path.sep).join('/');
+        userObj.profileImageUrl = `${baseUrl}/${relativePath}`;
+      }
     }
 
     res.json({ success: true, data: userObj });
@@ -152,11 +158,15 @@ router.put("/profile", authMiddleware, async (req, res) => {
       userObj.lastName = userObj.lastName || parts.slice(1).join(' ') || '';
     }
 
-    // Build a full URL for profile image so frontend can display it after reload
+    // If profileImage is already an absolute URL (e.g. Cloudinary), use it directly.
     if (userObj.profileImage) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const relativePath = userObj.profileImage.split(path.sep).join('/');
-      userObj.profileImageUrl = `${baseUrl}/${relativePath}`;
+      if (userObj.profileImage.startsWith('http://') || userObj.profileImage.startsWith('https://')) {
+        userObj.profileImageUrl = userObj.profileImage;
+      } else {
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const relativePath = userObj.profileImage.split(path.sep).join('/');
+        userObj.profileImageUrl = `${baseUrl}/${relativePath}`;
+      }
     }
 
     res.json({
