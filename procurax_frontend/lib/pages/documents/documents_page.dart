@@ -157,15 +157,15 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withOpacity(0.12) : Colors.white,
+                    color: isSelected ? color.withValues(alpha: 0.12) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSelected ? color : color.withOpacity(0.3),
+                      color: isSelected ? color : color.withValues(alpha: 0.3),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -176,7 +176,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
+                          color: color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(icon, size: 32, color: color),
@@ -233,7 +233,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: DocumentsPage.primaryBlue.withOpacity(0.1),
+                      color: DocumentsPage.primaryBlue.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -356,6 +356,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
     try {
       final selectedCategory = await _showUploadCategoryDialog();
       if (selectedCategory == null) return;
+      if (!mounted) return;
 
       final uploadSource = await showDialog<String>(
         context: context,
@@ -444,7 +445,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: DocumentsPage.primaryBlue.withOpacity(0.1),
+                    color: DocumentsPage.primaryBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -508,7 +509,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -571,7 +572,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -748,7 +749,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                               try {
                                 await ApiService.deleteDocument(docId);
                                 _loadDocuments();
-                                if (mounted) {
+                                if (context.mounted) {
                                   CustomToast.success(
                                     context,
                                     'The file has been removed from your documents',
@@ -756,7 +757,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                                   );
                                 }
                               } catch (e) {
-                                if (mounted) {
+                                if (context.mounted) {
                                   CustomToast.error(
                                     context,
                                     e.toString().replaceFirst(
@@ -902,7 +903,7 @@ class _CategoryCardState extends State<CategoryCard> {
         border: Border.all(color: Colors.blue.shade300, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.shade100.withOpacity(0.3),
+            color: Colors.blue.shade100.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

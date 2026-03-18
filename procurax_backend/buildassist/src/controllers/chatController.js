@@ -3,6 +3,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { parseProcurementSheet } from "../services/procurementSheetService.js";
+import { extractSheetId } from "../lib/googleSheets.js";
+import User from "../../../models/User.js";
 import {
   fetchUserMeetings,
   fetchUserNotes,
@@ -794,21 +796,54 @@ export const chatWithAI = async (req, res) => {
     }
 
     // ===== PROCUREMENT =====
-    if (!sheets || !process.env.GOOGLE_SHEET_ID) {
-      return res.json({ reply: "Procurement data unavailable", error: true });
+    // First check if we can access Google Sheets at all
+    if (!sheets) {
+      return res.json({ 
+        reply: "Google Sheets service is not available. Please check server configuration.", 
+        error: true 
+      });
+    }
+
+    // Get the user's assigned Google Sheet URL
+    let spreadsheetId = process.env.GOOGLE_SHEET_ID; // fallback to default
+    if (userId) {
+      try {
+        const user = await User.findById(userId).select('googleSheetUrl');
+        if (user?.googleSheetUrl) {
+          const extractedId = extractSheetId(user.googleSheetUrl);
+          if (extractedId) {
+            spreadsheetId = extractedId;
+            console.log(`Using user's assigned Google Sheet: ${spreadsheetId}`);
+          }
+        }
+      } catch (userError) {
+        console.error('Error fetching user Google Sheet URL:', userError);
+        // Continue with fallback spreadsheetId
+      }
+    }
+
+    if (!spreadsheetId) {
+      return res.json({ 
+        reply: "No Google Sheet configured. Please ask your admin to assign a procurement sheet to your account.", 
+        error: true 
+      });
     }
 
     let rows = null;
     try {
-      const metadata = await sheets.spreadsheets.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID });
+      const metadata = await sheets.spreadsheets.get({ spreadsheetId });
       const sheetName = metadata.data.sheets[0].properties.title;
       const sheetResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        spreadsheetId: spreadsheetId,
         range: `${sheetName}!A2:R1000`,
       });
       rows = sheetResponse.data.values;
     } catch (apiError) {
-      return res.status(500).json({ reply: "Cannot access Google Sheets", error: true });
+      console.error('Google Sheets API Error:', apiError.message);
+      return res.status(500).json({ 
+        reply: "Cannot access the assigned Google Sheet. Please check if the sheet is accessible and try again.", 
+        error: true 
+      });
     }
 
     if (!rows || rows.length === 0) {

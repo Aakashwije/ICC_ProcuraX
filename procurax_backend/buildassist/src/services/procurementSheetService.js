@@ -1,67 +1,89 @@
+/**
+ * Compute delivery status using required date vs actual delivery date.
+ * Mirrors procurement.service.js logic exactly.
+ */
+const calculateStatus = (requiredDate, deliveryDate) => {
+  try {
+    const required = new Date(requiredDate);
+    const delivery = new Date(deliveryDate);
+    if (!Number.isFinite(required.getTime()) || !Number.isFinite(delivery.getTime())) {
+      return "Unknown";
+    }
+    if (delivery > required) return "Delayed";
+    if (delivery < required) return "Early";
+    return "On Time";
+  } catch {
+    return "Unknown";
+  }
+};
+
+/**
+ * Parse procurement sheet rows using the EXACT same column mapping
+ * as the procurement page's procument/lib/googleSheets.js:
+ *   B(1)  = materialList       D(3)  = responsibility
+ *   J(9)  = openingLC          K(10) = etd
+ *   L(11) = eta                M(12) = boiApproval
+ *   O(14) = revisedDeliveryToSite    P(15) = requiredDateCMS
+ */
 export const parseProcurementSheet = (rows) => {
   if (!rows || rows.length === 0) return [];
-  
+
   const procurementItems = [];
-  
+
   console.log(`Processing ${rows.length} rows from sheet`);
-  
+
   // Debug: log first 3 rows to see actual data structure
   for (let d = 0; d < Math.min(3, rows.length); d++) {
     console.log(`  Row ${d}: [${rows[d].map((c, idx) => idx + ':"' + c + '"').join(', ')}]`);
   }
-  
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    
+
     // Skip empty rows
     if (!row || row.length === 0) continue;
-    
-    const colA = row[0] ? row[0].toString().trim() : '';
-    
-    // Skip if column A is empty (no material name)
-    if (!colA) continue;
-    
-    // Actual sheet structure:
-    // Column A: Material Name
-    // Column B: Quantity
-    // Column C: Order Date / ETD
-    // Column D: Delivery Date / ETA
-    // (additional columns if present)
+
+    // Column B (index 1) is materialList — the primary identifier
+    const materialList = row[1] ? row[1].toString().trim() : '';
+
+    // Skip rows with no material name
+    if (!materialList) continue;
+
+    const responsibility        = (row[3]  ?? '').toString().trim();
+    const openingLC             = (row[9]  ?? '').toString().trim();
+    const etd                   = (row[10] ?? '').toString().trim();
+    const eta                   = (row[11] ?? '').toString().trim();
+    const boiApproval           = (row[12] ?? '').toString().trim();
+    const revisedDeliveryToSite = (row[14] ?? '').toString().trim();
+    const requiredDateCMS       = (row[15] ?? '').toString().trim();
+
     const item = {
       id: `item-${i + 1}`,
-      material: colA,                          // Column A: Material Name
-      quantity: row[1] || '',                   // Column B: Quantity
-      category: detectCategory(colA),           // Auto-detect category from material name
+      // Primary fields — identical to procurement page data model
+      materialList,
+      responsibility,
+      openingLC,
+      etd,
+      eta,
+      boiApproval,
+      revisedDeliveryToSite,
+      requiredDateCMS,
+      // Computed status — same logic as procurement.service.js
+      status: calculateStatus(requiredDateCMS, revisedDeliveryToSite),
+      // Extra fields for BuildAssist search/filtering
+      category: detectCategory(materialList),
       parentCategory: '',
-      source: '',
-      responsibility: '',
-      initialSubmission: '',
-      materialApplication: '',
-      approvedByConsultant: '',
-      shopDrawingSubmission: '',
-      proFormaInvoice: '',
-      openingLC: '',
-      etd: row[2] || '',                        // Column C: Order/ETD Date
-      eta: row[3] || '',                        // Column D: Delivery/ETA Date
-      boiApproval: '',
-      clearingPort: '',
-      revisedDelivery: row[3] || '',             // Use delivery date as revised delivery
-      requiredDate: row[4] || '',                // Column E: Required Date (if exists)
-      remarks: row[5] || '',                     // Column F: Remarks (if exists)
-      draftLCAmount: row[6] || '',               // Column G: Amount (if exists)
-      status: row[5] ? parseStatus(row[5]) : 'In Progress',
-      type: 'Local'
+      // Legacy alias so enrichProcurementItems search still works
+      material: materialList,
     };
-    
-    console.log(`  Parsed item: material="${item.material}", qty=${item.quantity}, etd=${item.etd}, eta=${item.eta}`);
+
+    console.log(`  Parsed item: material="${item.materialList}", resp="${item.responsibility}", etd="${item.etd}", eta="${item.eta}"`);
     procurementItems.push(item);
   }
-  
+
   console.log(`Parsed ${procurementItems.length} procurement items`);
   return procurementItems;
-};
-
-const detectCategory = (materialName) => {
+};const detectCategory = (materialName) => {
   if (!materialName) return 'General';
   const name = materialName.toLowerCase();
   if (name.includes('steel') || name.includes('reinforcement') || name.includes('bar')) return 'Steel & Reinforcement';
@@ -74,14 +96,4 @@ const detectCategory = (materialName) => {
   if (name.includes('paint') || name.includes('finish')) return 'Finishes';
   if (name.includes('tile') || name.includes('floor')) return 'Flooring';
   return 'General';
-};
-
-const parseStatus = (remarks) => {
-  if (!remarks) return 'In Progress';
-  const remarks_lower = remarks.toLowerCase();
-  if (remarks_lower.includes('c drawing pending')) return 'Drawing Pending';
-  if (remarks_lower.includes('completed') || remarks_lower === 'c') return 'Completed';
-  if (remarks_lower.includes('pending')) return 'Pending';
-  if (remarks_lower.includes('not confirmed')) return 'Not Confirmed';
-  return 'In Progress';
 };

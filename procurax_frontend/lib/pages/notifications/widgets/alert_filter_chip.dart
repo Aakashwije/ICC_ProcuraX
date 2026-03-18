@@ -35,7 +35,7 @@ class AlertFilterChip extends StatelessWidget {
         ),
         selected: isSelected,
         onSelected: (_) => onTap(),
-        backgroundColor: color?.withOpacity(0.1),
+        backgroundColor: color?.withValues(alpha: 0.1),
         selectedColor: color ?? Theme.of(context).primaryColor,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : color,

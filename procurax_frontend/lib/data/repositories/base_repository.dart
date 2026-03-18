@@ -1,9 +1,8 @@
-/**
- * Base Repository Interface
- * 
- * Abstract class defining the repository pattern contract.
- * All repositories should extend this class.
- */
+/// Base Repository Interface
+///
+/// Abstract class defining the repository pattern contract.
+/// All repositories should extend this class.
+library;
 
 abstract class BaseRepository<T> {
   /// Get all items

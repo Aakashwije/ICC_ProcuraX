@@ -56,7 +56,7 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -70,7 +70,7 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -105,7 +105,7 @@ class _AccountApprovalDialogState extends State<AccountApprovalDialog>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: AppColors.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
