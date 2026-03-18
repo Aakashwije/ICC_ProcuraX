@@ -2,60 +2,18 @@
   Google Sheets helper for procurement.
   This file connects to Google Sheets and returns clean rows
   so the rest of the backend does not worry about auth details.
-*/
-import { google } from "googleapis";
-import path from "path";
-import { fileURLToPath } from "url";
 
-/*
-  In ESM (module) files, we build __filename and __dirname manually.
-  This lets us resolve the credentials.json path reliably.
+  Auth is handled by the shared config/googleAuth.js helper which
+  reads credentials from env vars (Railway) or the local file (dev).
 */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import {
+  sheetsClient as sheets,
+  extractSheetId,
+  extractGid,
+} from "../../config/googleAuth.js";
 
-/*
-  Absolute path to credentials.json (stored in procurax_backend/credentials.json).
-  This key file is used by GoogleAuth to access the Sheets API.
-*/
-const KEYFILE = path.resolve(__dirname, "..", "..", "credentials.json");
-
-/*
-  Create GoogleAuth using the key file and read-only Sheets scope.
-  We only need read access for procurement data.
-*/
-const auth = new google.auth.GoogleAuth({
-  keyFile: KEYFILE,
-  scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-});
-
-/*
-  Create a Sheets client that will execute API calls for us.
-*/
-const sheets = google.sheets({
-  version: "v4",
-  auth,
-});
-
-/*
-  Extract the Sheet ID from a full Google Sheets URL.
-  Example: https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit -> 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
-*/
-export function extractSheetId(url) {
-  if (!url) return null;
-  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  return match ? match[1] : url; // fallback to the raw string if it's already an ID
-}
-
-/*
-  Extract the gid (sheet tab ID) from a Google Sheets URL.
-  Example: ...edit?gid=257866353 -> 257866353
-*/
-export function extractGid(url) {
-  if (!url) return null;
-  const match = url.match(/[?&#]gid=(\d+)/);
-  return match ? match[1] : null;
-}
+// Re-export so existing import sites keep working
+export { extractSheetId, extractGid };
 
 /*
   Fetch raw procurement rows from Google Sheets.

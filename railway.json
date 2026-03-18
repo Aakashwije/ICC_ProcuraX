@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd procurax_backend && npm install --omit=dev",
+    "watchPatterns": ["procurax_backend/**"]
+  },
+  "deploy": {
+    "startCommand": "cd procurax_backend && node app.js",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}

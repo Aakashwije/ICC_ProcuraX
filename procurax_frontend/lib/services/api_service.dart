@@ -5,19 +5,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // ── Production backend (Railway) ──────────────────────────────────
+  static const String _productionUrl =
+      "https://iccprocurax-production.up.railway.app";
+
   // Update this base URL if the backend host changes.
   static String get baseUrl {
+    // 1. Compile-time override  (flutter run --dart-define=API_BASE_URL=...)
     const override = String.fromEnvironment("API_BASE_URL");
     if (override.isNotEmpty) {
       return override;
     }
-    if (kIsWeb) {
-      return "http://localhost:5002"; // Web development -> backend proxy
-    }
-    if (Platform.isAndroid) {
-      return "http://10.0.2.2:5002"; // Android emulator -> host machine
-    }
-    return "http://localhost:5002"; // iOS simulator / desktop
+
+    // 2. Use Railway for all builds (debug, profile, release)
+    // This allows hot refresh to work without running local backend
+    return _productionUrl;
   }
 
   // TODO: Replace with a secure storage/token flow for production.

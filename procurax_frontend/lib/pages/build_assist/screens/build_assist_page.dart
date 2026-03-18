@@ -102,7 +102,17 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
           final responseData = data['data'];
 
           // Handle different response types
-          if (responseType == 'meetings_data' ||
+          if (responseType == 'note_created' ||
+              responseType == 'task_added' ||
+              responseType == 'meeting_scheduled') {
+            // Success message for created items
+            messages.add({
+              'type': 'ai',
+              'message': reply,
+              'timestamp': _getCurrentTime(),
+              'showSuggestions': true,
+            });
+          } else if (responseType == 'meetings_data' ||
               responseType == 'tasks_data' ||
               responseType == 'notes_data' ||
               responseType == 'procurement_data') {
@@ -177,12 +187,13 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       'Schedule Meetings': 'show upcoming meetings',
       'Materials': 'show concrete status',
       'Material Status': 'show concrete status',
-      'Progress': 'show progress status',
-      'Progress Report': 'show progress status',
       'Team': 'show team members',
       'Meetings': 'show upcoming meetings',
       'Tasks': 'show pending tasks',
       'Notes': 'show all notes',
+      'Create Note': 'create a note',
+      'Create Task': 'create a task',
+      'Dashboard': 'dashboard summary',
     };
 
     final query = queryMap[action] ?? action;
@@ -414,8 +425,9 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                     children: [
                       _buildQuickAction("Schedule Update"),
                       _buildQuickAction("Material Status"),
-                      _buildQuickAction("Progress Report"),
-                      _buildQuickAction("Team"),
+                      _buildQuickAction("Create Note"),
+                      _buildQuickAction("Create Task"),
+                      _buildQuickAction("Dashboard"),
                     ],
                   ),
                 ),
