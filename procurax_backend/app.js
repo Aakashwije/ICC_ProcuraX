@@ -146,6 +146,10 @@ process.on("uncaughtException", (err) => {
 // New architecture: validated, service-layer backed
 app.use("/api/v1", v1Routes);
 
+// ===== UPLOAD ROUTES =====
+app.use("/api/upload", uploadRoutes);
+// =================================
+
 // ===== EXISTING CORE ROUTES (backward compatibility) =====
 app.use("/api", procurementRoutes);
 app.use("/api/notes", notesRoutes);
@@ -178,11 +182,6 @@ app.use("/admin-users", adminUserRoutes);
 app.use("/api/user", userProfileRoutes);
 
 
-
-// ===== UPLOAD ROUTES =====
-app.use("/api/upload", uploadRoutes);
-
-// =================================
 
 // ===== DOCUMENTS MODULE ROUTES =====
 app.use("/api/documents", documentRoutes);
