@@ -17,22 +17,32 @@ function getFirebaseApp() {
         return admin.apps[0];
     }
 
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    let raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     if (!raw) {
         console.warn("[Firebase] FIREBASE_SERVICE_ACCOUNT_JSON not set. Firebase disabled.");
         return null;
     }
 
-    console.log(`[Firebase] Env var length: ${raw.length}, starts with: "${raw.substring(0, 30)}..."`);
-
     try {
+        // Strip wrapping quotes that some env var UIs add
+        raw = raw.trim();
+        if ((raw.startsWith("'") && raw.endsWith("'")) ||
+            (raw.startsWith('"') && raw.endsWith('"') && !raw.startsWith('{"'))) {
+            raw = raw.slice(1, -1);
+        }
+
         const serviceAccount = JSON.parse(raw);
 
-        console.log(`[Firebase] Parsed OK. project_id=${serviceAccount.project_id}, has private_key=${!!serviceAccount.private_key}, type=${serviceAccount.type}`);
+        console.log(`[Firebase] Parsed OK – project_id=${serviceAccount.project_id}, type=${serviceAccount.type}`);
 
-        // Fix for escaped new lines in the private key
+        // Fix escaped newlines in the private key (common with env vars)
         if (serviceAccount.private_key) {
             serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
+
+        if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
+            console.error("[Firebase] Service account JSON is missing required fields (project_id, client_email, or private_key).");
+            return null;
         }
 
         const app = admin.initializeApp({
@@ -43,7 +53,8 @@ function getFirebaseApp() {
         return app;
     } catch (err) {
         console.error("[Firebase] Failed to initialise Admin SDK:", err.message);
-        console.error("[Firebase] Stack:", err.stack);
+        // Log the first 80 chars of the raw value for debugging (no secrets leaked)
+        console.error(`[Firebase] Raw env var (first 80 chars): ${raw.substring(0, 80)}`);
         return null;
     }
 }
