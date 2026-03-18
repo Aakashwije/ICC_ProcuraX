@@ -829,22 +829,10 @@ export const chatWithAI = async (req, res) => {
       console.log('   First item sample:', JSON.stringify(procurementItems[0], null, 2));
     }
 
-    // Check if user is asking for procurement/material data
-    const isProcurementQuery = 
-      intentTokens.includes('procurement') ||
-      intentTokens.includes('material') ||
-      intentTokens.includes('materials') ||
-      lowerMessage.includes('show procurement status') ||
-      lowerMessage.includes('material status');
-
-    if (!isProcurementQuery) {
-      // Not a procurement query at all - return help
-      return res.json({
-        reply: `I'm not sure what you're looking for. Here's what I can help with:\n\n📅 Meetings — "show my meetings" or "schedule a meeting"\n✅ Tasks — "show my tasks" or "add a task"\n📝 Notes — "show my notes" or "create a note"\n🏗️ Materials — "material status" or "show concrete"\n📊 Dashboard — "dashboard summary"`,
-        type: "help",
-        suggestions: ["Show my meetings", "Show my tasks", "Material status", "Dashboard summary"]
-      });
-    }
+    // Since we've already checked meetings, tasks, notes, and dashboard above,
+    // any remaining query that reaches here is treated as a procurement/material search.
+    // This ensures ANY material name the user asks for gets filtered and shown.
+    console.log('🔍 Falling through to procurement search for tokens:', intentTokens);
 
     // Strip generic procurement keywords to find the actual search terms
     const genericWords = ['procurement', 'material', 'materials', 'status', 'schedule', 'all', 'get', 'what', 'whats', 'check', 'find', 'search', 'look', 'up', 'my', 'our', 'is', 'are', 'have', 'has', 'do', 'does', 'can', 'i', 'we', 'any', 'available', 'current', 'update', 'latest'];
@@ -870,21 +858,30 @@ export const chatWithAI = async (req, res) => {
     }
 
     // Build list of all known keywords for fuzzy matching
+    // Split multi-word material names into individual words for better fuzzy matching
     const knownCategories = [
       'electrical', 'low voltage', 'protection', 'plumbing', 'hvac', 'civil', 
       'fire', 'elevator', 'concrete', 'glass', 'steel', 'generator', 'elv',
       'lightning', 'detection', 'system', 'delivery'
     ];
-    const knownMaterials = [...new Set(
+    const knownMaterialNames = [...new Set(
       procurementItems.map(item => item.material?.toLowerCase()).filter(Boolean)
     )];
-    const allKnownWords = [...new Set([...knownCategories, ...knownMaterials])];
+    // Break multi-word material names into individual words for fuzzy matching
+    const knownMaterialWords = [...new Set(
+      knownMaterialNames.flatMap(name => name.split(/\s+/).filter(w => w.length >= 3))
+    )];
+    const allKnownWords = [...new Set([...knownCategories, ...knownMaterialWords])];
 
     // Auto-correct misspelled tokens using fuzzy matching
     const corrections = [];
     const correctedTokens = searchTokens.map(token => {
-      // If token already matches exactly, keep it
+      // If token already matches a known word (exact or partial), keep it
       if (allKnownWords.some(w => w.includes(token) || token.includes(w))) {
+        return token;
+      }
+      // Also check against full material names for partial matches
+      if (knownMaterialNames.some(name => name.includes(token) || token.includes(name))) {
         return token;
       }
       const fuzzy = fuzzyMatch(token, allKnownWords);
@@ -902,44 +899,24 @@ export const chatWithAI = async (req, res) => {
 
     console.log('   Corrected tokens:', correctedTokens);
 
-    // Now search with the corrected tokens
-    let filteredItems = null;
-
-    // Check for specific material keywords (first match only)
-    if (!filteredItems && correctedTokens.includes('concrete')) {
-      filteredItems = procurementItems.filter(item => item.material?.toLowerCase().includes('concrete'));
-      console.log('   concrete items count', filteredItems.length);
-    }
-
-    if (!filteredItems && correctedTokens.includes('delivery')) {
-      filteredItems = procurementItems.filter(item => item.revisedDelivery);
-      console.log('   delivery items count', filteredItems.length);
-    }
-
-    // Check for category keywords (only if no specific keyword matched yet)
-    if (!filteredItems) {
-      for (const cat of knownCategories) {
-        if (correctedTokens.includes(cat)) {
-          filteredItems = procurementItems.filter(item => 
-            item.category?.toLowerCase().includes(cat) ||
-            item.parentCategory?.toLowerCase().includes(cat) ||
-            item.material?.toLowerCase().includes(cat)
-          );
-          console.log(`   category/material "${cat}" matched, count`, filteredItems.length);
-          break;
-        }
-      }
-    }
-
-    // Generic search using corrected tokens
-    if (!filteredItems) {
-      filteredItems = procurementItems.filter(item =>
-        correctedTokens.some(term =>
-          item.material?.toLowerCase().includes(term) ||
-          item.category?.toLowerCase().includes(term)
-        )
+    // Search procurement items using corrected tokens
+    // Single unified search that checks material name, category, and parent category
+    let filteredItems = procurementItems.filter(item => {
+      const materialLower = item.material?.toLowerCase() || '';
+      const categoryLower = item.category?.toLowerCase() || '';
+      const parentCategoryLower = item.parentCategory?.toLowerCase() || '';
+      return correctedTokens.some(term =>
+        materialLower.includes(term) ||
+        categoryLower.includes(term) ||
+        parentCategoryLower.includes(term)
       );
-      console.log('   generic search results count', filteredItems.length);
+    });
+    console.log('   Filtered items count:', filteredItems.length);
+
+    // Special case: "delivery" query should show items with delivery dates
+    if (filteredItems.length === 0 && correctedTokens.includes('delivery')) {
+      filteredItems = procurementItems.filter(item => item.revisedDelivery || item.eta);
+      console.log('   delivery date items count:', filteredItems.length);
     }
 
     // Return filtered results

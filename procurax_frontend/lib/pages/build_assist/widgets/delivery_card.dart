@@ -639,13 +639,14 @@ class DeliveryCard extends StatelessWidget {
   }
 
   Widget _buildProcurementCard() {
-    // Light blue theme colors
-    const Color cardBg = Color(0xFFEFF6FF); // Very light blue background
-    const Color headerBg = Color(0xFF3B82F6); // Blue header
-    const Color accentBlue = Color(0xFF2563EB); // Accent blue
-    const Color iconBg = Color(0xFFDBEAFE); // Light blue icon circles
-    const Color textPrimary = Color(0xFF1E3A5F); // Dark blue text
-    const Color textSecondary = Color(0xFF64748B); // Slate gray
+    // Dark neutral theme colors
+    const Color cardBg = Color(0xFF1B1E29); // Dark card background
+    const Color headerBg = Color(0xFF252836); // Slightly lighter header
+    const Color surfaceDark = Color(0xFF2A2D3A); // Row background
+    const Color accentTeal = Color(0xFF10B981); // Teal accent for icons
+    const Color textWhite = Color(0xFFF9FAFB); // Primary text
+    const Color textMuted = Color(0xFF9CA3AF); // Muted/label text
+    const Color borderColor = Color(0xFF374151); // Subtle border
 
     // If both material and category are missing, show error card
     if (!(data!['material']?.toString().isNotEmpty ?? false) &&
@@ -653,16 +654,9 @@ class DeliveryCard extends StatelessWidget {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFBFDBFE)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -672,35 +666,32 @@ class DeliveryCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: theme.AppColors.errorLight,
+                  color: const Color(0xFF7F1D1D),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.error_outline,
-                  color: Color(0xFFEF4444),
+                  color: Color(0xFFF87171),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'No material details found',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFEF4444),
+                        color: Color(0xFFF87171),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Material information is missing. Please try again.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
+                      style: TextStyle(fontSize: 12, color: textMuted),
                     ),
                   ],
                 ),
@@ -717,6 +708,10 @@ class DeliveryCard extends StatelessWidget {
     final responsibility = data!['responsibility']?.toString() ?? '';
     final revisedDelivery = data!['revisedDelivery']?.toString() ?? '';
     final parentCategory = data!['parentCategory']?.toString() ?? '';
+    final quantity = data!['quantity']?.toString() ?? '';
+    final etd = data!['etd']?.toString() ?? '';
+    final eta = data!['eta']?.toString() ?? '';
+    final status = data!['status']?.toString() ?? '';
 
     // Build title: material name, fallback to category
     final title = material.isNotEmpty ? material : category;
@@ -724,47 +719,44 @@ class DeliveryCard extends StatelessWidget {
         ? category
         : parentCategory;
 
+    Color _statusColor(String s) {
+      final lower = s.toLowerCase();
+      if (lower.contains('completed') || lower.contains('done'))
+        return const Color(0xFF10B981);
+      if (lower.contains('pending')) return const Color(0xFFF59E0B);
+      if (lower.contains('drawing')) return const Color(0xFF6366F1);
+      if (lower.contains('not confirmed')) return const Color(0xFFEF4444);
+      return accentTeal;
+    }
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBFDBFE), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with icon and title
+          // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-            ),
+            decoration: const BoxDecoration(color: headerBg),
             child: Row(
               children: [
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: accentTeal.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.inventory_2_rounded,
-                    color: Colors.white,
+                    color: accentTeal,
                     size: 20,
                   ),
                 ),
@@ -778,19 +770,19 @@ class DeliveryCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: textWhite,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (subtitle.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 2),
+                          padding: const EdgeInsets.only(top: 3),
                           child: Text(
                             subtitle,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.white.withOpacity(0.85),
+                              color: textMuted,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -798,61 +790,104 @@ class DeliveryCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (status.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _statusColor(status).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _statusColor(status),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
 
           // Detail rows
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Column(
               children: [
-                // Scheduled Delivery
+                if (quantity.isNotEmpty)
+                  _buildProcurementDetailRow(
+                    Icons.straighten_rounded,
+                    'Quantity',
+                    quantity,
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
+                  ),
                 if (revisedDelivery.isNotEmpty)
                   _buildProcurementDetailRow(
-                    Icons.schedule_rounded,
+                    Icons.local_shipping_rounded,
                     'Scheduled Delivery',
                     _formatDate(revisedDelivery),
-                    iconBg,
-                    accentBlue,
-                    textPrimary,
-                    textSecondary,
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
                   ),
-
-                // Source / Supplier
+                if (etd.isNotEmpty)
+                  _buildProcurementDetailRow(
+                    Icons.flight_takeoff_rounded,
+                    'ETD (Order Date)',
+                    _formatDate(etd),
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
+                  ),
+                if (eta.isNotEmpty)
+                  _buildProcurementDetailRow(
+                    Icons.flight_land_rounded,
+                    'ETA (Delivery Date)',
+                    _formatDate(eta),
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
+                  ),
                 if (source.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.store_rounded,
                     'Source',
                     source,
-                    iconBg,
-                    accentBlue,
-                    textPrimary,
-                    textSecondary,
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
                   ),
-
-                // Responsibility
                 if (responsibility.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.person_rounded,
                     'Responsibility',
                     responsibility,
-                    iconBg,
-                    accentBlue,
-                    textPrimary,
-                    textSecondary,
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
                   ),
-
-                // Parent Category
                 if (parentCategory.isNotEmpty && subtitle != parentCategory)
                   _buildProcurementDetailRow(
                     Icons.category_rounded,
                     'Parent Category',
                     parentCategory,
-                    iconBg,
-                    accentBlue,
-                    textPrimary,
-                    textSecondary,
+                    surfaceDark,
+                    accentTeal,
+                    textWhite,
+                    textMuted,
                   ),
               ],
             ),
@@ -863,13 +898,9 @@ class DeliveryCard extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                border: Border(
-                  top: BorderSide(
-                    color: const Color(0xFFBFDBFE).withOpacity(0.8),
-                  ),
-                ),
+              decoration: const BoxDecoration(
+                color: headerBg,
+                border: Border(top: BorderSide(color: borderColor)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -888,7 +919,7 @@ class DeliveryCard extends StatelessWidget {
                       'Related Tasks',
                       data!['relatedTasks'],
                       Icons.task_alt_rounded,
-                      accentBlue,
+                      accentTeal,
                     ),
                   if (data!['relatedNotes'] != null &&
                       (data!['relatedNotes'] as List).isNotEmpty)
@@ -925,18 +956,18 @@ class DeliveryCard extends StatelessWidget {
     Color valueColor,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: iconBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 16, color: iconColor),
+            child: Icon(icon, size: 15, color: iconColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1160,7 +1191,10 @@ class DeliveryCard extends StatelessWidget {
                     item['title'] ??
                         item['content']?.substring(0, 50) ??
                         'Item',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF9CA3AF),
+                    ),
                   ),
                 ),
               )
