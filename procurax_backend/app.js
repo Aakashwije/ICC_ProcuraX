@@ -215,6 +215,33 @@ app.get("/health", (req, res) => res.json({
   memory: process.memoryUsage(),
 }));
 
+// Firebase diagnostic endpoint (temporary - remove after debugging)
+app.get("/debug/firebase", async (req, res) => {
+  const { default: firebaseAdmin } = await import("firebase-admin");
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const info = {
+    envVarExists: !!raw,
+    envVarLength: raw ? raw.length : 0,
+    envVarStart: raw ? raw.substring(0, 50) : "N/A",
+    envVarEnd: raw ? raw.substring(raw.length - 50) : "N/A",
+  };
+  try {
+    const parsed = JSON.parse(raw || "{}");
+    info.parseSuccess = true;
+    info.projectId = parsed.project_id || "MISSING";
+    info.clientEmail = parsed.client_email || "MISSING";
+    info.hasPrivateKey = !!parsed.private_key;
+    info.privateKeyLength = parsed.private_key ? parsed.private_key.length : 0;
+    info.privateKeyStart = parsed.private_key ? parsed.private_key.substring(0, 40) : "N/A";
+    info.type = parsed.type || "MISSING";
+  } catch (e) {
+    info.parseSuccess = false;
+    info.parseError = e.message;
+  }
+  info.firebaseAppsCount = firebaseAdmin.apps.length;
+  res.json(info);
+});
+
 // ===== ERROR HANDLING (must be last) =====
 // 404 handler — catches unmatched routes
 app.use(notFoundHandler);
