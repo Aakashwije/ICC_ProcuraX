@@ -23,7 +23,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String selectedTimezone = "UTC";
   String role = "Project Manager";
   String department = "Construction";
-  String defaultProject = "Tower A - Downtown";
+  String defaultProject = "IIT project - Rathmalana";
 
   String firstName = "Dhasun";
   String lastName = "Jayarathna";
@@ -119,6 +119,36 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     _loadSettings();
     _loadUserProfile();
+  }
+
+  // ===== SAVE ALL METHOD =====
+  Future<void> _saveAll() async {
+    setState(() => _isSaving = true);
+    try {
+      await ApiService.updateUserProfile({
+        'firstName': firstNameController.text,
+        'lastName': lastNameController.text,
+        'email': emailController.text,
+        'phone': phoneController.text,
+      });
+      setState(() {
+        firstName = firstNameController.text;
+        lastName = lastNameController.text;
+        email = emailController.text;
+        phone = phoneController.text;
+      });
+      await ApiService.updateMultipleSettings({
+        'timezone': selectedTimezone,
+        'role': role,
+        'department': department,
+        'defaultProject': defaultProject,
+      });
+      if (mounted) _showSuccessSnackBar('Changes saved successfully');
+    } catch (e) {
+      if (mounted) _showErrorSnackBar('Failed to save changes: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   // ===== SAVE PROFILE METHOD =====
@@ -903,7 +933,8 @@ Issue Description:
         selectedTimezone = settings['timezone'] ?? 'UTC';
         role = settings['role'] ?? 'Project Manager';
         department = settings['department'] ?? 'Construction';
-        defaultProject = settings['defaultProject'] ?? 'Tower A - Downtown';
+        defaultProject =
+            settings['defaultProject'] ?? 'IIT project - Rathmalana';
       });
     } catch (e) {
       if (kDebugMode) {
@@ -983,7 +1014,10 @@ Issue Description:
                               fit: BoxFit.cover,
                             )
                           : null),
-                border: Border.all(color: blue.withValues(alpha: 0.3), width: 2),
+                border: Border.all(
+                  color: blue.withValues(alpha: 0.3),
+                  width: 2,
+                ),
               ),
               child: (_profileImage == null && profileImageUrl == null)
                   ? Center(
@@ -1047,7 +1081,7 @@ Issue Description:
               const SizedBox(height: 8),
               Text(
                 "JPG, PNG or GIF. Max size 2MB",
-                style: TextStyle(fontSize: 11, color: const Color(0xFF5A6A85)),
+                style: TextStyle(fontSize: 11, color: lightBlue),
               ),
             ],
           ),
@@ -1125,7 +1159,7 @@ Issue Description:
                             _card(
                               cardBg,
                               blue,
-                              const Color(0xFF5A6A85),
+                              lightBlue,
                               Icons.person_outline,
                               "Profile",
                               "Update your personal info",
@@ -1160,45 +1194,6 @@ Issue Description:
                                     phoneController,
                                     fieldBg,
                                   ),
-
-                                  const SizedBox(height: 16),
-
-                                  // Save Profile Button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: ElevatedButton(
-                                      onPressed: _isSaving
-                                          ? null
-                                          : _saveProfile,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: blue,
-                                        foregroundColor: Colors.white,
-                                        elevation: 2,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
-                                      child: _isSaving
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Save Changes',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -1216,13 +1211,7 @@ Issue Description:
                                   _dropdown(
                                     "Role",
                                     role,
-                                    [
-                                      "Project Manager",
-                                      "Engineer",
-                                      "Site Worker",
-                                      "Architect",
-                                      "Contractor",
-                                    ],
+                                    ["Project Manager", "Planning Engineer"],
                                     fieldBg,
                                     _handleRoleChange,
                                   ),
@@ -1243,10 +1232,10 @@ Issue Description:
                                     "Default Project",
                                     defaultProject,
                                     [
-                                      "Tower A - Downtown",
-                                      "Tower B - Uptown",
-                                      "Bridge Project",
-                                      "Hospital Renovation",
+                                      "IIT project - Rathmalana",
+                                      "Factory for ATG Celon",
+                                      "Bay One Residences Colombo",
+                                      "J'Adore Negombo",
                                     ],
                                     fieldBg,
                                     _handleProjectChange,
@@ -1282,11 +1271,47 @@ Issue Description:
                               ),
                             ),
 
+                            // Save All Button
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: ElevatedButton(
+                                  onPressed: _isSaving ? null : _saveAll,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: blue,
+                                    foregroundColor: Colors.white,
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: _isSaving
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Save Changes',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+
                             // About Card
                             _card(
                               cardBg,
                               blue,
-                              const Color(0xFF5A6A85),
+                              lightBlue,
                               Icons.info_outline,
                               "About",
                               "Application info",
@@ -1297,18 +1322,20 @@ Issue Description:
                                     "2.4.1",
                                     const Color(0xFF5A6A85),
                                   ),
-                                  const Divider(),
+                                  const Divider(color: Color(0xFF5A6A85)),
                                   _aboutRow(
                                     "Last Updated",
                                     "Nov 2, 2025",
                                     const Color(0xFF5A6A85),
                                   ),
-                                  const Divider(),
+                                  const Divider(color: Color(0xFF5A6A85)),
                                   _aboutRow(
                                     "Database",
                                     "MongoDB",
                                     const Color(0xFF5A6A85),
                                   ),
+                                  const Divider(color: Color(0xFF5A6A85)),
+
                                   const SizedBox(height: 16),
                                   _aboutButton(
                                     "Contact Support",
@@ -1429,10 +1456,12 @@ Issue Description:
     Color bg,
     ValueChanged<String> onChanged,
   ) {
+    // If the stored value is no longer a valid option, fall back to the first item.
+    final safeValue = items.contains(value) ? value : items.first;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        initialValue: value,
+        initialValue: safeValue,
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
