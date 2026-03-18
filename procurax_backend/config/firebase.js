@@ -17,13 +17,24 @@ function getFirebaseApp() {
         return admin.apps[0];
     }
 
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        console.warn("[Firebase] FIREBASE_SERVICE_ACCOUNT_JSON not set. Firebase disabled.");
+        return null;
+    }
+
     try {
         const serviceAccount = JSON.parse(
-            process.env.FIREBASE_SERVICE_ACCOUNT_JSON || "{}"
+            process.env.FIREBASE_SERVICE_ACCOUNT_JSON
         );
 
+        // Fix for escaped new lines in the private key
+        if (serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
+
         return admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
+            credential: admin.credential.cert(serviceAccount),
+            storageBucket: `${serviceAccount.project_id}.appspot.com`,
         });
     } catch (err) {
         console.error("[Firebase] Failed to initialise Admin SDK:", err.message);
