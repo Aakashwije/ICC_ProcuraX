@@ -1,9 +1,8 @@
 import { google } from "googleapis";
-import path from "path";
-import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { parseProcurementSheet } from "../services/procurementSheetService.js";
 import { extractSheetId } from "../lib/googleSheets.js";
+import { sheetsClient } from "../../../config/googleAuth.js";
 import User from "../../../models/User.js";
 import {
   fetchUserMeetings,
@@ -23,29 +22,12 @@ import NoteService from "../../../core/services/note.service.js";
 import TaskService from "../../../core/services/task.service.js";
 import NotificationService from "../../../notifications/notification.service.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-let sheets;
-try {
-  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS 
-    ? path.join(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
-    : path.join(__dirname, '../../credentials.json');
-  
-  const auth = new google.auth.GoogleAuth({
-    keyFile: credentialsPath,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-  });
-  
-  sheets = google.sheets({ version: "v4", auth });
-  console.log("✅ Google Sheets initialized successfully");
-  if (process.env.GOOGLE_SHEET_ID) {
-    console.log(`✅ Google Sheet ID configured: ${process.env.GOOGLE_SHEET_ID.slice(0, 8)}...`);
-  } else {
-    console.warn("⚠️ GOOGLE_SHEET_ID not set in environment variables — procurement features will be unavailable");
-  }
-} catch (error) {
-  console.error("❌ Failed to initialize Google Sheets:", error.message);
+// Use the shared Google Sheets client (env-var-aware, Railway-ready)
+const sheets = sheetsClient;
+if (sheets) {
+  console.log("✅ Google Sheets initialized successfully (shared auth)");
+} else {
+  console.error("❌ Google Sheets client unavailable — procurement features will not work");
 }
 
 /**
