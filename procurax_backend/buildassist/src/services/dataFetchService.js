@@ -3,6 +3,14 @@ import Note from "../../../notes/notes.model.js";
 import Task from "../../../tasks/tasks.model.js";
 
 /**
+ * Escape special regex characters in a string
+ */
+const escapeRegex = (string) => {
+  if (!string) return '';
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
  * Fetch all meetings for a user
  */
 export const fetchUserMeetings = async (userId) => {
@@ -152,11 +160,15 @@ export const fetchPendingTasks = async (userId) => {
  */
 export const searchNotes = async (userId, keyword) => {
   try {
+    if (!keyword || keyword.trim() === '') {
+      return []; // Don't search with empty keyword
+    }
+    const escapedKeyword = escapeRegex(keyword.trim());
     const filter = {
       $or: [
-        { title: { $regex: keyword, $options: 'i' } },
-        { content: { $regex: keyword, $options: 'i' } },
-        { tag: { $regex: keyword, $options: 'i' } }
+        { title: { $regex: escapedKeyword, $options: 'i' } },
+        { content: { $regex: escapedKeyword, $options: 'i' } },
+        { tag: { $regex: escapedKeyword, $options: 'i' } }
       ]
     };
     if (userId) filter.owner = userId;
@@ -184,11 +196,15 @@ export const searchNotes = async (userId, keyword) => {
  */
 export const searchTasks = async (userId, keyword) => {
   try {
+    if (!keyword || keyword.trim() === '') {
+      return []; // Don't search with empty keyword
+    }
+    const escapedKeyword = escapeRegex(keyword.trim());
     const filter = {
       $or: [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
-        { tags: { $in: [new RegExp(keyword, 'i')] } }
+        { title: { $regex: escapedKeyword, $options: 'i' } },
+        { description: { $regex: escapedKeyword, $options: 'i' } },
+        { tags: { $in: [new RegExp(escapedKeyword, 'i')] } }
       ],
       archived: { $ne: true }
     };
@@ -218,10 +234,14 @@ export const searchTasks = async (userId, keyword) => {
  */
 export const searchMeetings = async (userId, keyword) => {
   try {
+    if (!keyword || keyword.trim() === '') {
+      return []; // Don't search with empty keyword
+    }
+    const escapedKeyword = escapeRegex(keyword.trim());
     const filter = {
       $or: [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } }
+        { title: { $regex: escapedKeyword, $options: 'i' } },
+        { description: { $regex: escapedKeyword, $options: 'i' } }
       ]
     };
     if (userId) filter.owner = userId;
