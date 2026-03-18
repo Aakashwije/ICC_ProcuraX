@@ -180,7 +180,39 @@ if (msgData.type === 'file' && msgData.fileUrl && bucket) {
 }
 
 // Delete the message
+// Delete the message
 await msgRef.delete();
+
+// Update lastMessage on the chat
+const chatId = msgData.chatId;
+if (chatId) {
+  const chatRef = db.collection('chats').doc(chatId);
+  const remaining = await db
+    .collection('messages')
+    .where('chatId', '==', chatId)
+    .get();
+
+  const sorted = remaining.docs.sort((a, b) => {
+    const aTime = a.data().createdAt?.toMillis?.() || 0;
+    const bTime = b.data().createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
+
+  if (sorted.length > 0) {
+    const newLast = sorted[0].data();
+    await chatRef.update({
+      lastMessage: newLast.content || '',
+      lastMessageSenderId: newLast.senderId || '',
+      updatedAt: new Date(),
+    });
+  } else {
+    await chatRef.update({
+      lastMessage: '',
+      lastMessageSenderId: '',
+      updatedAt: new Date(),
+    });
+  }
+}
 
 return res.status(200).json({ success: true, id });
   } catch (err) {

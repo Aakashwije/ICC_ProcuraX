@@ -58,7 +58,7 @@ class AlertDetailScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AlertConstants.getTypeColor(alert.type).withOpacity(0.1),
+                color: AlertConstants.getTypeColor(alert.type).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

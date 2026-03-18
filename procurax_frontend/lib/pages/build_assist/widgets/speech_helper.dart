@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class SpeechHelper {
-  stt.SpeechToText _speech;
+  final stt.SpeechToText _speech;
   bool _isAvailable = false;
   bool _isListening = false;
 
@@ -11,7 +12,7 @@ class SpeechHelper {
     try {
       _isAvailable = await _speech.initialize();
     } catch (e) {
-      print('SpeechHelper init error: $e');
+      debugPrint('SpeechHelper init error: $e');
       _isAvailable = false;
     }
   }
@@ -28,8 +29,10 @@ class SpeechHelper {
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 5),
       localeId: 'en_US',
-      cancelOnError: true,
-      partialResults: true,
+      listenOptions: stt.SpeechListenOptions(
+        cancelOnError: true,
+        partialResults: true,
+      ),
     );
   }
 

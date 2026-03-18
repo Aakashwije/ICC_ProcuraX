@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../constants/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:procurax_frontend/theme/app_theme.dart' as theme;
@@ -13,12 +14,12 @@ class DeliveryCard extends StatelessWidget {
     if (data == null) return 'unknown';
 
     // Debug print
-    print('DeliveryCard data: $data');
+    debugPrint('DeliveryCard data: $data');
 
     // Prefer explicit type hints from the backend
     final typeField = data!['type'];
     if (typeField is String) {
-      print('Type field: $typeField');
+      debugPrint('Type field: $typeField');
       switch (typeField.toLowerCase()) {
         case 'meeting':
           return 'meeting';
@@ -41,8 +42,10 @@ class DeliveryCard extends StatelessWidget {
     if (data!.containsKey('content') && data!.containsKey('tag')) {
       return 'note';
     }
-    // Accept procurement if material OR category exists
-    if (data!.containsKey('material') || data!.containsKey('category')) {
+    // Accept procurement if materialList OR material OR category exists
+    if (data!.containsKey('materialList') ||
+        data!.containsKey('material') ||
+        data!.containsKey('category')) {
       return 'procurement';
     }
     return 'unknown';
@@ -59,12 +62,12 @@ class DeliveryCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.primaryBlue.withOpacity(0.4),
+            color: AppColors.primaryBlue.withValues(alpha: 0.4),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryBlue.withOpacity(0.08),
+              color: AppColors.primaryBlue.withValues(alpha: 0.08),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -75,7 +78,7 @@ class DeliveryCard extends StatelessWidget {
           children: [
             CircleAvatar(
               backgroundColor: Colors.red.shade100,
-              child: const Icon(Icons.error_outline, color: Colors.red),
+              child: const Icon(LucideIcons.alertCircle, color: Colors.red),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -124,7 +127,7 @@ class DeliveryCard extends StatelessWidget {
       children: [
         CircleAvatar(
           backgroundColor: Colors.orange.shade100,
-          child: const Icon(Icons.event, color: Colors.orange),
+          child: const Icon(LucideIcons.calendar, color: Colors.orange),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -136,7 +139,7 @@ class DeliveryCard extends StatelessWidget {
               border: Border.all(color: Colors.orange.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withOpacity(0.08),
+                  color: Colors.orange.withValues(alpha: 0.08),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -185,7 +188,7 @@ class DeliveryCard extends StatelessWidget {
                         : Row(
                             children: [
                               Icon(
-                                Icons.attach_file,
+                                LucideIcons.paperclip,
                                 color: Colors.orange.shade600,
                               ),
                               const SizedBox(width: 6),
@@ -216,7 +219,7 @@ class DeliveryCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.location_on,
+                        LucideIcons.mapPin,
                         size: 14,
                         color: theme.AppColors.neutral700,
                       ),
@@ -237,7 +240,7 @@ class DeliveryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.access_time,
+                      LucideIcons.clock,
                       size: 14,
                       color: Colors.orange.shade600,
                     ),
@@ -301,7 +304,7 @@ class DeliveryCard extends StatelessWidget {
       children: [
         CircleAvatar(
           backgroundColor: Colors.blue.shade100,
-          child: const Icon(Icons.check_circle, color: Colors.blue),
+          child: const Icon(LucideIcons.checkCircle2, color: Colors.blue),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -313,7 +316,7 @@ class DeliveryCard extends StatelessWidget {
               border: Border.all(color: Colors.blue.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.08),
+                  color: Colors.blue.withValues(alpha: 0.08),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -342,7 +345,7 @@ class DeliveryCard extends StatelessWidget {
                         : Row(
                             children: [
                               Icon(
-                                Icons.attach_file,
+                                LucideIcons.paperclip,
                                 color: Colors.blue.shade600,
                               ),
                               const SizedBox(width: 6),
@@ -400,7 +403,7 @@ class DeliveryCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _getStatusColor(
                           data!['status'],
-                        ).withOpacity(0.1),
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -423,7 +426,7 @@ class DeliveryCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.flag,
+                        LucideIcons.flag,
                         size: 14,
                         color: _getPriorityColor(data!['priority']),
                       ),
@@ -444,7 +447,7 @@ class DeliveryCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.calendar_today,
+                        LucideIcons.calendarDays,
                         size: 14,
                         color: Colors.blue.shade600,
                       ),
@@ -490,7 +493,7 @@ class DeliveryCard extends StatelessWidget {
       children: [
         CircleAvatar(
           backgroundColor: Colors.purple.shade100,
-          child: const Icon(Icons.note, color: Colors.purple),
+          child: const Icon(LucideIcons.fileText, color: Colors.purple),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -502,7 +505,7 @@ class DeliveryCard extends StatelessWidget {
               border: Border.all(color: Colors.purple.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.purple.withOpacity(0.08),
+                  color: Colors.purple.withValues(alpha: 0.08),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -531,7 +534,7 @@ class DeliveryCard extends StatelessWidget {
                         : Row(
                             children: [
                               Icon(
-                                Icons.attach_file,
+                                LucideIcons.paperclip,
                                 color: Colors.purple.shade600,
                               ),
                               const SizedBox(width: 6),
@@ -639,300 +642,340 @@ class DeliveryCard extends StatelessWidget {
   }
 
   Widget _buildProcurementCard() {
-    // Dark neutral theme colors
-    const Color cardBg = Color(0xFF1B1E29); // Dark card background
-    const Color headerBg = Color(0xFF252836); // Slightly lighter header
-    const Color surfaceDark = Color(0xFF2A2D3A); // Row background
-    const Color accentTeal = Color(0xFF10B981); // Teal accent for icons
-    const Color textWhite = Color(0xFFF9FAFB); // Primary text
-    const Color textMuted = Color(0xFF9CA3AF); // Muted/label text
-    const Color borderColor = Color(0xFF374151); // Subtle border
+    // Match the exact colors from the procurement page
+    const Color primaryBlue = Color(0xFF3563E9);
+    const Color lightBlue = Color(0xFF8DB3E2);
+    const Color cardBg = Color(0xFFEAF2FB);
+    const Color iconBg = Color(0xFFF3F7FF);
 
-    // If both material and category are missing, show error card
-    if (!(data!['material']?.toString().isNotEmpty ?? false) &&
-        !(data!['category']?.toString().isNotEmpty ?? false)) {
+    // Read fields using the procurement page's field names
+    final materialList = (data!['materialList'] ?? data!['material'] ?? '')
+        .toString();
+    final responsibility = (data!['responsibility'] ?? '').toString();
+    final openingLC = (data!['openingLC'] ?? '').toString();
+    final etd = (data!['etd'] ?? '').toString();
+    final eta = (data!['eta'] ?? '').toString();
+    final boiApproval = (data!['boiApproval'] ?? '').toString();
+    final revisedDeliveryToSite = (data!['revisedDeliveryToSite'] ?? '')
+        .toString();
+    final requiredDateCMS = (data!['requiredDateCMS'] ?? '').toString();
+    final status = (data!['status'] ?? '').toString();
+
+    if (materialList.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+        child: const Text(
+          'No material details found',
+          style: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Material + Status Badge
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7F1D1D),
-                  borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: _procFieldRow(
+                  Icons.inventory_2_outlined,
+                  "Material",
+                  materialList,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
                 ),
-                child: const Icon(
-                  Icons.error_outline,
-                  color: Color(0xFFF87171),
-                  size: 20,
+              ),
+              if (status.isNotEmpty) ...[
+                const SizedBox(width: 10),
+                _procStatusBadge(status),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Responsibility row
+          _procFieldRow(
+            Icons.business_outlined,
+            "Responsibility",
+            responsibility,
+            primaryBlue: primaryBlue,
+            lightBlue: lightBlue,
+            iconBg: iconBg,
+          ),
+          const SizedBox(height: 16),
+
+          // Logistics Timeline divider
+          Row(
+            children: [
+              Icon(Icons.timeline_outlined, size: 16, color: primaryBlue),
+              const SizedBox(width: 6),
+              Text(
+                "Logistics Timeline",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: primaryBlue,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                height: 1,
+                width: 100,
+                color: primaryBlue.withValues(alpha: 0.2),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Timeline row 1: LC Opening + ETD
+          Row(
+            children: [
+              Expanded(
+                child: _procFieldRow(
+                  Icons.account_balance_outlined,
+                  "LC Opening",
+                  openingLC,
+                  compact: true,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'No material details found',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFF87171),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Material information is missing. Please try again.',
-                      style: TextStyle(fontSize: 12, color: textMuted),
-                    ),
-                  ],
+              Expanded(
+                child: _procFieldRow(
+                  Icons.flight_takeoff_outlined,
+                  "ETD",
+                  etd,
+                  compact: true,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Timeline row 2: ETA + BOI Approval
+          Row(
+            children: [
+              Expanded(
+                child: _procFieldRow(
+                  Icons.flight_land_outlined,
+                  "ETA",
+                  eta,
+                  compact: true,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _procFieldRow(
+                  Icons.verified_outlined,
+                  "BOI Approval",
+                  boiApproval,
+                  compact: true,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Delivery Schedule divider
+          Row(
+            children: [
+              Icon(Icons.local_shipping_outlined, size: 16, color: primaryBlue),
+              const SizedBox(width: 6),
+              Text(
+                "Delivery Schedule",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: primaryBlue,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                height: 1,
+                width: 100,
+                color: primaryBlue.withValues(alpha: 0.2),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Delivery row: Delivery to Site + Required Date
+          Row(
+            children: [
+              Expanded(
+                child: _procFieldRow(
+                  Icons.event_available_outlined,
+                  "Delivery to Site",
+                  revisedDeliveryToSite,
+                  valueColor: Colors.orange.shade700,
+                  compact: true,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _procFieldRow(
+                  Icons.calendar_today_outlined,
+                  "Required Date",
+                  requiredDateCMS,
+                  valueColor: Colors.red.shade700,
+                  compact: true,
+                  primaryBlue: primaryBlue,
+                  lightBlue: lightBlue,
+                  iconBg: iconBg,
+                ),
+              ),
+            ],
+          ),
+
+          // Related items section (BuildAssist enrichment)
+          if (_hasRelatedItems()) ...[
+            const SizedBox(height: 16),
+            Divider(color: primaryBlue.withValues(alpha: 0.2)),
+            const SizedBox(height: 8),
+            if (data!['relatedMeetings'] != null &&
+                (data!['relatedMeetings'] as List).isNotEmpty)
+              _buildRelatedSection(
+                'Related Meetings',
+                data!['relatedMeetings'],
+                LucideIcons.calendar,
+                Colors.orange,
+              ),
+            if (data!['relatedTasks'] != null &&
+                (data!['relatedTasks'] as List).isNotEmpty)
+              _buildRelatedSection(
+                'Related Tasks',
+                data!['relatedTasks'],
+                LucideIcons.checkCircle2,
+                Colors.green,
+              ),
+            if (data!['relatedNotes'] != null &&
+                (data!['relatedNotes'] as List).isNotEmpty)
+              _buildRelatedSection(
+                'Related Notes',
+                data!['relatedNotes'],
+                LucideIcons.stickyNote,
+                Colors.purple,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Labeled field row — matches procurement page's _fieldRow exactly
+  Widget _procFieldRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+    bool compact = false,
+    required Color primaryBlue,
+    required Color lightBlue,
+    required Color iconBg,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: compact ? 28 : 36,
+          width: compact ? 28 : 36,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: compact ? 14 : 18, color: lightBlue),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: compact ? 10 : 12,
+                  color: primaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value.isEmpty ? "—" : value,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 15,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? const Color(0xFF1A1A1A),
                 ),
               ),
             ],
           ),
         ),
-      );
+      ],
+    );
+  }
+
+  /// Status badge — matches procurement page's _statusBadge exactly
+  Widget _procStatusBadge(String status) {
+    final normalized = status.toLowerCase();
+    final Color color;
+    if (normalized == 'delayed') {
+      color = Colors.red;
+    } else if (normalized == 'early' ||
+        normalized == 'on time' ||
+        normalized == 'ontime') {
+      color = Colors.green;
+    } else {
+      color = Colors.grey;
     }
-
-    final material = data!['material']?.toString() ?? '';
-    final category = data!['category']?.toString() ?? '';
-    final source = data!['source']?.toString() ?? '';
-    final responsibility = data!['responsibility']?.toString() ?? '';
-    final revisedDelivery = data!['revisedDelivery']?.toString() ?? '';
-    final parentCategory = data!['parentCategory']?.toString() ?? '';
-    final quantity = data!['quantity']?.toString() ?? '';
-    final etd = data!['etd']?.toString() ?? '';
-    final eta = data!['eta']?.toString() ?? '';
-    final status = data!['status']?.toString() ?? '';
-
-    // Build title: material name, fallback to category
-    final title = material.isNotEmpty ? material : category;
-    final subtitle = (category.isNotEmpty && material.isNotEmpty)
-        ? category
-        : parentCategory;
-
-    Color _statusColor(String s) {
-      final lower = s.toLowerCase();
-      if (lower.contains('completed') || lower.contains('done'))
-        return const Color(0xFF10B981);
-      if (lower.contains('pending')) return const Color(0xFFF59E0B);
-      if (lower.contains('drawing')) return const Color(0xFF6366F1);
-      if (lower.contains('not confirmed')) return const Color(0xFFEF4444);
-      return accentTeal;
-    }
-
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor, width: 1),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: const BoxDecoration(color: headerBg),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: accentTeal.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.inventory_2_rounded,
-                    color: accentTeal,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: textWhite,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (subtitle.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 3),
-                          child: Text(
-                            subtitle,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: textMuted,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (status.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _statusColor(status).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      status.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: _statusColor(status),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Detail rows
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Column(
-              children: [
-                if (quantity.isNotEmpty)
-                  _buildProcurementDetailRow(
-                    Icons.straighten_rounded,
-                    'Quantity',
-                    quantity,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-                if (revisedDelivery.isNotEmpty)
-                  _buildProcurementDetailRow(
-                    Icons.local_shipping_rounded,
-                    'Scheduled Delivery',
-                    _formatDate(revisedDelivery),
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-                if (etd.isNotEmpty)
-                  _buildProcurementDetailRow(
-                    Icons.flight_takeoff_rounded,
-                    'ETD (Order Date)',
-                    _formatDate(etd),
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-                if (eta.isNotEmpty)
-                  _buildProcurementDetailRow(
-                    Icons.flight_land_rounded,
-                    'ETA (Delivery Date)',
-                    _formatDate(eta),
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-                if (source.isNotEmpty)
-                  _buildProcurementDetailRow(
-                    Icons.store_rounded,
-                    'Source',
-                    source,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-                if (responsibility.isNotEmpty)
-                  _buildProcurementDetailRow(
-                    Icons.person_rounded,
-                    'Responsibility',
-                    responsibility,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-                if (parentCategory.isNotEmpty && subtitle != parentCategory)
-                  _buildProcurementDetailRow(
-                    Icons.category_rounded,
-                    'Parent Category',
-                    parentCategory,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
-                  ),
-              ],
-            ),
-          ),
-
-          // Related items section
-          if (_hasRelatedItems())
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              decoration: const BoxDecoration(
-                color: headerBg,
-                border: Border(top: BorderSide(color: borderColor)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (data!['relatedMeetings'] != null &&
-                      (data!['relatedMeetings'] as List).isNotEmpty)
-                    _buildRelatedSection(
-                      'Related Meetings',
-                      data!['relatedMeetings'],
-                      Icons.event_rounded,
-                      const Color(0xFFF97316),
-                    ),
-                  if (data!['relatedTasks'] != null &&
-                      (data!['relatedTasks'] as List).isNotEmpty)
-                    _buildRelatedSection(
-                      'Related Tasks',
-                      data!['relatedTasks'],
-                      Icons.task_alt_rounded,
-                      accentTeal,
-                    ),
-                  if (data!['relatedNotes'] != null &&
-                      (data!['relatedNotes'] as List).isNotEmpty)
-                    _buildRelatedSection(
-                      'Related Notes',
-                      data!['relatedNotes'],
-                      Icons.sticky_note_2_rounded,
-                      const Color(0xFF8B5CF6),
-                    ),
-                ],
-              ),
-            ),
-        ],
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
@@ -944,59 +987,6 @@ class DeliveryCard extends StatelessWidget {
             (data!['relatedTasks'] as List).isNotEmpty) ||
         (data!['relatedNotes'] != null &&
             (data!['relatedNotes'] as List).isNotEmpty);
-  }
-
-  Widget _buildProcurementDetailRow(
-    IconData icon,
-    String label,
-    String value,
-    Color iconBg,
-    Color iconColor,
-    Color labelColor,
-    Color valueColor,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 15, color: iconColor),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: valueColor,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: labelColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildGenericCard() {
@@ -1027,10 +1017,12 @@ class DeliveryCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
+              border: Border.all(
+                color: AppColors.primaryBlue.withValues(alpha: 0.2),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryBlue.withOpacity(0.04),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1147,15 +1139,6 @@ class DeliveryCard extends StatelessWidget {
     }
   }
 
-  String _formatDate(String dateString) {
-    try {
-      final DateTime date = DateTime.parse(dateString);
-      return DateFormat('MMM dd, yyyy').format(date);
-    } catch (e) {
-      return dateString;
-    }
-  }
-
   Widget _buildRelatedSection(
     String title,
     List items,
@@ -1197,8 +1180,7 @@ class DeliveryCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              )
-              .toList(),
+              ),
         ],
       ),
     );

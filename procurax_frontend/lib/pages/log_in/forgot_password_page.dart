@@ -428,7 +428,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: dangerRed.withOpacity(0.1),
+                color: dangerRed.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.lock_rounded, color: dangerRed, size: 40),
@@ -451,7 +451,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: neutralColor.withOpacity(0.6),
+                color: neutralColor.withValues(alpha: 0.6),
                 height: 1.5,
               ),
             ),
@@ -608,12 +608,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [primaryColor, primaryColor.withOpacity(0.8)],
+                colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
               ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
+                  color: primaryColor.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -643,7 +643,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 14,
-            color: neutralColor.withOpacity(0.6),
+            color: neutralColor.withValues(alpha: 0.6),
             height: 1.5,
           ),
         ),
@@ -656,11 +656,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             hintText: 'Enter your email',
             hintStyle: TextStyle(
               fontFamily: 'Poppins',
-              color: neutralColor.withOpacity(0.5),
+              color: neutralColor.withValues(alpha: 0.5),
             ),
             prefixIcon: Icon(
               Icons.email_outlined,
-              color: primaryColor.withOpacity(0.7),
+              color: primaryColor.withValues(alpha: 0.7),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -692,7 +692,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: primaryColor.withOpacity(0.8),
+              color: primaryColor.withValues(alpha: 0.8),
             ),
           ),
         ),
@@ -720,13 +720,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               gradient: LinearGradient(
                 colors: [
                   const Color(0xFFF59E0B),
-                  const Color(0xFFF59E0B).withOpacity(0.8),
+                  const Color(0xFFF59E0B).withValues(alpha: 0.8),
                 ],
               ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF59E0B).withOpacity(0.3),
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -752,7 +752,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: neutralColor.withOpacity(0.6),
+              color: neutralColor.withValues(alpha: 0.6),
               height: 1.5,
             ),
             children: [
@@ -775,13 +775,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: _otpExpirySeconds <= 60
-                ? dangerRed.withOpacity(0.08)
+                ? dangerRed.withValues(alpha: 0.08)
                 : inputBg,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: _otpExpirySeconds <= 60
-                  ? dangerRed.withOpacity(0.3)
-                  : primaryColor.withOpacity(0.15),
+                  ? dangerRed.withValues(alpha: 0.3)
+                  : primaryColor.withValues(alpha: 0.15),
             ),
           ),
           child: Row(
@@ -792,7 +792,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                 size: 18,
                 color: _otpExpirySeconds <= 60
                     ? dangerRed
-                    : primaryColor.withOpacity(0.7),
+                    : primaryColor.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 8),
               Text(
@@ -805,7 +805,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   fontWeight: FontWeight.w600,
                   color: _otpExpirySeconds <= 60
                       ? dangerRed
-                      : primaryColor.withOpacity(0.8),
+                      : primaryColor.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -818,7 +818,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: dangerRed.withOpacity(0.08),
+              color: dangerRed.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -872,7 +872,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: primaryColor.withOpacity(0.3),
+                      color: primaryColor.withValues(alpha: 0.3),
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
@@ -922,7 +922,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: neutralColor.withOpacity(0.6),
+                color: neutralColor.withValues(alpha: 0.6),
               ),
             ),
             GestureDetector(
@@ -936,7 +936,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: _resendCooldown > 0
-                      ? neutralColor.withOpacity(0.4)
+                      ? neutralColor.withValues(alpha: 0.4)
                       : primaryColor,
                 ),
               ),
@@ -965,12 +965,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [successGreen, successGreen.withOpacity(0.8)],
+                colors: [successGreen, successGreen.withValues(alpha: 0.8)],
               ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: successGreen.withOpacity(0.3),
+                  color: successGreen.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -1000,7 +1000,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 14,
-            color: neutralColor.withOpacity(0.6),
+            color: neutralColor.withValues(alpha: 0.6),
             height: 1.5,
           ),
         ),
@@ -1015,16 +1015,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             hintText: 'New password',
             hintStyle: TextStyle(
               fontFamily: 'Poppins',
-              color: neutralColor.withOpacity(0.5),
+              color: neutralColor.withValues(alpha: 0.5),
             ),
             prefixIcon: Icon(
               Icons.lock_outline,
-              color: primaryColor.withOpacity(0.7),
+              color: primaryColor.withValues(alpha: 0.7),
             ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscureNew ? Icons.visibility_off : Icons.visibility,
-                color: primaryColor.withOpacity(0.6),
+                color: primaryColor.withValues(alpha: 0.6),
               ),
               onPressed: () => setState(() => _obscureNew = !_obscureNew),
             ),
@@ -1055,16 +1055,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             hintText: 'Confirm new password',
             hintStyle: TextStyle(
               fontFamily: 'Poppins',
-              color: neutralColor.withOpacity(0.5),
+              color: neutralColor.withValues(alpha: 0.5),
             ),
             prefixIcon: Icon(
               Icons.lock_person_outlined,
-              color: primaryColor.withOpacity(0.7),
+              color: primaryColor.withValues(alpha: 0.7),
             ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                color: primaryColor.withOpacity(0.6),
+                color: primaryColor.withValues(alpha: 0.6),
               ),
               onPressed: () =>
                   setState(() => _obscureConfirm = !_obscureConfirm),
@@ -1193,7 +1193,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         decoration: BoxDecoration(
           color: inputBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: primaryColor.withOpacity(0.1)),
+          border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1204,7 +1204,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                 fontFamily: 'Poppins',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: neutralColor.withOpacity(0.7),
+                color: neutralColor.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 10),
@@ -1223,7 +1223,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                         size: 18,
                         color: req.met
                             ? successGreen
-                            : neutralColor.withOpacity(0.3),
+                            : neutralColor.withValues(alpha: 0.3),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1234,7 +1234,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                         fontSize: 12,
                         color: req.met
                             ? successGreen
-                            : neutralColor.withOpacity(0.5),
+                            : neutralColor.withValues(alpha: 0.5),
                         fontWeight: req.met ? FontWeight.w500 : FontWeight.w400,
                         decoration: req.met
                             ? TextDecoration.lineThrough
@@ -1259,7 +1259,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                       size: 18,
                       color: password == confirmPass
                           ? successGreen
-                          : neutralColor.withOpacity(0.3),
+                          : neutralColor.withValues(alpha: 0.3),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1270,7 +1270,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                       fontSize: 12,
                       color: password == confirmPass
                           ? successGreen
-                          : neutralColor.withOpacity(0.5),
+                          : neutralColor.withValues(alpha: 0.5),
                       fontWeight: password == confirmPass
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -1311,12 +1311,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [successGreen, successGreen.withOpacity(0.8)],
+                  colors: [successGreen, successGreen.withValues(alpha: 0.8)],
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: successGreen.withOpacity(0.3),
+                    color: successGreen.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -1349,7 +1349,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 14,
-            color: neutralColor.withOpacity(0.6),
+            color: neutralColor.withValues(alpha: 0.6),
             height: 1.5,
           ),
         ),
@@ -1377,7 +1377,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           elevation: 8,
-          shadowColor: primaryColor.withOpacity(0.28),
+          shadowColor: primaryColor.withValues(alpha: 0.28),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),

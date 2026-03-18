@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -21,17 +22,17 @@ class FirebaseService {
     return doc.exists ? doc.data() : null;
   }
 
-  static Future<void> syncUserOnLogin(String uid, Map<String, dynamic> userData) async {
+  static Future<void> syncUserOnLogin(
+    String uid,
+    Map<String, dynamic> userData,
+  ) async {
     try {
-      await FirebaseFirestore.instance.collection('users').doc(uid).set(
-        {
-          ...userData,
-          'lastLogin': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        ...userData,
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
-      print('Firebase Sync Error: $e');
+      debugPrint('Firebase Sync Error: $e');
     }
   }
 }

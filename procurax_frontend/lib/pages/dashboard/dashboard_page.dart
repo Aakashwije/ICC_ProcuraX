@@ -603,7 +603,11 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         if (snapshot.hasError) {
-          return _emptyState("Unable to load procurement updates.");
+          return const EmptyState(
+            icon: Icons.error_outline,
+            title: 'Failed to load procurement',
+            subtitle: 'Pull down to refresh',
+          );
         }
 
         final items =
@@ -680,7 +684,11 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         if (snapshot.hasError) {
-          return _emptyState("Unable to load meetings.");
+          return const EmptyState(
+            icon: Icons.error_outline,
+            title: 'Failed to load meetings',
+            subtitle: 'Pull down to refresh',
+          );
         }
 
         final meetings = snapshot.data ?? _recentMeetings;

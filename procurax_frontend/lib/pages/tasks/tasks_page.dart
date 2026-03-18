@@ -484,6 +484,7 @@ class _TasksPageState extends State<TasksPage> {
           context,
           MaterialPageRoute(builder: (_) => TaskDetailPage(task: task)),
         );
+        if (!mounted) return;
         if (result == 'edit') {
           final updated = await Navigator.push<Task>(
             context,
