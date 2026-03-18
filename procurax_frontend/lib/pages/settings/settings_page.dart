@@ -802,14 +802,34 @@ Issue Description:
     try {
       final response = await ApiService.uploadProfileImage(_profileImage!);
 
-      if (response['success'] == true) {
-        if (mounted) {
-          setState(() {
-            _profileImage = null;
-            profileImageUrl = response['data']?['profileImageUrl'];
-          });
-          _showSuccessSnackBar('Profile picture updated successfully');
-        }
+      final dynamic dataNode = response['data'];
+      final String? uploadedUrl =
+          (dataNode is Map<String, dynamic>
+                  ? (dataNode['profileImageUrl'] ?? dataNode['profileImage'])
+                  : null)
+              as String? ??
+          response['profileImageUrl'] as String? ??
+          response['profileImage'] as String?;
+
+      final bool isSuccess = response['success'] == true || uploadedUrl != null;
+
+      if (!isSuccess) {
+        final backendMessage = response['message'] ?? response['error'];
+        throw Exception(
+          backendMessage is String && backendMessage.isNotEmpty
+              ? backendMessage
+              : 'Upload failed',
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _profileImage = null;
+          if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+            profileImageUrl = uploadedUrl;
+          }
+        });
+        _showSuccessSnackBar('Profile picture updated successfully');
       }
     } catch (e) {
       _showErrorSnackBar('Failed to upload image: $e');

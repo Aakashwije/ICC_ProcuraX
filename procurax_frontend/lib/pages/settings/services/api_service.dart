@@ -9,6 +9,7 @@ import 'package:procurax_frontend/services/api_service.dart' as core_api;
 class ApiService {
   static String get baseUrl => '${core_api.ApiService.baseUrl}/api';
   static const Duration _timeout = Duration(seconds: 8);
+  static const Duration _uploadTimeout = Duration(seconds: 30);
 
   static bool hasToken() {
     return _authToken != null && _authToken!.isNotEmpty;
@@ -144,8 +145,15 @@ class ApiService {
       final url = Uri.parse('$baseUrl/upload/profile-image');
 
       if (kDebugMode) {
+        debugPrint('🔧 Base URL: $baseUrl');
+        debugPrint('🔧 Core API Base URL: ${core_api.ApiService.baseUrl}');
+      }
+
+      if (kDebugMode) {
         debugPrint('Uploading profile image to: $url');
         debugPrint('Token present: ${_authToken != null}');
+        debugPrint('File: ${imageFile.path}');
+        debugPrint('File size: ${await imageFile.length()} bytes');
       }
 
       // Create multipart request
@@ -154,6 +162,9 @@ class ApiService {
       // Add auth token to headers
       if (_authToken != null) {
         request.headers['Authorization'] = 'Bearer $_authToken';
+        if (kDebugMode) {
+          debugPrint('🔑 Auth header added');
+        }
       }
 
       // Add file to request
@@ -165,8 +176,12 @@ class ApiService {
         ),
       );
 
-      // Send request
-      var streamedResponse = await request.send().timeout(_timeout);
+      if (kDebugMode) {
+        debugPrint('Request prepared, sending...');
+      }
+
+      // Send request (uploads can take longer than normal API calls)
+      var streamedResponse = await request.send().timeout(_uploadTimeout);
       var response = await http.Response.fromStream(streamedResponse);
 
       if (kDebugMode) {
@@ -174,17 +189,33 @@ class ApiService {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
+        final dynamic decoded = jsonDecode(response.body);
+        final data = decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{};
         if (kDebugMode) {
           debugPrint('Profile image uploaded successfully');
         }
         return data;
       } else {
+        String backendMessage = 'Failed to upload image';
+        try {
+          final dynamic decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            final msg = decoded['message'] ?? decoded['error'];
+            if (msg is String && msg.isNotEmpty) {
+              backendMessage = msg;
+            }
+          }
+        } catch (_) {
+          // Keep fallback message when response is not JSON.
+        }
+
         if (kDebugMode) {
           debugPrint('Failed to upload image: ${response.statusCode}');
           debugPrint('Response: ${response.body}');
         }
-        throw Exception('Failed to upload image: ${response.statusCode}');
+        throw Exception('$backendMessage (${response.statusCode})');
       }
     } catch (e) {
       if (kDebugMode) {
