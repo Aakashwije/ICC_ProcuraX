@@ -5,7 +5,7 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["cd procurax_backend && npm ci --omit=dev"]
+cmds = ["cd procurax_backend && npm install --omit=dev"]
 
 [start]
 cmd = "cd procurax_backend && node app.js"
