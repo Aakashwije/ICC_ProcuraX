@@ -354,7 +354,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  bool _presenceFetching = false;
+
   Future<void> _refreshOtherPresence() async {
+    
+    if (_presenceFetching) return;
+    _presenceFetching = true;
     try {
       final presence = await _chatService.getPresence(widget.otherUserId);
       if (!mounted) return;
@@ -369,12 +374,15 @@ class _ChatScreenState extends State<ChatScreen> {
   void _startTypingPolling() {
     _refreshOtherTyping();
     _typingPollTimer?.cancel();
-    _typingPollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    _typingPollTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       _refreshOtherTyping();
     });
   }
 
+  bool _typingFetching = false;
   Future<void> _refreshOtherTyping() async {
+    if (_typingFetching) return;
+    _typingFetching = true;
     try {
       final typing = await _chatService.getTyping(
         chatId: widget.chatId,

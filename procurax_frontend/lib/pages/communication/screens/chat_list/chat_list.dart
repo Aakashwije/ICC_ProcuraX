@@ -41,6 +41,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   int messageUnreadCount = 0;
   Map<String, bool> onlineMap = {};
   Timer? _presenceTimer;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -49,11 +50,13 @@ class _ChatListScreenState extends State<ChatListScreen>
     fetchChats();
     fetchAlerts();
     _startPresence();
+    _startPolling();
   }
 
   @override
   void dispose() {
     _presenceTimer?.cancel();
+     _pollTimer?.cancel();
     _searchDebounce?.cancel();
     _searchController.dispose();
     _userSearchController.dispose();
@@ -79,8 +82,8 @@ class _ChatListScreenState extends State<ChatListScreen>
         loading = false;
         messageUnreadCount = unread;
       });
-      await _refreshPresence();
-      await fetchAlerts();
+      //await _refreshPresence();
+      //await fetchAlerts();
     } catch (e) {
       debugPrint('Failed to load chats: $e');
       setState(() => loading = false);
@@ -125,6 +128,13 @@ class _ChatListScreenState extends State<ChatListScreen>
       await _refreshPresence();
     });
   }
+  void _startPolling() {
+  _pollTimer?.cancel();
+  _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+    await fetchChats();
+    await fetchAlerts();
+  });
+}
 
   Future<void> _sendPresenceHeartbeat() async {
     try {
@@ -492,8 +502,11 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
+  bool _presenceFetching = false;
   Future<void> _refreshPresence() async {
     if (chats.isEmpty) return;
+    if (_presenceFetching) return; // new
+    _presenceFetching = true;  //new
 
     final otherUserIds = <String>{};
     for (final chat in chats) {
@@ -507,7 +520,10 @@ class _ChatListScreenState extends State<ChatListScreen>
       }
     }
 
-    if (otherUserIds.isEmpty) return;
+    if (otherUserIds.isEmpty) {
+      _presenceFetching = false; // new
+      return;
+    }
 
     try {
       final results = await Future.wait(
