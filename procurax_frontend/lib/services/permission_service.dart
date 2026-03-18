@@ -1,33 +1,33 @@
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 class PermissionService {
   /// Request storage permissions (for file picker, document uploads)
   static Future<bool> requestStoragePermission() async {
-    final status = await Permission.storage.request();
+    final status = await ph.Permission.storage.request();
     return status.isGranted;
   }
 
   /// Request photo library permission (for image picker)
   static Future<bool> requestPhotoLibraryPermission() async {
-    final status = await Permission.photos.request();
+    final status = await ph.Permission.photos.request();
     return status.isGranted;
   }
 
   /// Request camera permission (for image capture)
   static Future<bool> requestCameraPermission() async {
-    final status = await Permission.camera.request();
+    final status = await ph.Permission.camera.request();
     return status.isGranted;
   }
 
-  /// Request microphone permission (for audio recording)
+  /// Request microphone permission (for audio notes and meetings)
   static Future<bool> requestMicrophonePermission() async {
-    final status = await Permission.microphone.request();
+    final status = await ph.Permission.microphone.request();
     return status.isGranted;
   }
 
   /// Request notification permission (for push notifications)
   static Future<bool> requestNotificationPermission() async {
-    final status = await Permission.notification.request();
+    final status = await ph.Permission.notification.request();
     return status.isGranted;
   }
 
@@ -44,13 +44,13 @@ class PermissionService {
   }
 
   /// Check if a specific permission is granted
-  static Future<bool> isPermissionGranted(Permission permission) async {
+  static Future<bool> isPermissionGranted(ph.Permission permission) async {
     final status = await permission.status;
     return status.isGranted;
   }
 
   /// Open app settings if permission is permanently denied
   static Future<void> openAppSettings() async {
-    openAppSettings();
+    await ph.openAppSettings();
   }
 }

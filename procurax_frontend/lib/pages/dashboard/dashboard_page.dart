@@ -59,16 +59,20 @@ class _DashboardPageState extends State<DashboardPage> {
         prefs.getBool('permissions_requested') ?? false;
 
     if (!hasShownPermissionDialog && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => PermissionRequestDialog(
-          onPermissionsGranted: () async {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('permissions_requested', true);
-          },
-        ),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => PermissionRequestDialog(
+              onPermissionsGranted: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('permissions_requested', true);
+              },
+            ),
+          );
+        }
+      });
     }
   }
 

@@ -77,11 +77,6 @@ class _SettingsPageState extends State<SettingsPage> {
       final tokenFromPrefs = prefs.getString('auth_token');
       final apiServiceHasToken = ApiService.hasToken();
 
-      if (kDebugMode) {
-        debugPrint('🔑 Token in SharedPreferences: ${tokenFromPrefs != null}');
-        debugPrint('🔑 Token in ApiService: $apiServiceHasToken');
-      }
-
       return (tokenFromPrefs != null && tokenFromPrefs.isNotEmpty) ||
           apiServiceHasToken;
     } catch (e) {
@@ -97,26 +92,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (token != null && token.isNotEmpty) {
         await ApiService.setAuthToken(token);
-        if (kDebugMode) {
-          debugPrint(
-            'Token manually loaded into ApiService: ${token.substring(0, min(20, token.length))}...',
-          );
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error loading token: $e');
-      }
+      // ignore
     }
   }
 
   // Initialize settings - load token first, then load data
   Future<void> _initializeSettings() async {
     await _loadTokenIntoApiService();
-    final isLoggedIn = await _isLoggedIn();
-    if (kDebugMode) {
-      debugPrint('🔑 Final login status: $isLoggedIn');
-    }
+    await _isLoggedIn();
     _loadSettings();
     _loadUserProfile();
   }
@@ -642,9 +627,7 @@ Issue Description:
         });
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error loading user profile: $e');
-      }
+      // ignore
     }
   }
 
@@ -924,10 +907,6 @@ Issue Description:
 
     try {
       final settings = await ApiService.getSettings();
-      if (kDebugMode) {
-        debugPrint('Loaded settings from MongoDB: $settings');
-      }
-
       if (!mounted) return;
       setState(() {
         selectedTimezone = settings['timezone'] ?? 'UTC';
@@ -955,14 +934,8 @@ Issue Description:
         'department': department,
         'defaultProject': defaultProject,
       });
-
-      if (kDebugMode) {
-        debugPrint('Settings saved to MongoDB silently');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error saving settings: $e');
-      }
+      // ignore
     }
   }
 
@@ -1081,7 +1054,7 @@ Issue Description:
               const SizedBox(height: 8),
               Text(
                 "JPG, PNG or GIF. Max size 2MB",
-                style: TextStyle(fontSize: 11, color: lightBlue),
+                style: TextStyle(fontSize: 11, color: Color(0xFF5A6A85)),
               ),
             ],
           ),
