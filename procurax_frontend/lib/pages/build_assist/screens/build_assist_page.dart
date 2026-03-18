@@ -126,8 +126,9 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
             });
           } else if (responseType == 'dashboard_data') {
             messages.add({
-              'type': 'ai',
+              'type': 'dashboard_data',
               'message': reply,
+              'data': responseData,
               'timestamp': _getCurrentTime(),
               'showSuggestions': false,
             });
@@ -193,11 +194,38 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
       'Notes': 'show all notes',
       'Create Note': 'create a note',
       'Create Task': 'create a task',
-      'Dashboard': 'dashboard summary',
+      'Schedule Meeting': 'schedule a meeting',
+      'Dashboard Summary': 'dashboard summary',
     };
 
     final query = queryMap[action] ?? action;
     sendMessage(query);
+  }
+
+  Widget _dashboardRow(IconData icon, String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -394,6 +422,77 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         const SizedBox(height: 8),
                       ],
                     );
+                  } else if (msg['type'] == 'dashboard_data') {
+                    final d = msg['data'] as Map<String, dynamic>? ?? {};
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0F7FF),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.layoutDashboard,
+                                    size: 20,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Project Dashboard',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              _dashboardRow(
+                                LucideIcons.calendar,
+                                'Meetings',
+                                '${d['meetings'] ?? 0}',
+                                const Color(0xFF2563EB),
+                              ),
+                              _dashboardRow(
+                                LucideIcons.clock,
+                                'Pending Tasks',
+                                '${d['pendingTasks'] ?? 0}',
+                                const Color(0xFFF59E0B),
+                              ),
+                              _dashboardRow(
+                                LucideIcons.checkCircle2,
+                                'Completed Tasks',
+                                '${d['completedTasks'] ?? 0}',
+                                const Color(0xFF10B981),
+                              ),
+                              _dashboardRow(
+                                LucideIcons.stickyNote,
+                                'Notes',
+                                '${d['notes'] ?? 0}',
+                                const Color(0xFF8B5CF6),
+                              ),
+                              _dashboardRow(
+                                LucideIcons.clipboardList,
+                                'Total Tasks',
+                                '${d['totalTasks'] ?? 0}',
+                                const Color(0xFF64748B),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    );
                   } else {
                     return Column(
                       children: [
@@ -427,7 +526,8 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                       _buildQuickAction("Material Status"),
                       _buildQuickAction("Create Note"),
                       _buildQuickAction("Create Task"),
-                      _buildQuickAction("Dashboard"),
+                      _buildQuickAction("Schedule Meeting"),
+                      _buildQuickAction("Dashboard Summary"),
                     ],
                   ),
                 ),

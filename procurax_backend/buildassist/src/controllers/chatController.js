@@ -770,8 +770,14 @@ export const chatWithAI = async (req, res) => {
       const summary = await getDashboardSummary(userId);
       console.log('   → dashboard summary', summary);
       return res.json({
-        reply: `📊 **Project Dashboard**\n\n�️ Meetings: ${summary?.summary?.totalMeetings || 0}\n⏳ Pending Tasks: ${summary?.summary?.pendingTasks || 0}\n✅ Completed Tasks: ${summary?.summary?.completedTasks || 0}\n🗒️ Notes: ${summary?.summary?.totalNotes || 0}\n📦 Total Tasks: ${summary?.summary?.totalTasks || 0}`,
-        data: summary,
+        reply: 'Project Dashboard',
+        data: {
+          meetings: summary?.summary?.totalMeetings || 0,
+          pendingTasks: summary?.summary?.pendingTasks || 0,
+          completedTasks: summary?.summary?.completedTasks || 0,
+          notes: summary?.summary?.totalNotes || 0,
+          totalTasks: summary?.summary?.totalTasks || 0,
+        },
         type: "dashboard_data",
         suggestions: ["Show my meetings", "Show my tasks", "Show my notes", "Material status"]
       });
