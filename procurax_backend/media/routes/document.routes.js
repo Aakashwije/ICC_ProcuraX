@@ -5,41 +5,15 @@ import fs from "fs";
 import { fileURLToPath } from 'url';
 import Document from "../models/document.model.js";
 import { authenticateToken } from "../middleware/auth.middleware.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../../config/cloudinary.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('✅ Uploads directory created');
-}
-
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Get category from request body
-    const category = req.body.category || 'Other';
-    // Replace spaces with underscores for folder name
-    const categoryFolder = category.replace(/\s+/g, '_');
-    const categoryDir = path.join(uploadDir, categoryFolder);
-    
-    // Create category directory if it doesn't exist
-    if (!fs.existsSync(categoryDir)) {
-      fs.mkdirSync(categoryDir, { recursive: true });
-    }
-    cb(null, categoryDir);
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'file-' + uniqueSuffix + ext);
-  }
-});
+// Configure multer to use MEMORY storage (file buffer for Cloudinary upload)
+const storage = multer.memoryStorage();
 
 // File filter function
 const fileFilter = (req, file, cb) => {
@@ -105,7 +79,7 @@ const getDocumentType = (category, mimeType) => {
 
 // ==================== API ROUTES ====================
 
-// 1. UPLOAD DOCUMENT
+// 1. UPLOAD DOCUMENT (to Cloudinary)
 router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
   console.log('[DOC UPLOAD] received upload request for', req.originalUrl);
   try {
@@ -121,14 +95,36 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     // Determine file type
     const documentType = getDocumentType(category, req.file.mimetype);
 
-    // Create document record in database
+    // Determine Cloudinary resource_type based on mime
+    let resourceType = 'auto';
+    if (req.file.mimetype.startsWith('video/')) resourceType = 'video';
+    else if (req.file.mimetype.startsWith('image/')) resourceType = 'image';
+    else resourceType = 'raw'; // PDFs, docs, etc.
+
+    // Upload to Cloudinary from buffer
+    // folder and public_id are sanitized inside uploadToCloudinary() to avoid "Display name cannot contain slashes" error
+    const sanitizedCategory = (category || 'Other').replaceAll(/\s+/g, '_');
+    const cloudinaryResult = await uploadToCloudinary(
+      `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
+      {
+        resource_type: resourceType,
+        folder: `procurax/${sanitizedCategory}`,
+        public_id: `file-${Date.now()}`,
+      }
+    );
+
+    console.log('[DOC UPLOAD] Cloudinary result:', cloudinaryResult.secure_url);
+
+    // Create document record in database with Cloudinary URL
     const document = new Document({
-      filename: req.file.filename,
+      filename: `file-${Date.now()}${path.extname(req.file.originalname)}`,
       originalName: req.file.originalname,
       fileType: documentType,
       mimeType: req.file.mimetype,
       size: req.file.size,
-      path: req.file.path,
+      path: cloudinaryResult.secure_url,          // store cloud URL as path
+      cloudinaryUrl: cloudinaryResult.secure_url,
+      cloudinaryPublicId: cloudinaryResult.public_id,
       category: category || 'Other',
       uploadedBy: req.userId,
       description: description || '',
@@ -137,10 +133,6 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     });
 
     await document.save();
-
-    // Generate URL for the file
-    const categoryFolder = (category || 'Other').replace(/\s+/g, '_');
-    const fileUrl = `/uploads/${categoryFolder}/${req.file.filename}`;
 
     res.status(201).json({
       success: true,
@@ -151,7 +143,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
         fileType: document.fileType,
         size: document.size,
         category: document.category,
-        url: fileUrl,
+        url: cloudinaryResult.secure_url,
         uploadedAt: document.createdAt
       }
     });
@@ -160,7 +152,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     console.error('Upload error:', error);
 
     // Return client-friendly errors for common upload failures
-    if (error && error.message && error.message.includes('Invalid file type')) {
+    if (error?.message?.includes('Invalid file type')) {
       return res.status(400).json({
         success: false,
         message: error.message,
@@ -168,7 +160,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     }
 
     // Multer limit errors (e.g., file size)
-    if (error && error.code === 'LIMIT_FILE_SIZE') {
+    if (error?.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
         message: 'File is too large. Maximum upload size is 100MB.',
@@ -202,9 +194,8 @@ router.get('/', authenticateToken, async (req, res) => {
     const documents = await Document.find(query)
       .sort({ createdAt: -1 });
 
-    // Add URLs to documents
+    // Add URLs to documents (use Cloudinary URL if available, fallback to local)
     const documentsWithUrls = documents.map(doc => {
-      const categoryFolder = doc.category.replace(/\s+/g, '_');
       return {
         id: doc._id,
         filename: doc.originalName,
@@ -214,7 +205,7 @@ router.get('/', authenticateToken, async (req, res) => {
         category: doc.category,
         description: doc.description,
         tags: doc.tags,
-        url: `/uploads/${categoryFolder}/${doc.filename}`,
+        url: doc.cloudinaryUrl || `/uploads/${doc.category.replace(/\s+/g, '_')}/${doc.filename}`,
         uploadedAt: doc.createdAt
       };
     });
@@ -267,7 +258,6 @@ router.get('/category/:category', authenticateToken, async (req, res) => {
     }).sort({ createdAt: -1 });
 
     const documentsWithUrls = documents.map(doc => {
-      const categoryFolder = doc.category.replace(/\s+/g, '_');
       return {
         id: doc._id,
         filename: doc.originalName,
@@ -277,7 +267,7 @@ router.get('/category/:category', authenticateToken, async (req, res) => {
         category: doc.category,
         description: doc.description,
         tags: doc.tags,
-        url: `/uploads/${categoryFolder}/${doc.filename}`,
+        url: doc.cloudinaryUrl || `/uploads/${doc.category.replace(/\s+/g, '_')}/${doc.filename}`,
         uploadedAt: doc.createdAt
       };
     });
@@ -312,8 +302,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    const categoryFolder = document.category.replace(/\s+/g, '_');
-    
     res.json({
       success: true,
       document: {
@@ -325,7 +313,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         category: document.category,
         description: document.description,
         tags: document.tags,
-        url: `/uploads/${categoryFolder}/${document.filename}`,
+        url: document.cloudinaryUrl || `/uploads/${document.category.replace(/\s+/g, '_')}/${document.filename}`,
         uploadedAt: document.createdAt,
         updatedAt: document.updatedAt
       }
@@ -401,11 +389,18 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Delete file from storage
+    // Delete file from Cloudinary if it was stored there, otherwise try local
     try {
-      if (fs.existsSync(document.path)) {
+      if (document.cloudinaryPublicId) {
+        // Determine resource type for Cloudinary deletion
+        let resType = 'image';
+        if (document.mimeType?.startsWith('video/')) resType = 'video';
+        else if (!document.mimeType?.startsWith('image/')) resType = 'raw';
+        await deleteFromCloudinary(document.cloudinaryPublicId, resType);
+        console.log(`Cloudinary file deleted: ${document.cloudinaryPublicId}`);
+      } else if (document.path && fs.existsSync(document.path)) {
         fs.unlinkSync(document.path);
-        console.log(`File deleted: ${document.path}`);
+        console.log(`Local file deleted: ${document.path}`);
       }
     } catch (fileError) {
       console.error('Error deleting file:', fileError);
@@ -446,10 +441,15 @@ router.post('/bulk-delete', authenticateToken, async (req, res) => {
       uploadedBy: req.userId
     });
 
-    // Delete files from storage
+    // Delete files from Cloudinary or local storage
     for (const doc of documents) {
       try {
-        if (fs.existsSync(doc.path)) {
+        if (doc.cloudinaryPublicId) {
+          let resType = 'image';
+          if (doc.mimeType?.startsWith('video/')) resType = 'video';
+          else if (!doc.mimeType?.startsWith('image/')) resType = 'raw';
+          await deleteFromCloudinary(doc.cloudinaryPublicId, resType);
+        } else if (doc.path && fs.existsSync(doc.path)) {
           fs.unlinkSync(doc.path);
         }
       } catch (fileError) {

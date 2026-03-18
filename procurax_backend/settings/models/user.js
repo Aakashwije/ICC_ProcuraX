@@ -64,6 +64,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  cloudinaryPublicId: {
+    type: String,
+    default: ''
+  },
   isActive: {
     type: Boolean,
     default: true

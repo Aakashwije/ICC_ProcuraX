@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import 'package:intl/intl.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class DeliveryCard extends StatelessWidget {
   final Map<String, dynamic>? data;
@@ -83,10 +84,9 @@ class DeliveryCard extends StatelessWidget {
                 children: [
                   Text(
                     'Procurement data unavailable',
-                    style: const TextStyle(
+                    style: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.primary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: Color(0xFF2563EB),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -205,10 +205,9 @@ class DeliveryCard extends StatelessWidget {
                 // Title
                 Text(
                   data!['title'] ?? 'Meeting',
-                  style: const TextStyle(
+                  style: theme.AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: Color(0xFF1A1A1A),
+                    color: theme.AppColors.neutral900,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -219,15 +218,14 @@ class DeliveryCard extends StatelessWidget {
                       Icon(
                         Icons.location_on,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: theme.AppColors.neutral700,
                       ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           data!['location'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
+                          style: theme.AppTextStyles.caption.copyWith(
+                            color: theme.AppColors.neutral700,
                           ),
                         ),
                       ),
@@ -388,10 +386,9 @@ class DeliveryCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         data!['title'] ?? 'Task',
-                        style: const TextStyle(
+                        style: theme.AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Color(0xFF1A1A1A),
+                          color: theme.AppColors.neutral900,
                         ),
                       ),
                     ),
@@ -578,10 +575,9 @@ class DeliveryCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         data!['title'] ?? 'Note',
-                        style: const TextStyle(
+                        style: theme.AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Color(0xFF1A1A1A),
+                          color: theme.AppColors.neutral900,
                         ),
                       ),
                     ),
@@ -643,220 +639,332 @@ class DeliveryCard extends StatelessWidget {
   }
 
   Widget _buildProcurementCard() {
+    // Light blue theme colors
+    const Color cardBg = Color(0xFFEFF6FF); // Very light blue background
+    const Color headerBg = Color(0xFF3B82F6); // Blue header
+    const Color accentBlue = Color(0xFF2563EB); // Accent blue
+    const Color iconBg = Color(0xFFDBEAFE); // Light blue icon circles
+    const Color textPrimary = Color(0xFF1E3A5F); // Dark blue text
+    const Color textSecondary = Color(0xFF64748B); // Slate gray
+
     // If both material and category are missing, show error card
     if (!(data!['material']?.toString().isNotEmpty ?? false) &&
         !(data!['category']?.toString().isNotEmpty ?? false)) {
       return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primaryBlue.withOpacity(0.4),
-            width: 2,
-          ),
+          border: Border.all(color: const Color(0xFFBFDBFE)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryBlue.withOpacity(0.08),
-              blurRadius: 10,
+              color: Colors.blue.withOpacity(0.08),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.red.shade100,
-              child: const Icon(Icons.error_outline, color: Colors.red),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'No material details found',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Material information is missing or could not be displayed. Please try again or contact support.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                  ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: theme.AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  color: Color(0xFFEF4444),
+                  size: 20,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'No material details found',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFEF4444),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Material information is missing. Please try again.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    // ...existing code...
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          backgroundColor: AppColors.primaryBlue.withOpacity(0.2),
-          child: const Icon(Icons.shopping_cart, color: Color(0xFF2563EB)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.primaryBlue.withOpacity(0.2),
-                width: 1,
+    final material = data!['material']?.toString() ?? '';
+    final category = data!['category']?.toString() ?? '';
+    final source = data!['source']?.toString() ?? '';
+    final responsibility = data!['responsibility']?.toString() ?? '';
+    final revisedDelivery = data!['revisedDelivery']?.toString() ?? '';
+    final parentCategory = data!['parentCategory']?.toString() ?? '';
+
+    // Build title: material name, fallback to category
+    final title = material.isNotEmpty ? material : category;
+    final subtitle = (category.isNotEmpty && material.isNotEmpty)
+        ? category
+        : parentCategory;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBFDBFE), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon and title
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.inventory_2_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (subtitle.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.85),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
+          ),
+
+          // Detail rows
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Category
-                if (data!['category'] != null &&
-                    data!['category'].toString().isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      (data!['category']?.toString().isNotEmpty ?? false)
-                          ? data!['category']
-                          : "Category info unavailable",
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primaryBlue,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-
-                // Material
-                Text(
-                  (data!['material']?.toString().isNotEmpty ?? false)
-                      ? data!['material']
-                      : "Material info unavailable",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Color(0xFF2563EB),
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Source and Responsibility
-                if (data!['source'] != null &&
-                    data!['source'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      'Source: ' +
-                          ((data!['source']?.toString().isNotEmpty ?? false)
-                              ? data!['source']
-                              : "N/A"),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ),
-                if (data!['responsibility'] != null &&
-                    data!['responsibility'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      'Responsibility: ' +
-                          ((data!['responsibility']?.toString().isNotEmpty ??
-                                  false)
-                              ? data!['responsibility']
-                              : "N/A"),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
+                // Scheduled Delivery
+                if (revisedDelivery.isNotEmpty)
+                  _buildProcurementDetailRow(
+                    Icons.schedule_rounded,
+                    'Scheduled Delivery',
+                    _formatDate(revisedDelivery),
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
 
-                // Delivery Dates
-                if (data!['revisedDelivery'] != null &&
-                    data!['revisedDelivery'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.local_shipping,
-                          size: 14,
-                          color: Colors.green.shade600,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _formatDate(data!['revisedDelivery'].toString()),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                // Source / Supplier
+                if (source.isNotEmpty)
+                  _buildProcurementDetailRow(
+                    Icons.store_rounded,
+                    'Source',
+                    source,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
 
-                // Related Meetings
-                if (data!['relatedMeetings'] != null &&
-                    (data!['relatedMeetings'] as List).isNotEmpty)
-                  _buildRelatedSection(
-                    'Related Meetings',
-                    data!['relatedMeetings'],
-                    Icons.event,
-                    Colors.orange,
+                // Responsibility
+                if (responsibility.isNotEmpty)
+                  _buildProcurementDetailRow(
+                    Icons.person_rounded,
+                    'Responsibility',
+                    responsibility,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
 
-                // Related Tasks
-                if (data!['relatedTasks'] != null &&
-                    (data!['relatedTasks'] as List).isNotEmpty)
-                  _buildRelatedSection(
-                    'Related Tasks',
-                    data!['relatedTasks'],
-                    Icons.task,
-                    Colors.blue,
-                  ),
-
-                // Related Notes
-                if (data!['relatedNotes'] != null &&
-                    (data!['relatedNotes'] as List).isNotEmpty)
-                  _buildRelatedSection(
-                    'Related Notes',
-                    data!['relatedNotes'],
-                    Icons.note,
-                    Colors.purple,
+                // Parent Category
+                if (parentCategory.isNotEmpty && subtitle != parentCategory)
+                  _buildProcurementDetailRow(
+                    Icons.category_rounded,
+                    'Parent Category',
+                    parentCategory,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
               ],
             ),
           ),
-        ),
-      ],
+
+          // Related items section
+          if (_hasRelatedItems())
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.6),
+                border: Border(
+                  top: BorderSide(
+                    color: const Color(0xFFBFDBFE).withOpacity(0.8),
+                  ),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (data!['relatedMeetings'] != null &&
+                      (data!['relatedMeetings'] as List).isNotEmpty)
+                    _buildRelatedSection(
+                      'Related Meetings',
+                      data!['relatedMeetings'],
+                      Icons.event_rounded,
+                      const Color(0xFFF97316),
+                    ),
+                  if (data!['relatedTasks'] != null &&
+                      (data!['relatedTasks'] as List).isNotEmpty)
+                    _buildRelatedSection(
+                      'Related Tasks',
+                      data!['relatedTasks'],
+                      Icons.task_alt_rounded,
+                      accentBlue,
+                    ),
+                  if (data!['relatedNotes'] != null &&
+                      (data!['relatedNotes'] as List).isNotEmpty)
+                    _buildRelatedSection(
+                      'Related Notes',
+                      data!['relatedNotes'],
+                      Icons.sticky_note_2_rounded,
+                      const Color(0xFF8B5CF6),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasRelatedItems() {
+    return (data!['relatedMeetings'] != null &&
+            (data!['relatedMeetings'] as List).isNotEmpty) ||
+        (data!['relatedTasks'] != null &&
+            (data!['relatedTasks'] as List).isNotEmpty) ||
+        (data!['relatedNotes'] != null &&
+            (data!['relatedNotes'] as List).isNotEmpty);
+  }
+
+  Widget _buildProcurementDetailRow(
+    IconData icon,
+    String label,
+    String value,
+    Color iconBg,
+    Color iconColor,
+    Color labelColor,
+    Color valueColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: valueColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -921,10 +1029,9 @@ class DeliveryCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: theme.AppTextStyles.bodySmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: Color(0xFF2563EB),
+                    color: theme.AppColors.primary,
                   ),
                 ),
                 if (description.isNotEmpty) ...[

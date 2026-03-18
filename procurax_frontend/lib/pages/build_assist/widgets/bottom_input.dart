@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
 import 'package:file_picker/file_picker.dart';
 import 'speech_helper.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class BottomInput extends StatefulWidget {
   final TextEditingController controller;
@@ -91,7 +91,9 @@ class _BottomInputState extends State<BottomInput> {
                 Expanded(
                   child: Text(
                     'Microphone unavailable or permission denied. Please enable mic access in settings.',
-                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                    style: theme.AppTextStyles.caption.copyWith(
+                      color: Colors.red,
+                    ),
                   ),
                 ),
               ],
@@ -104,16 +106,15 @@ class _BottomInputState extends State<BottomInput> {
               children: [
                 Icon(
                   Icons.record_voice_over,
-                  color: AppColors.primaryBlue,
+                  color: theme.AppColors.primary,
                   size: 18,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     _voiceText,
-                    style: TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontSize: 15,
+                    style: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -136,7 +137,7 @@ class _BottomInputState extends State<BottomInput> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.attach_file),
+                icon: const Icon(Icons.add_circle_outline_rounded),
                 tooltip: 'Attach file/image',
                 onPressed: widget.isLoading
                     ? null
@@ -155,7 +156,7 @@ class _BottomInputState extends State<BottomInput> {
                       },
               ),
               IconButton(
-                icon: const Icon(Icons.calendar_today),
+                icon: const Icon(Icons.event_note_outlined),
                 tooltip: 'Pick date/time',
                 onPressed: widget.isLoading
                     ? null
@@ -194,9 +195,14 @@ class _BottomInputState extends State<BottomInput> {
                   controller: widget.controller,
                   enabled: !widget.isLoading,
                   decoration: InputDecoration(
-                    hintText: "Type a message...",
+                    hintText: widget.isLoading
+                        ? "Waiting for response..."
+                        : "Ask me anything about your project...",
+                    hintStyle: theme.AppTextStyles.bodySmall.copyWith(
+                      color: theme.AppColors.neutral500,
+                    ),
                     filled: true,
-                    fillColor: AppColors.lightGrey,
+                    fillColor: theme.AppColors.neutral100,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 14,
@@ -228,8 +234,8 @@ class _BottomInputState extends State<BottomInput> {
                       },
               ),
               Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryBlue,
+                decoration: BoxDecoration(
+                  color: theme.AppColors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(

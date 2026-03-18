@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import 'suggestion_chip.dart';
+import 'package:procurax_frontend/theme/app_theme.dart' as theme;
 
 class AIMessage extends StatelessWidget {
   final String message;
   final String timestamp;
   final bool showSuggestions;
+  final List<String> suggestions;
   final Function(String)? onSuggestionTap;
 
   const AIMessage({
@@ -13,6 +15,7 @@ class AIMessage extends StatelessWidget {
     required this.message,
     required this.timestamp,
     this.showSuggestions = false,
+    this.suggestions = const [],
     this.onSuggestionTap,
   });
 
@@ -35,37 +38,42 @@ class AIMessage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: theme.AppShadows.card,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(message, style: const TextStyle(fontSize: 14)),
+                    Text(message, style: theme.AppTextStyles.bodyMedium),
                     if (showSuggestions) ...[
                       const SizedBox(height: 14),
                       Wrap(
                         spacing: 10,
                         runSpacing: 8,
-                        children: [
-                          SuggestionChip(
-                            label: "Schedule",
-                            onTap: () => onSuggestionTap?.call("Schedule"),
-                          ),
-                          SuggestionChip(
-                            label: "Materials",
-                            onTap: () => onSuggestionTap?.call("Materials"),
-                          ),
-                          SuggestionChip(
-                            label: "Progress",
-                            onTap: () => onSuggestionTap?.call("Progress"),
-                          ),
-                        ],
+                        children: suggestions.isNotEmpty
+                            ? suggestions
+                                  .map(
+                                    (s) => SuggestionChip(
+                                      label: s,
+                                      onTap: () => onSuggestionTap?.call(s),
+                                    ),
+                                  )
+                                  .toList()
+                            : [
+                                SuggestionChip(
+                                  label: "Schedule",
+                                  onTap: () =>
+                                      onSuggestionTap?.call("Schedule"),
+                                ),
+                                SuggestionChip(
+                                  label: "Materials",
+                                  onTap: () =>
+                                      onSuggestionTap?.call("Materials"),
+                                ),
+                                SuggestionChip(
+                                  label: "Tasks",
+                                  onTap: () => onSuggestionTap?.call("Tasks"),
+                                ),
+                              ],
                       ),
                     ],
                   ],
@@ -74,7 +82,9 @@ class AIMessage extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 timestamp,
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: theme.AppTextStyles.caption.copyWith(
+                  color: theme.AppColors.neutral700,
+                ),
               ),
             ],
           ),
