@@ -5,6 +5,11 @@ import { db } from '../config/firebase.js';
 // Get all project managers only
 async function getProjectManagers(req, res) {
   try {
+    if (!db) {
+      return res.status(503).json({ 
+        error: 'Firebase is not initialized. Please check server configuration.' 
+      });
+    }
 
     const usersSnapshot = await db
       .collection('users')
@@ -32,6 +37,11 @@ async function getProjectManagers(req, res) {
 // Get all users
 async function getAllUsers(req, res) {
   try {
+    if (!db) {
+      return res.status(503).json({ 
+        error: 'Firebase is not initialized. Please check server configuration.' 
+      });
+    }
 
     const usersSnapshot = await db.collection('users').get();
 
