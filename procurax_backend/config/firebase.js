@@ -31,13 +31,27 @@ function getFirebaseApp() {
             raw = raw.slice(1, -1);
         }
 
-        const serviceAccount = JSON.parse(raw);
+        let serviceAccount;
+        try {
+            serviceAccount = JSON.parse(raw);
+        } catch (parseErr) {
+            // If JSON.parse fails, it might be because the raw string has
+            // literal \\n that confuses the parser. Replace them first.
+            console.warn("[Firebase] Initial JSON.parse failed, trying with newline fix...");
+            const fixed = raw.replace(/\\\\n/g, '\\n');
+            serviceAccount = JSON.parse(fixed);
+        }
 
         console.log(`[Firebase] Parsed OK – project_id=${serviceAccount.project_id}, type=${serviceAccount.type}`);
 
-        // Fix escaped newlines in the private key (common with env vars)
+        // Fix escaped newlines in the private key.
+        // After JSON.parse, the private_key may contain literal "\n" text
+        // (two chars: backslash + n) instead of actual newline characters.
+        // This happens when env vars store \\n which JSON decodes to \n text.
         if (serviceAccount.private_key) {
-            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+            serviceAccount.private_key = serviceAccount.private_key
+                .replace(/\\n/g, '\n')   // literal \n text → real newline
+                .replace(/\\\\n/g, '\n'); // double-escaped → real newline
         }
 
         if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
