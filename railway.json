@@ -2,7 +2,7 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd procurax_backend && npm ci --omit=dev",
+    "buildCommand": "cd procurax_backend && npm install --omit=dev",
     "watchPatterns": ["procurax_backend/**"]
   },
   "deploy": {
