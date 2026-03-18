@@ -1047,7 +1047,7 @@ Issue Description:
               const SizedBox(height: 8),
               Text(
                 "JPG, PNG or GIF. Max size 2MB",
-                style: TextStyle(fontSize: 11, color: lightBlue),
+                style: TextStyle(fontSize: 11, color: const Color(0xFF5A6A85)),
               ),
             ],
           ),
@@ -1125,7 +1125,7 @@ Issue Description:
                             _card(
                               cardBg,
                               blue,
-                              lightBlue,
+                              const Color(0xFF5A6A85),
                               Icons.person_outline,
                               "Profile",
                               "Update your personal info",
@@ -1286,21 +1286,29 @@ Issue Description:
                             _card(
                               cardBg,
                               blue,
-                              lightBlue,
+                              const Color(0xFF5A6A85),
                               Icons.info_outline,
                               "About",
                               "Application info",
                               Column(
                                 children: [
-                                  _aboutRow("Version", "2.4.1", lightBlue),
+                                  _aboutRow(
+                                    "Version",
+                                    "2.4.1",
+                                    const Color(0xFF5A6A85),
+                                  ),
                                   const Divider(),
                                   _aboutRow(
                                     "Last Updated",
                                     "Nov 2, 2025",
-                                    lightBlue,
+                                    const Color(0xFF5A6A85),
                                   ),
                                   const Divider(),
-                                  _aboutRow("Database", "MongoDB", lightBlue),
+                                  _aboutRow(
+                                    "Database",
+                                    "MongoDB",
+                                    const Color(0xFF5A6A85),
+                                  ),
                                   const SizedBox(height: 16),
                                   _aboutButton(
                                     "Contact Support",
@@ -1372,7 +1380,7 @@ Issue Description:
             ],
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(color: lightBlue)),
+          Text(subtitle, style: const TextStyle(color: Color(0xFF5A6A85))),
           const SizedBox(height: 16),
           child,
         ],
@@ -1391,7 +1399,7 @@ Issue Description:
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(label, style: const TextStyle(color: Color(0xFF4A5568))),
           const SizedBox(height: 6),
           TextField(
             controller: controller,
