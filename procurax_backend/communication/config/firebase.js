@@ -5,16 +5,24 @@ let db = null;
 let bucket = null;
 let isInitialized = false;
 
-// Lazy initialization - only initialize when needed
+// Lazy initialization - reuse existing Firebase app or create new one
 function initializeFirebase() {
   if (isInitialized) return;
 
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    console.warn("  FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set. Firebase features will be disabled.");
-    return;
-  }
-
   try {
+    // Check if Firebase is already initialized by another module
+    if (admin.apps.length > 0) {
+      db = admin.firestore();
+      bucket = admin.storage().bucket();
+      isInitialized = true;
+      return;
+    }
+
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      console.warn("  FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set. Firebase features will be disabled.");
+      return;
+    }
+
     // convert the JSON string back to an object
     const serviceAccount = JSON.parse(
       process.env.FIREBASE_SERVICE_ACCOUNT_JSON
