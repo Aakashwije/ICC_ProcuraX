@@ -221,7 +221,7 @@ class ChatService {
 
   Future<List<dynamic>> getAllUsers() async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/api/users/all'),
+      Uri.parse('$_baseUrl/api/communication/users/all'),
       headers: _headers,
     );
 
@@ -235,25 +235,23 @@ class ChatService {
 
   //Delete chat
   Future<Map<String, dynamic>> deleteMessage({
-  required String messageId,
-  required String userId,
-}) async {
-  final response = await http
-      .delete(
-        Uri.parse('$_baseUrl/api/messages/$messageId'),
-        headers: _headers,
-        body: jsonEncode({
-          'userId': userId,
-        }),
-      )
-      .timeout(const Duration(seconds: 8));
+    required String messageId,
+    required String userId,
+  }) async {
+    final response = await http
+        .delete(
+          Uri.parse('$_baseUrl/api/messages/$messageId'),
+          headers: _headers,
+          body: jsonEncode({'userId': userId}),
+        )
+        .timeout(const Duration(seconds: 8));
 
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    throw Exception(
+      'Failed to delete message (${response.statusCode}): ${response.body}',
+    );
   }
-
-  throw Exception(
-    'Failed to delete message (${response.statusCode}): ${response.body}',
-  );
-}
 }

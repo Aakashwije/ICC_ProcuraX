@@ -164,7 +164,7 @@ app.use("/api/users", settingsUserProfileRoutes);
 // =========================
 
 // ===== COMMUNICATION MODULE ROUTES =====
-app.use("/api/users", userRoutes);
+app.use("/api/communication/users", userRoutes);
 app.use("/api/calls", callRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/files", fileRoutes);
