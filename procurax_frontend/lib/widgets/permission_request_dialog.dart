@@ -5,8 +5,7 @@ import 'package:procurax_frontend/theme/app_theme.dart';
 class PermissionRequestDialog extends StatefulWidget {
   final VoidCallback onPermissionsGranted;
 
-  const PermissionRequestDialog({Key? key, required this.onPermissionsGranted})
-    : super(key: key);
+  const PermissionRequestDialog({super.key, required this.onPermissionsGranted});
 
   @override
   State<PermissionRequestDialog> createState() =>

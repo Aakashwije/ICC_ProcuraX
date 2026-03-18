@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
@@ -165,127 +164,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     } finally {
       if (mounted) setState(() => usersLoading = false);
     }
-  }
-
-  Future<void> _showCurrentUserPicker() async {
-    await _loadUsers();
-    if (!mounted) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final filtered = _filterUsers(_userSearchController.text);
-
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: SizedBox(
-                height: 520,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 4,
-                      width: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Select current user',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _userSearchController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'Search by phone or name',
-                        ),
-                        onChanged: (_) => setSheetState(() {}),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: usersLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : filtered.isEmpty
-                          ? const Center(child: Text('No users found'))
-                          : ListView.separated(
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (context, index) {
-                                final user = filtered[index];
-                                final userId = _getUserId(user);
-                                final name = _getUserName(user);
-                                final phone = _getUserPhone(user);
-
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    child: Text(
-                                      name.isNotEmpty
-                                          ? name[0].toUpperCase()
-                                          : '?',
-                                    ),
-                                  ),
-                                  title: Text(
-                                    name.isNotEmpty
-                                        ? name
-                                        : (phone.isNotEmpty ? phone : userId),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  subtitle: Text(
-                                    phone.isNotEmpty ? phone : userId,
-                                  ),
-                                  trailing: userId == currentUserId
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: AppColours.primary,
-                                        )
-                                      : null,
-                                  onTap: () async {
-                                    Navigator.of(context).pop();
-                                    if (userId.isEmpty) return;
-                                    _userSearchController.clear();
-                                    setState(() {
-                                      currentUserId = userId;
-                                      chats = [];
-                                      loading = true;
-                                      alertCount = 0;
-                                      messageUnreadCount = 0;
-                                      onlineMap = {};
-                                    });
-                                    await _sendPresenceHeartbeat();
-                                    await fetchChats();
-                                    await fetchAlerts();
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   String _getUserId(dynamic user) {
@@ -649,7 +527,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColours.primary.withOpacity(0.8),
+                        AppColours.primary.withValues(alpha: 0.8),
                         AppColours.primary,
                       ],
                       begin: Alignment.topLeft,
@@ -824,7 +702,7 @@ class MessagesPage extends StatelessWidget {
               border: Border.all(color: Colors.grey.shade300),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -975,12 +853,12 @@ class ChatTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Container(
         decoration: BoxDecoration(
-          color: isUnread ? AppColours.primary.withOpacity(0.04) : Colors.white,
+          color: isUnread ? AppColours.primary.withValues(alpha: 0.04) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: isUnread ? Border.all(color: AppColours.primary.withOpacity(0.1)) : null,
+          border: isUnread ? Border.all(color: AppColours.primary.withValues(alpha: 0.1)) : null,
           boxShadow: isUnread ? [] : [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1059,7 +937,7 @@ class ChatTile extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
                                   fontSize: 16,
-                                  color: isUnread ? Colors.black87 : Colors.black.withOpacity(0.8),
+                                  color: isUnread ? Colors.black87 : Colors.black.withValues(alpha: 0.8),
                                 ),
                               ),
                             ),
@@ -1081,7 +959,7 @@ class ChatTile extends StatelessWidget {
                             fontSize: 10,
                             letterSpacing: 0.8,
                             fontWeight: FontWeight.bold,
-                            color: AppColours.primary.withOpacity(0.8),
+                            color: AppColours.primary.withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: 4),

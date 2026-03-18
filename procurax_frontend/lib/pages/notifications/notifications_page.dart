@@ -25,8 +25,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   void initState() {
     super.initState();
     if (ApiService.hasToken) {
-      Future.microtask(
-        () => context.read<AlertProvider>().fetchNotifications(),
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => context.read<AlertProvider>().fetchNotifications(),
       );
     }
   }
@@ -187,7 +187,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.AppColors.primary.withOpacity(0.1),
+                        color: theme.AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -321,7 +321,7 @@ class _FilterChip extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: isSelected ? color : color.withOpacity(0.08),
+        color: isSelected ? color : color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,
@@ -385,14 +385,14 @@ class _NotificationTile extends StatelessWidget {
           border: Border.all(
             color: alert.isRead
                 ? Colors.grey.shade200
-                : typeColor.withOpacity(0.3),
+                : typeColor.withValues(alpha: 0.3),
             width: alert.isRead ? 1 : 1.5,
           ),
           boxShadow: alert.isRead
               ? []
               : [
                   BoxShadow(
-                    color: typeColor.withOpacity(0.08),
+                    color: typeColor.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -414,7 +414,7 @@ class _NotificationTile extends StatelessWidget {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: typeColor.withOpacity(0.1),
+                      color: typeColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -478,7 +478,7 @@ class _NotificationTile extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: typeColor.withOpacity(0.1),
+                                color: typeColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -500,7 +500,7 @@ class _NotificationTile extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: priorityColor.withOpacity(0.1),
+                                  color: priorityColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(

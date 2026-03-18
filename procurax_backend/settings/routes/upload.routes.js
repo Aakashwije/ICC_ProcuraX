@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { authMiddleware } from  "../../core/middleware/auth.middleware.js";
-import User from '../models/User.js';
+import User from '../../models/User.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../config/cloudinary.js';
 
 const router = express.Router();
