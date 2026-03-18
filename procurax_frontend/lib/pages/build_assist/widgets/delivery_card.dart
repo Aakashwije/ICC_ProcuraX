@@ -639,14 +639,16 @@ class DeliveryCard extends StatelessWidget {
   }
 
   Widget _buildProcurementCard() {
-    // Dark neutral theme colors
-    const Color cardBg = Color(0xFF1B1E29); // Dark card background
-    const Color headerBg = Color(0xFF252836); // Slightly lighter header
-    const Color surfaceDark = Color(0xFF2A2D3A); // Row background
-    const Color accentTeal = Color(0xFF10B981); // Teal accent for icons
-    const Color textWhite = Color(0xFFF9FAFB); // Primary text
-    const Color textMuted = Color(0xFF9CA3AF); // Muted/label text
-    const Color borderColor = Color(0xFF374151); // Subtle border
+    // Light blue theme colors
+    const Color cardBg = Color(0xFFF0F7FF); // Very light blue background
+    const Color headerBg = Color(
+      0xFFE0EEFF,
+    ); // Slightly deeper light blue header
+    const Color iconBg = Color(0xFFDBEAFE); // Light blue icon circles
+    const Color accentBlue = Color(0xFF2563EB); // Blue accent for icons
+    const Color textPrimary = Color(0xFF1E293B); // Dark slate text
+    const Color textSecondary = Color(0xFF64748B); // Muted slate text
+    const Color borderColor = Color(0xFFBFDBFE); // Soft blue border
 
     // If both material and category are missing, show error card
     if (!(data!['material']?.toString().isNotEmpty ?? false) &&
@@ -654,7 +656,7 @@ class DeliveryCard extends StatelessWidget {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: cardBg,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor),
         ),
@@ -666,32 +668,35 @@ class DeliveryCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7F1D1D),
+                  color: const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.error_outline,
-                  color: Color(0xFFF87171),
+                  color: Color(0xFFEF4444),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'No material details found',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFF87171),
+                        color: Color(0xFFEF4444),
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Material information is missing. Please try again.',
-                      style: TextStyle(fontSize: 12, color: textMuted),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
@@ -726,7 +731,7 @@ class DeliveryCard extends StatelessWidget {
       if (lower.contains('pending')) return const Color(0xFFF59E0B);
       if (lower.contains('drawing')) return const Color(0xFF6366F1);
       if (lower.contains('not confirmed')) return const Color(0xFFEF4444);
-      return accentTeal;
+      return accentBlue;
     }
 
     return Container(
@@ -751,12 +756,12 @@ class DeliveryCard extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: accentTeal.withOpacity(0.15),
+                    color: accentBlue.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.inventory_2_rounded,
-                    color: accentTeal,
+                    color: accentBlue,
                     size: 20,
                   ),
                 ),
@@ -770,7 +775,7 @@ class DeliveryCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: textWhite,
+                          color: textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -782,7 +787,7 @@ class DeliveryCard extends StatelessWidget {
                             subtitle,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: textMuted,
+                              color: textSecondary,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -824,70 +829,70 @@ class DeliveryCard extends StatelessWidget {
                     Icons.straighten_rounded,
                     'Quantity',
                     quantity,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
                 if (revisedDelivery.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.local_shipping_rounded,
                     'Scheduled Delivery',
                     _formatDate(revisedDelivery),
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
                 if (etd.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.flight_takeoff_rounded,
                     'ETD (Order Date)',
                     _formatDate(etd),
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
                 if (eta.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.flight_land_rounded,
                     'ETA (Delivery Date)',
                     _formatDate(eta),
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
                 if (source.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.store_rounded,
                     'Source',
                     source,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
                 if (responsibility.isNotEmpty)
                   _buildProcurementDetailRow(
                     Icons.person_rounded,
                     'Responsibility',
                     responsibility,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
                 if (parentCategory.isNotEmpty && subtitle != parentCategory)
                   _buildProcurementDetailRow(
                     Icons.category_rounded,
                     'Parent Category',
                     parentCategory,
-                    surfaceDark,
-                    accentTeal,
-                    textWhite,
-                    textMuted,
+                    iconBg,
+                    accentBlue,
+                    textPrimary,
+                    textSecondary,
                   ),
               ],
             ),
@@ -898,9 +903,9 @@ class DeliveryCard extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              decoration: const BoxDecoration(
-                color: headerBg,
-                border: Border(top: BorderSide(color: borderColor)),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.6),
+                border: const Border(top: BorderSide(color: borderColor)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -919,7 +924,7 @@ class DeliveryCard extends StatelessWidget {
                       'Related Tasks',
                       data!['relatedTasks'],
                       Icons.task_alt_rounded,
-                      accentTeal,
+                      accentBlue,
                     ),
                   if (data!['relatedNotes'] != null &&
                       (data!['relatedNotes'] as List).isNotEmpty)
@@ -1193,7 +1198,7 @@ class DeliveryCard extends StatelessWidget {
                         'Item',
                     style: const TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF9CA3AF),
+                      color: Color(0xFF64748B),
                     ),
                   ),
                 ),
