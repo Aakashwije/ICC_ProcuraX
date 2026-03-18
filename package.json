@@ -1,4 +1,14 @@
 {
+  "name": "icc-procurax",
+  "private": true,
+  "scripts": {
+    "start": "cd procurax_backend && node app.js",
+    "dev": "cd procurax_backend && npx nodemon app.js",
+    "install:backend": "cd procurax_backend && npm ci"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3"

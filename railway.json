@@ -2,10 +2,11 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm ci --omit=dev"
+    "buildCommand": "cd procurax_backend && npm ci --omit=dev",
+    "watchPatterns": ["procurax_backend/**"]
   },
   "deploy": {
-    "startCommand": "node app.js",
+    "startCommand": "cd procurax_backend && node app.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
