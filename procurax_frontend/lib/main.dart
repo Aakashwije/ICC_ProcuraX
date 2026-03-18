@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'routes/app_routes.dart';
 import 'services/api_service.dart';
+import 'services/firebase_service.dart';
 import 'theme/app_theme.dart';
 
 import 'pages/get_started/get_started_page.dart';
@@ -27,7 +28,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase first
+  await FirebaseService.initialize();
+
+  // Then initialize API service
   await ApiService.initialize();
+
   runApp(const MyApp());
 }
 
