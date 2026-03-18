@@ -17,18 +17,8 @@ class ApiService {
       return override;
     }
 
-    // 2. Debug / profile → local backend for fast iteration
-    if (kDebugMode) {
-      if (kIsWeb) {
-        return "http://localhost:5002"; // Web development -> backend proxy
-      }
-      if (Platform.isAndroid) {
-        return "http://10.0.2.2:5002"; // Android emulator -> host machine
-      }
-      return "http://localhost:5002"; // iOS simulator / desktop
-    }
-
-    // 3. Release build → Railway production
+    // 2. Use Railway for all builds (debug, profile, release)
+    // This allows hot refresh to work without running local backend
     return _productionUrl;
   }
 
