@@ -77,7 +77,7 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -91,7 +91,7 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.logout, size: 44, color: Colors.red),
@@ -373,6 +373,7 @@ class _DrawerTile extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.selected,
+    // ignore: unused_element_parameter
     this.badge,
     this.color,
   });

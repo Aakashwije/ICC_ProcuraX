@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -474,10 +473,10 @@ class _ChatScreenState extends State<ChatScreen> {
               width: 48,
               margin: const EdgeInsets.only(bottom: 2),
               decoration: BoxDecoration(
-                color: isUserTyping ? AppColours.primary : AppColours.primary.withOpacity(0.4),
+                color: isUserTyping ? AppColours.primary : AppColours.primary.withValues(alpha: 0.4),
                 shape: BoxShape.circle,
                 boxShadow: isUserTyping
-                    ? [BoxShadow(color: AppColours.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    ? [BoxShadow(color: AppColours.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
                     : null,
               ),
               child: IconButton(
@@ -578,6 +577,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       
 
+      if (!mounted) return;
       final fileName = file.name;
       final mimeType = lookupMimeType(fileName, headerBytes: bytes) ?? 'application/octet-stream';
       final createdAt = DateTime.now();
@@ -820,7 +820,7 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 209, 221, 234),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, -3)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, -3)),
               ],
             ),
             child: Column(

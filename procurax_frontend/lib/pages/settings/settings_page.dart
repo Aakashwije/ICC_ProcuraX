@@ -2,18 +2,14 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart' show ThemeMode;
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
-import 'theme_notifier.dart';
 import 'services/api_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -260,7 +256,7 @@ Issue Description:
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1F4CCF).withOpacity(0.1),
+                        color: const Color(0xFF1F4CCF).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -326,7 +322,7 @@ Issue Description:
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1F4CCF).withOpacity(0.1),
+                        color: const Color(0xFF1F4CCF).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -386,10 +382,10 @@ Issue Description:
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
+                  color: Colors.blue.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF1F4CCF).withOpacity(0.2),
+                    color: const Color(0xFF1F4CCF).withValues(alpha: 0.2),
                   ),
                 ),
                 child: Row(
@@ -715,7 +711,7 @@ Issue Description:
         return;
       }
 
-      final bool cameraAvailable = await _picker.supportsImageSource(
+      final bool cameraAvailable = _picker.supportsImageSource(
         ImageSource.camera,
       );
 
@@ -967,7 +963,7 @@ Issue Description:
                               fit: BoxFit.cover,
                             )
                           : null),
-                border: Border.all(color: blue.withOpacity(0.3), width: 2),
+                border: Border.all(color: blue.withValues(alpha: 0.3), width: 2),
               ),
               child: (_profileImage == null && profileImageUrl == null)
                   ? Center(
@@ -987,7 +983,7 @@ Issue Description:
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                   ),
                   child: const Center(
                     child: CircularProgressIndicator(
@@ -1408,7 +1404,7 @@ Issue Description:
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
@@ -1461,7 +1457,7 @@ Issue Description:
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
           foregroundColor: textColor,
-          side: BorderSide(color: textColor.withOpacity(0.3)),
+          side: BorderSide(color: textColor.withValues(alpha: 0.3)),
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

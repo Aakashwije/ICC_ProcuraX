@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:procurax_frontend/main.dart' show navigatorKey;
 import '../models/alert_model.dart';
@@ -98,7 +99,8 @@ class NotificationHelper {
   }) async {
     await _createNotification(
       title: 'Meeting Scheduled',
-      message: 'Meeting "$meetingTitle" scheduled for ${_formatDateTime(startTime)}',
+      message:
+          'Meeting "$meetingTitle" scheduled for ${_formatDateTime(startTime)}',
       type: AlertType.meetings,
       priority: AlertPriority.medium,
       meetingId: meetingId,
@@ -192,7 +194,8 @@ class NotificationHelper {
   }) async {
     await _createNotification(
       title: 'Project Deadline Approaching',
-      message: 'Project "$projectName" deadline is ${_formatDateTime(deadline)}',
+      message:
+          'Project "$projectName" deadline is ${_formatDateTime(deadline)}',
       type: AlertType.projects,
       priority: AlertPriority.high,
       projectId: projectId,
@@ -201,7 +204,7 @@ class NotificationHelper {
   }
 
   // ==================== PROCUREMENT NOTIFICATIONS ====================
-  
+
   /// Procurement order created notification
   static Future<void> procurementOrderCreated({
     required String procurementId,
@@ -259,7 +262,7 @@ class NotificationHelper {
   }
 
   // ==================== GENERAL NOTIFICATIONS ====================
-  
+
   /// Custom general notification
   static Future<void> general({
     required String title,
@@ -275,7 +278,7 @@ class NotificationHelper {
   }
 
   // ==================== INTERNAL HELPERS ====================
-  
+
   /// Internal method to create notification
   static Future<void> _createNotification({
     required String title,
@@ -291,7 +294,9 @@ class NotificationHelper {
   }) async {
     final provider = _getProvider();
     if (provider == null) {
-      print('Warning: Could not get AlertProvider. Notification not created.');
+      debugPrint(
+        'Warning: Could not get AlertProvider. Notification not created.',
+      );
       return;
     }
 

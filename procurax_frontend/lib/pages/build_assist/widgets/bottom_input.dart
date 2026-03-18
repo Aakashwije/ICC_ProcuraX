@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:file_picker/file_picker.dart';
 import 'speech_helper.dart';
 import 'package:procurax_frontend/theme/app_theme.dart' as theme;
@@ -39,7 +40,7 @@ class _BottomInputState extends State<BottomInput> {
           }
         })
         .catchError((e) {
-          print('Speech init error in BottomInput: $e');
+          debugPrint('Speech init error in BottomInput: $e');
           if (mounted) {
             setState(() {
               _micError = true;
@@ -86,7 +87,7 @@ class _BottomInputState extends State<BottomInput> {
             padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red, size: 18),
+                Icon(LucideIcons.alertCircle, color: Colors.red, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -104,11 +105,7 @@ class _BottomInputState extends State<BottomInput> {
             padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
             child: Row(
               children: [
-                Icon(
-                  Icons.record_voice_over,
-                  color: theme.AppColors.primary,
-                  size: 18,
-                ),
+                Icon(LucideIcons.mic, color: theme.AppColors.primary, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -128,7 +125,7 @@ class _BottomInputState extends State<BottomInput> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, -2),
               ),
@@ -137,7 +134,7 @@ class _BottomInputState extends State<BottomInput> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.add_circle_outline_rounded),
+                icon: const Icon(LucideIcons.plusCircle),
                 tooltip: 'Attach file/image',
                 onPressed: widget.isLoading
                     ? null
@@ -156,7 +153,7 @@ class _BottomInputState extends State<BottomInput> {
                       },
               ),
               IconButton(
-                icon: const Icon(Icons.event_note_outlined),
+                icon: const Icon(LucideIcons.calendarClock),
                 tooltip: 'Pick date/time',
                 onPressed: widget.isLoading
                     ? null
@@ -170,7 +167,7 @@ class _BottomInputState extends State<BottomInput> {
                             const Duration(days: 365),
                           ),
                         );
-                        if (date != null) {
+                        if (date != null && context.mounted) {
                           // Time picker
                           final time = await showTimePicker(
                             context: context,
@@ -221,7 +218,7 @@ class _BottomInputState extends State<BottomInput> {
                 ),
               ),
               IconButton(
-                icon: Icon(_isListening ? Icons.stop : Icons.mic),
+                icon: Icon(_isListening ? LucideIcons.square : LucideIcons.mic),
                 tooltip: _isListening ? 'Stop listening' : 'Voice input',
                 onPressed: widget.isLoading
                     ? null
@@ -248,7 +245,7 @@ class _BottomInputState extends State<BottomInput> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Icon(Icons.send, color: Colors.white),
+                      : const Icon(LucideIcons.send, color: Colors.white),
                   onPressed: widget.isLoading
                       ? null
                       : () {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:procurax_frontend/services/api_service.dart';
 import '../models/alert_model.dart';
@@ -28,19 +29,21 @@ class NotificationApiService {
         baseUrl,
       ).replace(queryParameters: queryParams.isEmpty ? null : queryParams);
 
-      print('[NotificationApiService] Fetching from: $uri');
-      print('[NotificationApiService] Headers: ${ApiService.authHeaders}');
+      debugPrint('[NotificationApiService] Fetching from: $uri');
+      debugPrint('[NotificationApiService] Headers: ${ApiService.authHeaders}');
 
       final response = await http.get(uri, headers: ApiService.authHeaders);
 
-      print('[NotificationApiService] Response status: ${response.statusCode}');
-      print('[NotificationApiService] Response body: ${response.body}');
+      debugPrint(
+        '[NotificationApiService] Response status: ${response.statusCode}',
+      );
+      debugPrint('[NotificationApiService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final notifications = data['notifications'] as List;
 
-        print(
+        debugPrint(
           '[NotificationApiService] Parsed ${notifications.length} notifications',
         );
 
@@ -51,7 +54,7 @@ class NotificationApiService {
         );
       }
     } catch (e) {
-      print('Error fetching notifications: $e');
+      debugPrint('Error fetching notifications: $e');
       rethrow;
     }
   }
@@ -75,7 +78,7 @@ class NotificationApiService {
         );
       }
     } catch (e) {
-      print('Error marking notification as read: $e');
+      debugPrint('Error marking notification as read: $e');
       rethrow;
     }
   }
@@ -101,7 +104,7 @@ class NotificationApiService {
         throw Exception('Failed to mark all as read: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error marking all as read: $e');
+      debugPrint('Error marking all as read: $e');
       rethrow;
     }
   }
@@ -125,7 +128,7 @@ class NotificationApiService {
         );
       }
     } catch (e) {
-      print('Error deleting notification: $e');
+      debugPrint('Error deleting notification: $e');
       rethrow;
     }
   }
@@ -181,7 +184,7 @@ class NotificationApiService {
         );
       }
     } catch (e) {
-      print('Error creating notification: $e');
+      debugPrint('Error creating notification: $e');
       rethrow;
     }
   }
@@ -205,7 +208,7 @@ class NotificationApiService {
         throw Exception('Failed to fetch stats: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching notification stats: $e');
+      debugPrint('Error fetching notification stats: $e');
       rethrow;
     }
   }
