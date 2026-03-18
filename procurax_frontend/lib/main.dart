@@ -29,10 +29,14 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase first
-  await FirebaseService.initialize();
+  // Try to initialize Firebase (optional - app works without it)
+  try {
+    await FirebaseService.initialize();
+  } catch (e) {
+    debugPrint('⚠️ Skipping Firebase initialization: $e');
+  }
 
-  // Then initialize API service
+  // Initialize API service
   await ApiService.initialize();
 
   runApp(const MyApp());
