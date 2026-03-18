@@ -5,7 +5,10 @@ import 'package:procurax_frontend/theme/app_theme.dart';
 class PermissionRequestDialog extends StatefulWidget {
   final VoidCallback onPermissionsGranted;
 
-  const PermissionRequestDialog({super.key, required this.onPermissionsGranted});
+  const PermissionRequestDialog({
+    super.key,
+    required this.onPermissionsGranted,
+  });
 
   @override
   State<PermissionRequestDialog> createState() =>
@@ -19,18 +22,13 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
     setState(() => _isRequesting = true);
 
     try {
-      final results = await PermissionService.requestAllPermissions();
+      await PermissionService.requestAllPermissions();
 
       if (!mounted) return;
 
-      // Show summary of granted permissions
-      _showPermissionSummary(results);
-
       // Close dialog and continue
-      if (mounted) {
-        Navigator.of(context).pop();
-        widget.onPermissionsGranted();
-      }
+      Navigator.of(context).pop();
+      widget.onPermissionsGranted();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
