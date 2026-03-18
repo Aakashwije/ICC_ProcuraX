@@ -1,48 +1,28 @@
 import "../../config/env.js";
 import admin from "firebase-admin";
+import getFirebaseApp from "../../config/firebase.js";
 
 let db = null;
 let bucket = null;
 let isInitialized = false;
 
-// Lazy initialization - reuse existing Firebase app or create new one
+// Lazy initialization - reuse the main Firebase app singleton
 function initializeFirebase() {
   if (isInitialized) return;
 
   try {
-    // Check if Firebase is already initialized by another module
-    if (admin.apps.length > 0) {
-      db = admin.firestore();
-      bucket = admin.storage().bucket();
-      isInitialized = true;
+    // Use the main config's getFirebaseApp() which handles initialization
+    const app = getFirebaseApp();
+    if (!app) {
+      console.warn("  Firebase app not available. Communication Firebase features will be disabled.");
       return;
     }
 
-    if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-      console.warn("  FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set. Firebase features will be disabled.");
-      return;
-    }
-
-    // convert the JSON string back to an object
-    const serviceAccount = JSON.parse(
-      process.env.FIREBASE_SERVICE_ACCOUNT_JSON
-    );
-
-    // Fix for escaped new lines in the private key
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-
-    // Initialize Firebase admin
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      storageBucket: `${serviceAccount.project_id}.appspot.com`,
-    });
-
-    // Firebase instances
     db = admin.firestore();
-    bucket = admin.storage().bucket();
+    bucket = admin.storage().bucket(`${app.options.projectId || 'default'}.appspot.com`);
     isInitialized = true;
   } catch (error) {
-    console.error(" Failed to initialize Firebase:", error.message);
+    console.error(" Failed to initialize Firebase for communication:", error.message);
   }
 }
 
