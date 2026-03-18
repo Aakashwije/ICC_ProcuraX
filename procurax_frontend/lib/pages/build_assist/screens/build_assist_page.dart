@@ -252,9 +252,10 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                         button: true,
                         child: IconButton(
                           tooltip: 'Menu',
-                          icon: Icon(
-                            LucideIcons.menu,
-                            color: Colors.grey.shade700,
+                          icon: const Icon(
+                            Icons.menu_rounded,
+                            size: 30,
+                            color: Color(0xFF1F4DF0),
                           ),
                           onPressed: () => Scaffold.of(context).openDrawer(),
                         ),
@@ -264,9 +265,10 @@ class _BuildAssistPageState extends State<BuildAssistPage> {
                   const Text(
                     "BuildAssist",
                     style: TextStyle(
-                      color: Color(0xFF2563EB),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F4DF0),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Poppins',
                     ),
                   ),
                 ],
