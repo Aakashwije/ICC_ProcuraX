@@ -17,27 +17,33 @@ function getFirebaseApp() {
         return admin.apps[0];
     }
 
-    if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!raw) {
         console.warn("[Firebase] FIREBASE_SERVICE_ACCOUNT_JSON not set. Firebase disabled.");
         return null;
     }
 
+    console.log(`[Firebase] Env var length: ${raw.length}, starts with: "${raw.substring(0, 30)}..."`);
+
     try {
-        const serviceAccount = JSON.parse(
-            process.env.FIREBASE_SERVICE_ACCOUNT_JSON
-        );
+        const serviceAccount = JSON.parse(raw);
+
+        console.log(`[Firebase] Parsed OK. project_id=${serviceAccount.project_id}, has private_key=${!!serviceAccount.private_key}, type=${serviceAccount.type}`);
 
         // Fix for escaped new lines in the private key
         if (serviceAccount.private_key) {
             serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
         }
 
-        return admin.initializeApp({
+        const app = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
             storageBucket: `${serviceAccount.project_id}.appspot.com`,
         });
+        console.log("[Firebase] Admin SDK initialised successfully.");
+        return app;
     } catch (err) {
         console.error("[Firebase] Failed to initialise Admin SDK:", err.message);
+        console.error("[Firebase] Stack:", err.stack);
         return null;
     }
 }
