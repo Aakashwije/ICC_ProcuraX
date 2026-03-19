@@ -1,36 +1,27 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 /**
- * Create a reusable transporter.
+ * Email delivery via Resend (HTTPS API — works on all Railway plans).
  *
- * Set these environment variables in your .env:
- *   SMTP_HOST=smtp.gmail.com
- *   SMTP_PORT=587
- *   SMTP_USER=your-email@gmail.com
- *   SMTP_PASS=your-app-password      ← use a Gmail "App Password"
- *   SMTP_FROM="ProcuraX <your-email@gmail.com>"
+ * Railway blocks outbound SMTP (port 587) on Free/Hobby plans, so
+ * nodemailer + Gmail SMTP hangs and times out. Resend uses a standard
+ * HTTPS API call instead, which is never blocked.
  *
- * NOTE: The transporter is created lazily (on first sendMail call) so that
- * dotenv has already populated process.env before the credentials are read.
- * Creating it at module load time can cause "Missing credentials" errors
- * because ES module static imports are evaluated before the module body of
- * the entry-point (app.js) runs — including the `import "./config/env.js"` line.
+ * Required environment variable:
+ *   RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx   ← from https://resend.com/api-keys
+ *
+ * Optional:
+ *   MAIL_FROM="ProcuraX <onboarding@resend.dev>"
+ *   (defaults to Resend's shared sandbox address for testing)
  */
-let _transporter = null;
 
-function getTransporter() {
-  if (!_transporter) {
-    _transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false, // true for 465, false for 587
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+let _resend = null;
+
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
   }
-  return _transporter;
+  return _resend;
 }
 
 /**
@@ -38,8 +29,22 @@ function getTransporter() {
  * @param {{ to: string, subject: string, html: string }} options
  */
 export const sendMail = async ({ to, subject, html }) => {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-  return getTransporter().sendMail({ from, to, subject, html });
+  const from =
+    process.env.MAIL_FROM ||
+    "ProcuraX <onboarding@resend.dev>";
+
+  const { data, error } = await getResend().emails.send({
+    from,
+    to,
+    subject,
+    html,
+  });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
+
+  return data;
 };
 
-export default getTransporter;
+export default getResend;
