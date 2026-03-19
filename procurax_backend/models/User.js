@@ -107,6 +107,13 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       select: false
+    },
+
+    // ── FCM push notification tokens (one per device) ──
+    fcmTokens: {
+      type: [String],
+      default: [],
+      select: false
     }
   },
   {

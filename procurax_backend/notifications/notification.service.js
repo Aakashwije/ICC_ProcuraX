@@ -1,9 +1,85 @@
 import Notification from './notification.model.js';
+import User from '../models/User.js';
+import getFirebaseApp from '../config/firebase.js';
+import admin from 'firebase-admin';
 
 /**
  * Notification Service
- * Helper functions to create notifications from different modules
+ * Helper functions to create notifications from different modules.
+ * Now also sends FCM push notifications to the user's devices.
  */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   sendPushNotification — sends an FCM message to all of a user's devices
+────────────────────────────────────────────────────────────────────────── */
+async function sendPushNotification(userId, { title, body, data = {} }) {
+  try {
+    const app = getFirebaseApp();
+    if (!app) {
+      console.log('[FCM-Push] Firebase not initialised — skipping push');
+      return;
+    }
+
+    const user = await User.findById(userId).select('+fcmTokens').lean();
+    if (!user?.fcmTokens?.length) {
+      console.log(`[FCM-Push] No FCM tokens for user ${userId}`);
+      return;
+    }
+
+    const messaging = admin.messaging();
+
+    // Build the message for each token
+    const messages = user.fcmTokens.map((token) => ({
+      token,
+      notification: { title, body },
+      data: {
+        ...Object.fromEntries(
+          Object.entries(data).map(([k, v]) => [k, String(v)])
+        ),
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'procurax_notifications',
+          sound: 'default',
+        },
+      },
+      apns: {
+        payload: { aps: { sound: 'default', badge: 1 } },
+      },
+    }));
+
+    const response = await messaging.sendEach(messages);
+
+    // Clean up any invalid tokens
+    const tokensToRemove = [];
+    response.responses.forEach((resp, idx) => {
+      if (resp.error) {
+        const code = resp.error.code;
+        if (
+          code === 'messaging/invalid-registration-token' ||
+          code === 'messaging/registration-token-not-registered'
+        ) {
+          tokensToRemove.push(user.fcmTokens[idx]);
+        }
+        console.warn(`[FCM-Push] Error sending to token ${idx}: ${resp.error.message}`);
+      }
+    });
+
+    if (tokensToRemove.length > 0) {
+      await User.findByIdAndUpdate(userId, {
+        $pull: { fcmTokens: { $in: tokensToRemove } },
+      });
+      console.log(`[FCM-Push] Removed ${tokensToRemove.length} stale tokens`);
+    }
+
+    console.log(`[FCM-Push] Sent ${response.successCount}/${messages.length} to user ${userId}`);
+  } catch (err) {
+    // Non-fatal — log but don't break the caller
+    console.error('[FCM-Push] Error:', err.message);
+  }
+}
 
 class NotificationService {
   /**
@@ -26,7 +102,7 @@ class NotificationService {
       statusChanged: `The project "${projectName}" status changed to ${projectStatus}.`
     };
 
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title: titles[action] || `Project: ${projectName}`,
       message: messages[action] || details || `Update for project "${projectName}".`,
@@ -36,6 +112,15 @@ class NotificationService {
       projectStatus,
       projectId
     });
+
+    // Send FCM push
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'projects', projectId: projectId?.toString() || '' },
+    });
+
+    return notification;
   }
 
   /**
@@ -66,7 +151,7 @@ class NotificationService {
                      action === 'dueToday' ? 'high' : 
                      action === 'assigned' ? 'high' : 'medium';
 
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title: titles[action] || `Task: ${taskTitle}`,
       message: messages[action] || `Update for task "${taskTitle}".`,
@@ -75,6 +160,14 @@ class NotificationService {
       taskId,
       metadata: { dueDate, assignedBy }
     });
+
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'tasks', taskId: taskId?.toString() || '' },
+    });
+
+    return notification;
   }
 
   /**
@@ -100,7 +193,7 @@ class NotificationService {
     const priority = action === 'delayed' ? 'high' : 
                      action === 'cancelled' ? 'high' : 'medium';
 
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title: titles[action] || `Procurement: ${itemName}`,
       message: messages[action] || `Update for procurement item "${itemName}".`,
@@ -109,6 +202,14 @@ class NotificationService {
       procurementId,
       metadata: { deliveryDate, supplier }
     });
+
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'procurement', procurementId: procurementId || '' },
+    });
+
+    return notification;
   }
 
   /**
@@ -134,7 +235,7 @@ class NotificationService {
     const priority = action === 'reminder' ? 'high' : 
                      action === 'cancelled' ? 'high' : 'medium';
 
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title: titles[action] || `Meeting: ${meetingTitle}`,
       message: messages[action] || `Update for meeting "${meetingTitle}".`,
@@ -143,6 +244,14 @@ class NotificationService {
       meetingId,
       metadata: { startTime, location, organizer }
     });
+
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'meetings', meetingId: meetingId?.toString() || '' },
+    });
+
+    return notification;
   }
 
   /**
@@ -161,7 +270,7 @@ class NotificationService {
       deleted: `The note "${noteTitle}" has been deleted.`
     };
 
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title: titles[action] || `Note: ${noteTitle}`,
       message: messages[action] || `Update for note "${noteTitle}".`,
@@ -170,6 +279,14 @@ class NotificationService {
       noteId,
       metadata: { tag }
     });
+
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'notes', noteId: noteId?.toString() || '' },
+    });
+
+    return notification;
   }
 
   /**
@@ -190,7 +307,7 @@ class NotificationService {
       missed: `You have missed messages from ${senderName}.`
     };
 
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title: titles[action] || `Message from ${senderName}`,
       message: messages[action] || `New message from ${senderName}.`,
@@ -198,13 +315,21 @@ class NotificationService {
       priority: action === 'mention' ? 'high' : 'medium',
       metadata: { chatId, senderName }
     });
+
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'communication', chatId: chatId || '' },
+    });
+
+    return notification;
   }
 
   /**
    * Create a general notification
    */
   static async createGeneralNotification(userId, { title, message, priority = 'medium', metadata }) {
-    return await Notification.create({
+    const notification = await Notification.create({
       owner: userId,
       title,
       message,
@@ -212,6 +337,14 @@ class NotificationService {
       priority,
       metadata
     });
+
+    await sendPushNotification(userId, {
+      title: notification.title,
+      body: notification.message,
+      data: { type: 'general' },
+    });
+
+    return notification;
   }
 
   /**
@@ -223,7 +356,18 @@ class NotificationService {
       ...notificationData
     }));
 
-    return await Notification.insertMany(notifications);
+    const created = await Notification.insertMany(notifications);
+
+    // Send push to each user (fire-and-forget)
+    for (const userId of userIds) {
+      sendPushNotification(userId, {
+        title: notificationData.title,
+        body: notificationData.message,
+        data: { type: notificationData.type || 'general' },
+      });
+    }
+
+    return created;
   }
 
   /**
