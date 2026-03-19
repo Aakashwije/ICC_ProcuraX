@@ -29,9 +29,11 @@ function getResend() {
  * @param {{ to: string, subject: string, html: string }} options
  */
 export const sendMail = async ({ to, subject, html }) => {
-  const from =
-    process.env.MAIL_FROM ||
-    "ProcuraX <onboarding@resend.dev>";
+  // Strip surrounding quotes that some env-var UIs may inject
+  const rawFrom = process.env.MAIL_FROM || "ProcuraX <noreply@mail.procurax.lk>";
+  const from = rawFrom.replaceAll(/^["']|["']$/g, "");
+
+  console.log(`[mailer] Sending to=${to} from=${from}`);
 
   const { data, error } = await getResend().emails.send({
     from,
@@ -41,9 +43,11 @@ export const sendMail = async ({ to, subject, html }) => {
   });
 
   if (error) {
+    console.error("[mailer] Resend API error:", JSON.stringify(error));
     throw new Error(`Resend error: ${error.message}`);
   }
 
+  console.log("[mailer] Email sent successfully, id:", data?.id);
   return data;
 };
 
