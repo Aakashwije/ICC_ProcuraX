@@ -183,6 +183,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
   bool _acceptTerms = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   final AuthService _authService = AuthService();
 
   @override
@@ -297,8 +299,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     _inputField(
                       hint: "Password",
                       icon: Icons.lock_outline,
-                      isPassword: true,
+                      isPassword: _obscurePassword,
                       controller: _passC,
+                      onToggleObscure: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return "Password is required";
@@ -319,8 +323,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     _inputField(
                       hint: "Confirm Password",
                       icon: Icons.lock_outline,
-                      isPassword: true,
+                      isPassword: _obscureConfirm,
                       controller: _confirmC,
+                      onToggleObscure: () =>
+                          setState(() => _obscureConfirm = !_obscureConfirm),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return "Confirm your password";
@@ -481,6 +487,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     required TextEditingController controller,
     TextInputType? keyboardType,
     bool isPassword = false,
+    VoidCallback? onToggleObscure,
     String? Function(String?)? validator,
   }) {
     return Container(
@@ -508,6 +515,15 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             color: neutralColor.withValues(alpha: 0.5),
           ),
           prefixIcon: Icon(icon, color: primaryColor),
+          suffixIcon: onToggleObscure != null
+              ? IconButton(
+                  icon: Icon(
+                    isPassword ? Icons.visibility_off : Icons.visibility,
+                    color: primaryColor.withValues(alpha: 0.6),
+                  ),
+                  onPressed: onToggleObscure,
+                )
+              : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(
