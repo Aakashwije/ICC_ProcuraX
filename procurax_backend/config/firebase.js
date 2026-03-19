@@ -24,8 +24,17 @@ function getFirebaseApp() {
     }
 
     try {
-        // Strip wrapping quotes that some env var UIs add
+        // Strip wrapping quotes or stray characters some env var UIs add
         raw = raw.trim();
+
+        // Railway sometimes prepends " =" when importing from .env files
+        // e.g. the value becomes " ={...}" instead of "{...}"
+        const jsonStart = raw.indexOf('{');
+        if (jsonStart > 0) {
+            console.warn(`[Firebase] Stripping ${jsonStart} unexpected leading chars from env var`);
+            raw = raw.substring(jsonStart);
+        }
+
         if ((raw.startsWith("'") && raw.endsWith("'")) ||
             (raw.startsWith('"') && raw.endsWith('"') && !raw.startsWith('{"'))) {
             raw = raw.slice(1, -1);
