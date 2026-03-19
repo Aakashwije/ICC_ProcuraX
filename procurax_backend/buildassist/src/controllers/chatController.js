@@ -124,6 +124,32 @@ export const formatDateStr = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Parse a date string + time string into a Date object.
+ * Avoids using new Date(string) which is unreliable across environments.
+ * @param {string} dateStr - e.g. "2026-03-20"
+ * @param {string} timeStr - e.g. "2:00 PM"
+ * @returns {Date|null}
+ */
+export const parseTimeToDate = (dateStr, timeStr) => {
+  if (!dateStr || !timeStr) return null;
+  const dateParts = dateStr.split('-').map(Number);
+  if (dateParts.length !== 3) return null;
+  const [year, month, dayNum] = dateParts;
+
+  const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!timeMatch) return null;
+
+  let hour = parseInt(timeMatch[1]);
+  const minute = parseInt(timeMatch[2]);
+  const meridiem = timeMatch[3].toUpperCase();
+
+  if (meridiem === 'PM' && hour < 12) hour += 12;
+  if (meridiem === 'AM' && hour === 12) hour = 0;
+
+  return new Date(year, month - 1, dayNum, hour, minute, 0);
+};
+
 export const parseMeetingDetails = (message) => {
   const lowerMessage = message.toLowerCase();
   
@@ -193,15 +219,34 @@ export const parseMeetingDetails = (message) => {
     }
   }
 
-  // Extract time - more flexible matching
+  // Extract time - robust matching with support for ranges and dotted meridiem
   let timeStr = null;
-  // Match patterns like: 4pm, 4:30pm, 16:00, 4 pm, 4:30 pm, 2:00 PM, etc.
-  const timeMatch = message.match(/(\d{1,2})\s*:?\s*(\d{2})?\s*(am|pm|AM|PM)?/);
-  if (timeMatch) {
-    const hour = timeMatch[1];
-    const minute = timeMatch[2] || '00';
-    const meridiem = timeMatch[3] ? timeMatch[3].toUpperCase() : 'AM';
-    timeStr = `${hour}:${minute} ${meridiem}`;
+  let endTimeStr = null;
+
+  // First try time range: "2pm to 4pm", "2:00 PM to 4:00 PM", "2:00 p.m. to 4:00 p.m."
+  const timeRangeMatch = message.match(/(\d{1,2})(?:\s*:\s*(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?)\s*(?:to|-)\s*(\d{1,2})(?:\s*:\s*(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?)/i);
+  if (timeRangeMatch) {
+    const startMeridiem = timeRangeMatch[3].replace(/[.\s]/g, '').toUpperCase();
+    const endMeridiem = timeRangeMatch[6].replace(/[.\s]/g, '').toUpperCase();
+    timeStr = `${timeRangeMatch[1]}:${timeRangeMatch[2] || '00'} ${startMeridiem}`;
+    endTimeStr = `${timeRangeMatch[4]}:${timeRangeMatch[5] || '00'} ${endMeridiem}`;
+  } else {
+    // Single time with AM/PM: "2pm", "2:30pm", "2:00 p.m."
+    const singleTimeMatch = message.match(/(\d{1,2})(?:\s*:\s*(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?)/i);
+    if (singleTimeMatch) {
+      const meridiem = singleTimeMatch[3].replace(/[.\s]/g, '').toUpperCase();
+      timeStr = `${singleTimeMatch[1]}:${singleTimeMatch[2] || '00'} ${meridiem}`;
+    } else {
+      // 24-hour format: "14:00", "09:30" (must have colon, avoid matching dates)
+      const militaryMatch = message.match(/(?:^|\s|at\s+)(([01]?\d|2[0-3]):([0-5]\d))(?:\s|$|[,.])/i);
+      if (militaryMatch) {
+        const hour = parseInt(militaryMatch[2]);
+        const minute = militaryMatch[3];
+        const meridiem = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+        timeStr = `${displayHour}:${minute} ${meridiem}`;
+      }
+    }
   }
 
   // Extract location - more flexible patterns
@@ -224,7 +269,7 @@ export const parseMeetingDetails = (message) => {
     }
   }
 
-  return { title, dateStr, timeStr, location, durationMinutes };
+  return { title, dateStr, timeStr, endTimeStr, location, durationMinutes };
 };
 
 /**
@@ -253,8 +298,8 @@ export const parseNoteDetails = (message) => {
     title = titleMatch[1].trim();
     content = message.replace(/['"][^'"]+['"]\s*/i, '').trim();
   } else {
-    // Try "titled" or "named" or "about" patterns
-    let extractedTitle = message.match(/(?:titled|named|about)\s+([^\n.]+?)(?:\s+(?:content|saying|note:|says:|tag:|tagged|as\s+\w+)|\n|$)/i);
+    // Try "titled", "named", "called", or "about" patterns
+    let extractedTitle = message.match(/(?:titled|named|called|about)\s+([^\n.]+?)(?:\s+(?:content|saying|note:|says:|tag:|tagged|as\s+\w+)|\n|$)/i);
     if (extractedTitle && extractedTitle[1]) {
       title = extractedTitle[1].trim();
       // Keep original message as content for context
@@ -428,92 +473,7 @@ export const chatWithAI = async (req, res) => {
 
     const query = tokens.join(' ');
 
-    // ===== SCHEDULE MEETING =====
-    if (intentTokens.includes('schedule') || intentTokens.includes('create') || intentTokens.includes('new')) {
-      if (intentTokens.includes('meeting') || intentTokens.includes('meet')) {
-        console.log('🔍 Schedule meeting branch triggered');
-        
-        // Require authentication for meeting scheduling
-        if (!userId) {
-          return res.status(401).json({
-            reply: "Please log in to schedule meetings. Your session may have expired — try logging in again.",
-            error: true,
-            suggestions: ["Show materials", "Material status"]
-          });
-        }
-        
-        const meetingDetails = parseMeetingDetails(message);
-        console.log('Parsed meeting details:', meetingDetails);
-
-        // Use smart defaults if date or time is missing
-        let dateStr = meetingDetails.dateStr;
-        let timeStr = meetingDetails.timeStr;
-
-        // Default to tomorrow if no date specified
-        if (!dateStr) {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          dateStr = formatDateStr(tomorrow);
-        }
-
-        // Require time - ask user if not specified
-        if (!timeStr) {
-          return res.json({
-            reply: `I can schedule a meeting on ${dateStr}. What time would you like? Please provide a time like '2pm', '2:30pm', '14:00', or '2:00 PM'`,
-          });
-        }
-
-        try {
-          // Parse date and time
-          const dateTimeStr = `${dateStr} ${timeStr}`;
-          const startTime = new Date(dateTimeStr);
-          
-          if (isNaN(startTime.getTime())) {
-            return res.json({
-              reply: "I had trouble parsing the meeting details. Please specify the date and time more clearly. Example: 'schedule meeting \"Project Review\" on tomorrow at 2pm' or 'schedule meeting \"Team Sync\" on 2026-03-20 at 3:00 PM'",
-            });
-          }
-
-          // Validate that the meeting is not in the past
-          const now = new Date();
-          if (startTime < now) {
-            return res.json({
-              reply: `The meeting time (${startTime.toLocaleString()}) is in the past. Please pick a future date or time. Would you like to schedule it for tomorrow instead?`,
-            });
-          }
-
-          const endTime = new Date(startTime.getTime() + meetingDetails.durationMinutes * 60000);
-
-          // Create the meeting
-          const newMeeting = new Meeting({
-            title: meetingDetails.title,
-            description: `Scheduled via BuildAssist: ${message}`,
-            location: meetingDetails.location,
-            startTime,
-            endTime,
-            priority: 'medium',
-            owner: userId,
-          });
-
-          await newMeeting.save();
-
-          return res.json({
-            reply: `✅ Meeting scheduled successfully!\n\n📅 **${meetingDetails.title}**\n🕐 ${startTime.toLocaleString()} - ${endTime.toLocaleString()}\n📍 ${meetingDetails.location || 'No location specified'}`,
-            type: "meeting_scheduled",
-            suggestions: ["Show my meetings", "Create a task", "Create a note"]
-          });
-
-        } catch (error) {
-          console.error('Error scheduling meeting:', error);
-          return res.status(500).json({
-            reply: "Failed to schedule the meeting. Please try again or contact support.",
-            error: true
-          });
-        }
-      }
-    }
-
-    // ===== CREATE NOTE =====
+    // ===== CREATE NOTE (check BEFORE meeting to avoid "create a note called meeting" confusion) =====
     if (intentTokens.includes('note') && (intentTokens.includes('create') || intentTokens.includes('new') || intentTokens.includes('add') || intentTokens.includes('write'))) {
       console.log('🔍 Create note branch triggered');
       
@@ -532,7 +492,7 @@ export const chatWithAI = async (req, res) => {
         // If no title provided, guide the user with examples
         if (!noteDetails.title || noteDetails.title === 'Untitled Note') {
           return res.json({
-            reply: `I'd love to create a note for you! Just include a title.\n\nHere are some ways you can do it:\n• Create note "Site Inspection Report"\n• Add note titled Foundation Review\n• New note "Safety Checklist" tag: urgent\n\nAvailable tags: Bug, Feature, Issue, Idea, Urgent, Important, Reminder, Todo`,
+            reply: `I'd love to create a note for you! Just include a title.\n\nHere are some ways you can do it:\n• Create note "Site Inspection Report"\n• Add note titled Foundation Review\n• New note called Safety Checklist\n• New note "Safety Checklist" tag: urgent\n\nAvailable tags: Bug, Feature, Issue, Idea, Urgent, Important, Reminder, Todo`,
             type: "guide",
           });
         }
@@ -583,7 +543,7 @@ export const chatWithAI = async (req, res) => {
       }
     }
 
-    // ===== ADD TASK =====
+    // ===== ADD TASK (check BEFORE meeting to avoid "create a task for meeting" confusion) =====
     if (intentTokens.includes('task') && (intentTokens.includes('add') || intentTokens.includes('create') || intentTokens.includes('new') || intentTokens.includes('assign'))) {
       console.log('🔍 Add task branch triggered');
       
@@ -670,7 +630,106 @@ export const chatWithAI = async (req, res) => {
       }
     }
 
-    // ===== MEETINGS ====="
+    // ===== SCHEDULE MEETING =====
+    if (intentTokens.includes('schedule') || intentTokens.includes('create') || intentTokens.includes('new')) {
+      if (intentTokens.includes('meeting') || intentTokens.includes('meet')) {
+        console.log('🔍 Schedule meeting branch triggered');
+        
+        // Require authentication for meeting scheduling
+        if (!userId) {
+          return res.status(401).json({
+            reply: "Please log in to schedule meetings. Your session may have expired — try logging in again.",
+            error: true,
+            suggestions: ["Show materials", "Material status"]
+          });
+        }
+        
+        const meetingDetails = parseMeetingDetails(message);
+        console.log('Parsed meeting details:', meetingDetails);
+
+        // Use smart defaults if date or time is missing
+        let dateStr = meetingDetails.dateStr;
+        let timeStr = meetingDetails.timeStr;
+
+        // Default to tomorrow if no date specified
+        if (!dateStr) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          dateStr = formatDateStr(tomorrow);
+        }
+
+        // Require time - ask user to provide full details (no server-side state for follow-ups)
+        if (!timeStr) {
+          return res.json({
+            reply: `I'd love to schedule "${meetingDetails.title}" for you! Please include the time in your message so I can create it. For example:\n\n• Schedule meeting "${meetingDetails.title}" at 2pm${dateStr ? '' : ' tomorrow'}\n• Schedule meeting "${meetingDetails.title}" from 2pm to 4pm\n• Schedule meeting "${meetingDetails.title}" at 3:30 PM on March 20\n\nTip: You can include a time range like '2pm to 4pm' for automatic duration!`,
+            type: "guide",
+            suggestions: [`Schedule meeting "${meetingDetails.title}" at 2pm`, `Schedule meeting "${meetingDetails.title}" at 10am tomorrow`]
+          });
+        }
+
+        try {
+          // Parse date and time explicitly (avoid unreliable new Date(string))
+          const startTime = parseTimeToDate(dateStr, timeStr);
+          
+          if (!startTime || isNaN(startTime.getTime())) {
+            return res.json({
+              reply: "I had trouble understanding the meeting time. Please try again with a clearer format:\n\n• 'schedule meeting \"Project Review\" at 2pm tomorrow'\n• 'schedule meeting \"Team Sync\" at 3:30 PM on 2026-03-20'\n• 'schedule meeting \"Budget Review\" from 10am to 12pm'",
+              type: "guide",
+              suggestions: ["Schedule meeting at 2pm tomorrow", "Schedule meeting at 10am"]
+            });
+          }
+
+          // Validate that the meeting is not in the past
+          const now = new Date();
+          if (startTime < now) {
+            return res.json({
+              reply: `The meeting time (${startTime.toLocaleString()}) is in the past. Please pick a future date or time.\n\nTry: 'schedule meeting "${meetingDetails.title}" at ${timeStr} tomorrow'`,
+              type: "guide",
+              suggestions: [`Schedule meeting "${meetingDetails.title}" at ${timeStr} tomorrow`]
+            });
+          }
+
+          // Calculate end time from range or duration
+          let endTime;
+          if (meetingDetails.endTimeStr) {
+            endTime = parseTimeToDate(dateStr, meetingDetails.endTimeStr);
+            if (!endTime || isNaN(endTime.getTime()) || endTime <= startTime) {
+              endTime = new Date(startTime.getTime() + meetingDetails.durationMinutes * 60000);
+            }
+          } else {
+            endTime = new Date(startTime.getTime() + meetingDetails.durationMinutes * 60000);
+          }
+
+          // Create the meeting
+          const newMeeting = new Meeting({
+            title: meetingDetails.title,
+            description: `Scheduled via BuildAssist: ${message}`,
+            location: meetingDetails.location,
+            startTime,
+            endTime,
+            priority: 'medium',
+            owner: userId,
+          });
+
+          await newMeeting.save();
+
+          return res.json({
+            reply: `✅ Meeting scheduled successfully!\n\n📅 **${meetingDetails.title}**\n🕐 ${startTime.toLocaleString()} - ${endTime.toLocaleString()}\n📍 ${meetingDetails.location || 'No location specified'}`,
+            type: "meeting_scheduled",
+            suggestions: ["Show my meetings", "Create a task", "Create a note"]
+          });
+
+        } catch (error) {
+          console.error('Error scheduling meeting:', error);
+          return res.status(500).json({
+            reply: "Failed to schedule the meeting. Please try again or contact support.",
+            error: true
+          });
+        }
+      }
+    }
+
+    // ===== MEETINGS =====
     if (intentTokens.includes('meeting') || intentTokens.includes('meetings') || intentTokens.includes('schedule') || intentTokens.includes('upcoming')) {
       console.log('🔍 Meeting branch triggered');
       
@@ -780,6 +839,16 @@ export const chatWithAI = async (req, res) => {
         },
         type: "dashboard_data",
         suggestions: ["Show my meetings", "Show my tasks", "Show my notes", "Material status"]
+      });
+    }
+
+    // ===== TIME-ONLY RESPONSES (catch orphaned time inputs from stateless follow-ups) =====
+    const timeOnlyPattern = /^\s*(?:it'?s?\s+)?(?:at\s+)?(\d{1,2})(?:\s*:\s*\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?)(?:\s*(?:to|-)\s*(\d{1,2})(?:\s*:\s*\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?))?\s*[.!]?\s*$/i;
+    if (timeOnlyPattern.test(message)) {
+      return res.json({
+        reply: "It looks like you provided a time. To schedule a meeting, please include all the details in one message. For example:\n\n• 'Schedule meeting \"Project Review\" at 2pm tomorrow'\n• 'Create meeting called Team Sync from 2pm to 4pm'\n• 'Schedule meeting \"Budget Review\" at 10am on March 20'\n\nI can also help with tasks, notes, and materials!",
+        type: "guide",
+        suggestions: ["Schedule a meeting at 2pm", "Create a task", "Create a note", "Show materials"]
       });
     }
 
