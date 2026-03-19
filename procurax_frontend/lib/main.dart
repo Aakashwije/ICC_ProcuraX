@@ -21,6 +21,7 @@ import 'pages/settings/settings_page.dart';
 import 'pages/settings/theme_notifier.dart';
 import 'pages/notifications/notifications_page.dart';
 import 'pages/notifications/providers/alert_provider.dart';
+import 'pages/build_assist/providers/build_assist_chat_provider.dart';
 import 'widgets/auth_gate.dart';
 
 // Global navigator key for notifications
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => AlertProvider()..initialize()),
+        ChangeNotifierProvider(create: (_) => BuildAssistChatProvider()),
       ],
       child: Consumer<ThemeNotifier>(
         builder: (context, themeNotifier, _) {
