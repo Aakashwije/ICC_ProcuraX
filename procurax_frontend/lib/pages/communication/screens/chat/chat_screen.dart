@@ -112,6 +112,11 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           );
         }
+        messages.sort((a, b) {
+          final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return aTime.compareTo(bTime);
+        });
         loadError = null;
       });
       _scrollToBottom(force: true);
@@ -152,12 +157,18 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
     if (createdAt is String) {
-      final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(createdAt);
-      final normalized = hasTz ? createdAt : '${createdAt}Z';
-      final parsed = DateTime.tryParse(normalized);
+      final parsed = _parseDateString(createdAt);
       if (parsed != null) return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
     }
     return '';
+  }
+
+  DateTime? _parseDateString(String value) {
+    final direct = DateTime.tryParse(value);
+    if (direct != null) return direct;
+
+    final withUtcSuffix = DateTime.tryParse('${value}Z');
+    return withUtcSuffix;
   }
 
   DateTime? _parseMessageDate(dynamic createdAt) {
@@ -170,9 +181,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
     if (createdAt is String) {
-      final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(createdAt);
-      final normalized = hasTz ? createdAt : '${createdAt}Z';
-      final parsed = DateTime.tryParse(normalized);
+      final parsed = _parseDateString(createdAt);
       if (parsed != null) return parsed.toLocal();
     }
     return null;
@@ -281,8 +290,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   List<Widget> _buildMessageItems() {
     final items = <Widget>[];
-    DateTime? lastDate;
-
     for (int i = messages.length - 1; i >= 0; i--) {
       final message = messages[i];
       final date = message.createdAt;
@@ -300,15 +307,22 @@ class _ChatScreenState extends State<ChatScreen> {
             time: message.time,
             onOpenFile: _openAttachment,
             isDeleted: message.isDeleted,
-            isUploading: message.isUploading, // ipassed here
+            isUploading: message.isUploading,
           ),
         ),
       );
 
       if (dateOnly != null) {
-        if (lastDate == null || !_isSameDay(lastDate, dateOnly)) {
+        DateTime? previousDateOnly;
+        if (i > 0) {
+          final previousDate = messages[i - 1].createdAt;
+          if (previousDate != null) {
+            previousDateOnly = DateTime(previousDate.year, previousDate.month, previousDate.day);
+          }
+        }
+
+        if (previousDateOnly == null || !_isSameDay(previousDateOnly, dateOnly)) {
           items.add(_buildDateSeparator(_formatDateHeader(dateOnly)));
-          lastDate = dateOnly;
         }
       }
     }
@@ -818,7 +832,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 209, 221, 234),
+              color: const Color(0xFFEDEDED),
               boxShadow: [
                 BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, -3)),
               ],
