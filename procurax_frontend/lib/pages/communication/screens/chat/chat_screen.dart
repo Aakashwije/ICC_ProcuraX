@@ -818,7 +818,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 209, 221, 234),
+              color: const Color(0xFFEDEDED),
               boxShadow: [
                 BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, -3)),
               ],
