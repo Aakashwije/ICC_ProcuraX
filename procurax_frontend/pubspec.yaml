@@ -71,13 +71,14 @@ flutter:
   assets:
     - assets/procurax.png
     - assets/icc_logo.png
+    - assets/procurax_app_logo.png
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/procurax.png
+  image_path: assets/procurax_app_logo.png
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: assets/procurax.png
+  adaptive_icon_foreground: assets/procurax_app_logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

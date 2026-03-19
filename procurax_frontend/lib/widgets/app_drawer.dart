@@ -229,7 +229,7 @@ class AppDrawer extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(6),
                         child: Image.asset(
-                          "assets/procurax.png",
+                          "assets/procurax_app_logo.png",
                           fit: BoxFit.contain,
                         ),
                       ),
