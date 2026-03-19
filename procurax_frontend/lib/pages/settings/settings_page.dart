@@ -1302,12 +1302,6 @@ Issue Description:
                                     const Color(0xFF5A6A85),
                                   ),
                                   const Divider(color: Color(0xFF5A6A85)),
-                                  _aboutRow(
-                                    "Database",
-                                    "MongoDB",
-                                    const Color(0xFF5A6A85),
-                                  ),
-                                  const Divider(color: Color(0xFF5A6A85)),
 
                                   const SizedBox(height: 16),
                                   _aboutButton(
