@@ -353,7 +353,7 @@ describe('parseMeetingDetails - Meeting Details Parser', () => {
 
     it('should extract 24-hour format "14:00"', () => {
       const result = parseMeetingDetails('schedule meeting tomorrow at 14:00');
-      expect(result.timeStr).toBe('14:00 AM');
+      expect(result.timeStr).toBe('2:00 PM');
     });
 
     it('should extract time with spaces "4 pm"', () => {
@@ -378,7 +378,7 @@ describe('parseMeetingDetails - Meeting Details Parser', () => {
 
     it('should extract military time "16:30"', () => {
       const result = parseMeetingDetails('schedule meeting tomorrow at 16:30');
-      expect(result.timeStr).toBe('16:30 AM');
+      expect(result.timeStr).toBe('4:30 PM');
     });
 
     it('should handle single digit hour with minutes "3:15pm"', () => {
