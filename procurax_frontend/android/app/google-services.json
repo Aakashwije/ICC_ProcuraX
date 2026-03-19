@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "116975061065",
+    "project_id": "chat-test-project-66d6b",
+    "storage_bucket": "chat-test-project-66d6b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116975061065:android:070e44808bb825c3771798",
+        "android_client_info": {
+          "package_name": "com.icc.procuraX"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBk4Upg9m6wz7iogsxW4HHpbOzH-Rl_5Gw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
