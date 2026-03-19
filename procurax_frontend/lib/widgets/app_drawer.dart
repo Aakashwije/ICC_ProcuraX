@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/api_service.dart';
+import 'package:procurax_frontend/services/push_notification_service.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
 
 class LogoutConfirmationDialog extends StatefulWidget {
@@ -46,6 +47,8 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
   Future<void> _handleLogout() async {
     setState(() => _isLoggingOut = true);
     try {
+      // Unregister FCM token before clearing auth
+      await PushNotificationService.unregisterToken();
       await ApiService.clearAuthToken();
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(

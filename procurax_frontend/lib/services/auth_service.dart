@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/services/firebase_service.dart';
+import 'package:procurax_frontend/services/push_notification_service.dart';
 
 class AuthService {
   static String get _loginEndpoint => "${ApiService.baseUrl}/auth/login";
@@ -50,6 +51,9 @@ class AuthService {
           userData,
         );
       }
+
+      // Register FCM token for push notifications
+      await PushNotificationService.registerToken();
 
       return;
     }
