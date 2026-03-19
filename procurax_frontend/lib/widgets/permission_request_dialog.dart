@@ -22,13 +22,18 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
     setState(() => _isRequesting = true);
 
     try {
-      await PermissionService.requestAllPermissions();
+      final results = await PermissionService.requestAllPermissions();
 
       if (!mounted) return;
 
+      // Show summary of granted permissions
+      _showPermissionSummary(results);
+
       // Close dialog and continue
-      Navigator.of(context).pop();
-      widget.onPermissionsGranted();
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onPermissionsGranted();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

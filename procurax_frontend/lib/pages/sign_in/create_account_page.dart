@@ -460,7 +460,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   /// Footer
                   _animatedSection(
                     Text(
-                      "Secure Access Portal – Managed by the IT Division\nNeed help? Contact: it-support@ICC.com",
+                      "Secure Access Portal – Managed by the IT Division\nNeed help? Contact: pprocurax@gmail.com",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Poppins',
