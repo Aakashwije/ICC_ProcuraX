@@ -107,7 +107,7 @@ class AuthService {
           headers: const {"Content-Type": "application/json"},
           body: jsonEncode({"email": email.trim()}),
         )
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
 
     final body = _parseBody(response);
 
