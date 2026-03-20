@@ -82,9 +82,40 @@ class PushNotificationService {
     );
 
     // 4. Get the FCM token
-    _fcmToken = await _messaging.getToken();
-    debugPrint('[FCM] Token: $_fcmToken');
+    //    On iOS, we must wait for the APNS token before requesting the FCM token.
+    //    On the iOS simulator, APNS is unavailable so we skip gracefully.
+    try {
+      if (Platform.isIOS) {
+        // Wait up to 10 seconds for the APNS token to become available
+        String? apnsToken;
+        for (int i = 0; i < 10; i++) {
+          apnsToken = await _messaging.getAPNSToken();
+          if (apnsToken != null) break;
+          await Future.delayed(const Duration(seconds: 1));
+        }
+        if (apnsToken == null) {
+          debugPrint(
+            '[FCM] APNS token not available (iOS simulator?) — skipping FCM token',
+          );
+          // Still set up listeners so the rest of the app works
+          _setupListeners();
+          return;
+        }
+      }
+      _fcmToken = await _messaging.getToken();
+      debugPrint('[FCM] Token: $_fcmToken');
+    } catch (e) {
+      debugPrint('[FCM] Could not get FCM token: $e');
+      // Non-fatal — continue app startup without push token
+    }
 
+    _setupListeners();
+
+    debugPrint('[FCM] Push notification service initialized ✅');
+  }
+
+  /// Sets up token refresh, foreground, background, and terminated-state listeners.
+  static Future<void> _setupListeners() async {
     // Listen for token refreshes (e.g. app reinstall, token rotation)
     _messaging.onTokenRefresh.listen((newToken) {
       debugPrint('[FCM] Token refreshed: $newToken');
@@ -95,19 +126,17 @@ class PushNotificationService {
       }
     });
 
-    // 5. Handle foreground messages — show a local notification popup
+    // Handle foreground messages — show a local notification popup
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
 
-    // 6. Handle notification taps when app was in background
+    // Handle notification taps when app was in background
     FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
-    // 7. Check if app was opened from a terminated-state notification
+    // Check if app was opened from a terminated-state notification
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       _onMessageOpenedApp(initialMessage);
     }
-
-    debugPrint('[FCM] Push notification service initialized ✅');
   }
 
   // ── Show a heads-up notification when app is in the foreground ──
