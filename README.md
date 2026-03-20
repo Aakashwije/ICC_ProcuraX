@@ -53,7 +53,7 @@ The system replaces manual Excel tracking and fragmented communication with a ce
 - Frontend: Flutter  
 - Backend: Node.js (Express)  
 - Database: MongoDB, Firebase Firestore  
-- Authentication: Firebase Authentication  
+- Authentication: Firebase Authentication, JWT (JSON Web Tokens)
 - Storage: Cloudinary, Firebase Storage
 
  -----
