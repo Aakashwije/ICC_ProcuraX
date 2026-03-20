@@ -1,12 +1,14 @@
-ProcuraX
+# ProcuraX
 
-Intelligent Procurement & Construction Management System
+### Intelligent Procurement & Construction Management System
 
 ProcuraX is a mobile-based system developed for International Construction Consortium (ICC) to digitize procurement and construction project management.
 
-It replaces manual Excel tracking and fragmented communication with a centralized, real-time digital platform.
+The system replaces manual Excel tracking and fragmented communication with a centralized, real-time digital platform.
 
-What It Does
+---
+
+## 🚀 Features
 - Provides a real-time project dashboard
 - Tracks procurement schedules and material deliveries
 - Manages tasks and site notes
@@ -15,14 +17,17 @@ What It Does
 - Sends automated reminders and alerts
 - Implements secure login with role-based access control
 
-Key Goals
+----
+
+## 🎯 Objectives
 - Reduce manual processes
 - Improve transparency
 - Enhance inter-department coordination
 - Minimize project delays
 - Support data-driven decision making
 
-Core Modules
+-----
+## 🧩 Core Modules
 - Authentication & Admin Approval
 - Dashboard (Live Updates)
 - Procurement Management
@@ -32,17 +37,32 @@ Core Modules
 - Document Storage
 - Communication Hub
 - AI Chatbot (BuildAssist)
+-----
 
-Users
+## 👥 Target Users
 - Project Managers
 - Planning Engineers
 - General Manager
 - Finance Department
 - Directors
 
-Academic Project
+----
+
+ ## 🛠️ Tech Stack
+
+- Frontend: Flutter  
+- Backend: Node.js (Express)  
+- Database: MongoDB, Firebase Firestore  
+- Authentication: Firebase Authentication  
+- Storage: Cloudinary, Firebase Storage
+
+ -----
+
+
+## 📄 Academic Project
 Developed for the Software Development Group Project (5COSC021C)
 Informatics Institute of Technology (IIT)
 University of Westminster
+---
 
 ![CI](https://github.com/USERNAME/REPO/actions/workflows/ci.yml/badge.svg)
