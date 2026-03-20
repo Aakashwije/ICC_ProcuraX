@@ -105,11 +105,68 @@ class _ProcurementSchedulePageState extends State<ProcurementSchedulePage> {
 
             /*
               Error state: show retry UI with the backend error message.
+              Wrapped in a scrollable column with the top bar so the user
+              can still open the drawer and navigate to other modules.
             */
             if (snapshot.hasError) {
-              return _ErrorState(
-                message: snapshot.error.toString(),
-                onRetry: _reload,
+              return SingleChildScrollView(
+                padding: AppResponsive.pagePadding(context),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Builder(
+                          builder: (ctx) => IconButton(
+                            tooltip: 'Menu',
+                            onPressed: () => Scaffold.of(ctx).openDrawer(),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              size: 30,
+                              color: primaryBlue,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Column(
+                          children: const [
+                            Text(
+                              "Procurement",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: primaryBlue,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              "Schedule",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: primaryBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: _reload,
+                          icon: const Icon(
+                            Icons.refresh,
+                            size: 26,
+                            color: primaryBlue,
+                          ),
+                          tooltip: "Refresh",
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 60),
+                    _ErrorState(
+                      message: snapshot.error.toString(),
+                      onRetry: _reload,
+                    ),
+                  ],
+                ),
               );
             }
 
