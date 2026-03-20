@@ -1,5 +1,69 @@
 
 import { db, bucket } from '../config/firebase.js'; 
+import User from '../../models/User.js';
+import admin from 'firebase-admin';
+
+/**
+ * Send an FCM push notification for a chat message.
+ * Looks up the recipient in MongoDB to get their FCM tokens,
+ * then sends a high-priority notification.
+ * Fire-and-forget — errors are logged but don't break the response.
+ */
+async function sendChatPushNotification(recipientMongoId, senderName, messagePreview, chatId) {
+  try {
+    const user = await User.findById(recipientMongoId).select('+fcmTokens').lean();
+    if (!user?.fcmTokens?.length) return;
+
+    const messaging = admin.messaging();
+    const messages = user.fcmTokens.map((token) => ({
+      token,
+      notification: {
+        title: `Message from ${senderName}`,
+        body: messagePreview.length > 100 ? messagePreview.slice(0, 100) + '…' : messagePreview,
+      },
+      data: {
+        type: 'chat_message',
+        chatId: String(chatId),
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'procurax_notifications',
+          sound: 'default',
+        },
+      },
+      apns: {
+        payload: { aps: { sound: 'default', badge: 1 } },
+      },
+    }));
+
+    const response = await messaging.sendEach(messages);
+
+    // Clean up stale tokens
+    const tokensToRemove = [];
+    response.responses.forEach((resp, idx) => {
+      if (resp.error) {
+        const code = resp.error.code;
+        if (
+          code === 'messaging/invalid-registration-token' ||
+          code === 'messaging/registration-token-not-registered'
+        ) {
+          tokensToRemove.push(user.fcmTokens[idx]);
+        }
+      }
+    });
+    if (tokensToRemove.length > 0) {
+      await User.findByIdAndUpdate(recipientMongoId, {
+        $pull: { fcmTokens: { $in: tokensToRemove } },
+      });
+    }
+
+    console.log(`[FCM-Chat] Sent to user ${recipientMongoId}: ${response.successCount}/${messages.length}`);
+  } catch (err) {
+    console.error('[FCM-Chat] Push error:', err.message);
+  }
+}
 
 
 async function sendMessage(req, res) {
@@ -93,6 +157,25 @@ async function sendMessage(req, res) {
 
     //Save all alerts at once to the firebase
     await alertsBatch.commit();
+
+    // ── Send FCM push notifications to all recipients ──
+    // Look up sender name for a friendly notification title
+    let senderName = trimmedSenderId;
+    try {
+      const senderUser = await User.findById(trimmedSenderId).select('name firstName').lean();
+      if (senderUser) {
+        senderName = senderUser.name || senderUser.firstName || trimmedSenderId;
+      }
+    } catch (_) { /* use ID as fallback */ }
+
+    const messagePreview = content || fileName || 'File Attachment';
+
+    // Fire-and-forget: send push to each non-sender member
+    members.forEach((memberId) => {
+      if (memberId !== trimmedSenderId) {
+        sendChatPushNotification(memberId, senderName, messagePreview, trimmedChatId);
+      }
+    });
 
     res.status(201).json({
       id: docRef.id,

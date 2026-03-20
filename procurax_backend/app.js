@@ -21,6 +21,7 @@ import {
 } from "./core/index.js";
 
 import NotificationService from "./notifications/notification.service.js";
+import { startScheduler } from "./notifications/scheduler.js";
 
 // ===== API v1 ROUTES (versioned, validated, service-layer) =====
 import v1Routes from "./api/v1/index.js";
@@ -257,6 +258,9 @@ const server = app.listen(port, () => {
 		env: process.env.NODE_ENV || "development",
 		port,
 	});
+
+	// Start the notification reminder scheduler (tasks & meetings due tomorrow)
+	startScheduler();
 });
 
 server.on("error", (err) => {
