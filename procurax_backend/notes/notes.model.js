@@ -24,6 +24,12 @@ const noteSchema = new mongoose.Schema(
     */
     hasAttachment: { type: Boolean, default: false },
     /*
+      Cloudinary URL and public ID for the attached file.
+    */
+    attachmentUrl: { type: String, default: "" },
+    attachmentPublicId: { type: String, default: "" },
+    attachmentName: { type: String, default: "" },
+    /*
       Owner is the user who created the note.
     */
     owner: {

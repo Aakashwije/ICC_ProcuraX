@@ -127,6 +127,9 @@ class NoteService {
       createdAt: note.createdAt,
       lastEdited: note.lastEdited,
       hasAttachment: note.hasAttachment,
+      attachmentUrl: note.attachmentUrl || "",
+      attachmentPublicId: note.attachmentPublicId || "",
+      attachmentName: note.attachmentName || "",
     };
   }
 }

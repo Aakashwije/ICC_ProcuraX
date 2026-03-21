@@ -49,6 +49,19 @@ const MOCK_NOTE = {
   hasAttachment: false,
 };
 
+const MOCK_NOTE_WITH_ATTACHMENT = {
+  _id: { toString: () => "note_002" },
+  title: "Site Visit Notes",
+  content: "Photos attached from site inspection",
+  tag: "site visit",
+  createdAt: new Date("2024-02-10"),
+  lastEdited: new Date("2024-02-10"),
+  hasAttachment: true,
+  attachmentUrl: "https://res.cloudinary.com/demo/image/upload/site_photo.jpg",
+  attachmentPublicId: "procurax/notes/site_photo",
+  attachmentName: "site_photo.jpg",
+};
+
 /* ------------------------------------------------------------------ */
 /*  Test Suites                                                        */
 /* ------------------------------------------------------------------ */
@@ -201,6 +214,26 @@ describe("NoteService", () => {
       expect(result).toHaveProperty("content");
       expect(result).toHaveProperty("tag");
       expect(result).toHaveProperty("lastEdited");
+    });
+
+    it("should include attachment fields when note has an attachment", () => {
+      const result = NoteService.normalizeNote(MOCK_NOTE_WITH_ATTACHMENT);
+
+      expect(result.hasAttachment).toBe(true);
+      expect(result.attachmentUrl).toBe(
+        "https://res.cloudinary.com/demo/image/upload/site_photo.jpg"
+      );
+      expect(result.attachmentName).toBe("site_photo.jpg");
+      expect(result.attachmentPublicId).toBe("procurax/notes/site_photo");
+    });
+
+    it("should default attachment fields to empty string when absent", () => {
+      const result = NoteService.normalizeNote(MOCK_NOTE);
+
+      expect(result.hasAttachment).toBe(false);
+      expect(result.attachmentUrl).toBe("");
+      expect(result.attachmentName).toBe("");
+      expect(result.attachmentPublicId).toBe("");
     });
   });
 });
