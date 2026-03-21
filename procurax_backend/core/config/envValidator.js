@@ -69,6 +69,24 @@ const optionalVariables = [
     name: "REDIS_URL",
     description: "Redis connection URL for caching",
   },
+  {
+    name: "REDIS_URI",
+    description: "Redis connection URI (alias for REDIS_URL)",
+  },
+  {
+    name: "DB_POOL_SIZE",
+    default: "10",
+    description: "MongoDB connection pool size",
+  },
+  {
+    name: "DB_SLOW_QUERY_MS",
+    default: "200",
+    description: "Slow query threshold in milliseconds",
+  },
+  {
+    name: "ALERT_WEBHOOK_URL",
+    description: "Webhook URL for performance alerts (Slack/Teams)",
+  },
 ];
 
 /**

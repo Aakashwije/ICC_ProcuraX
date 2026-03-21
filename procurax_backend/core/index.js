@@ -25,6 +25,7 @@ export {
 
 export { requestIdMiddleware } from "./middleware/requestId.middleware.js";
 export { httpLogger } from "./middleware/httpLogger.middleware.js";
+export { tracingMiddleware } from "./middleware/tracing.middleware.js";
 
 export {
   apiLimiter,
@@ -61,6 +62,9 @@ export { default as ProjectService } from "./services/project.service.js";
 export { default as NotificationCoreService } from "./services/notification.service.js";
 export { default as cache } from "./services/cache.service.js";
 export { default as jobQueue } from "./services/jobQueue.js";
+export { default as redisService } from "./services/redis.service.js";
+export { default as metrics } from "./services/metrics.service.js";
+export { default as performanceMonitor } from "./services/performance.service.js";
 
 // Logging
 export { default as logger } from "./logging/logger.js";
