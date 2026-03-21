@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import 'package:procurax_frontend/services/notes_service.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 import 'package:procurax_frontend/components/loading_state.dart';
@@ -47,25 +48,24 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
+    CustomAlertDialog.show(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+      title: 'Error',
+      message: message,
+      type: ToastType.error,
+      showCancel: false,
+      confirmText: 'OK',
+    );
   }
 
   void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+    CustomAlertDialog.show(
+      context,
+      title: 'Success',
+      message: message,
+      type: ToastType.success,
+      showCancel: false,
+      confirmText: 'OK',
     );
   }
 

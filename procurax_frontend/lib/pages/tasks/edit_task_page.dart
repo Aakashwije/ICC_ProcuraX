@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 class EditTaskPage extends StatefulWidget {
   final Task task;
@@ -55,9 +56,14 @@ class _EditTaskPageState extends State<EditTaskPage> {
       Navigator.pop(context, saved);
     } catch (err) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      CustomAlertDialog.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to update task: $err')));
+        title: 'Error',
+        message: 'Failed to update task: $err',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
+      );
     } finally {
       if (mounted) {
         setState(() => _saving = false);

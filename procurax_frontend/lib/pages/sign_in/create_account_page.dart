@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/auth_service.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import '../../routes/app_routes.dart';
 
 class AccountApprovalDialog extends StatefulWidget {
@@ -554,8 +555,13 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   Future<void> _handleRegister() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please accept the policy to continue")),
+      CustomAlertDialog.show(
+        context,
+        title: 'Policy Required',
+        message: 'Please accept the policy to continue',
+        type: ToastType.warning,
+        showCancel: false,
+        confirmText: 'OK',
       );
       return;
     }
@@ -575,9 +581,14 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       });
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      CustomAlertDialog.show(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+        title: 'Registration Failed',
+        message: error.toString(),
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }

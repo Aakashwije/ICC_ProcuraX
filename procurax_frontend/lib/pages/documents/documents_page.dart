@@ -157,7 +157,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withValues(alpha: 0.12) : Colors.white,
+                    color: isSelected
+                        ? color.withValues(alpha: 0.12)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isSelected ? color : color.withValues(alpha: 0.3),
@@ -849,21 +851,25 @@ class _CategoryCardState extends State<CategoryCard> {
         final result = await OpenFile.open(file.path);
 
         if (result.type != ResultType.done && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open file: ${result.message}'),
-              backgroundColor: Colors.orange,
-            ),
+          CustomAlertDialog.show(
+            context,
+            title: 'Warning',
+            message: 'Could not open file: ${result.message}',
+            type: ToastType.warning,
+            showCancel: false,
+            confirmText: 'OK',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening file'),
-            backgroundColor: Colors.red,
-          ),
+        CustomAlertDialog.show(
+          context,
+          title: 'Error',
+          message: 'Error opening file',
+          type: ToastType.error,
+          showCancel: false,
+          confirmText: 'OK',
         );
       }
     }
@@ -1190,21 +1196,25 @@ class _CategoryFilesPageState extends State<CategoryFilesPage> {
         final result = await OpenFile.open(file.path);
 
         if (result.type != ResultType.done && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open file: ${result.message}'),
-              backgroundColor: Colors.orange,
-            ),
+          CustomAlertDialog.show(
+            context,
+            title: 'Warning',
+            message: 'Could not open file: ${result.message}',
+            type: ToastType.warning,
+            showCancel: false,
+            confirmText: 'OK',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening file'),
-            backgroundColor: Colors.red,
-          ),
+        CustomAlertDialog.show(
+          context,
+          title: 'Error',
+          message: 'Error opening file',
+          type: ToastType.error,
+          showCancel: false,
+          confirmText: 'OK',
         );
       }
     }

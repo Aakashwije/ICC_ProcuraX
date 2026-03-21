@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
 import 'package:procurax_frontend/widgets/app_drawer.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 import 'package:procurax_frontend/components/loading_state.dart';
 import 'package:procurax_frontend/components/error_state.dart';
 import 'package:procurax_frontend/components/empty_state.dart';
@@ -172,21 +173,13 @@ class _TasksPageState extends State<TasksPage> {
                 await _tasksService.deleteTask(task.id);
                 await _loadTasks();
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: const [
-                        Icon(Icons.check_circle, color: Colors.white, size: 18),
-                        SizedBox(width: 8),
-                        Expanded(child: Text("Task deleted")),
-                      ],
-                    ),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                CustomAlertDialog.show(
+                  context,
+                  title: 'Deleted',
+                  message: 'Task deleted successfully',
+                  type: ToastType.success,
+                  showCancel: false,
+                  confirmText: 'OK',
                 );
               } catch (err) {
                 if (!mounted) return;
