@@ -70,40 +70,89 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Future<void> _addNote() async {
-    final note = await Navigator.push<Note>(
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(builder: (_) => const AddNotePage()),
     );
 
-    if (!mounted) return;
+    if (!mounted || result == null) return;
 
-    if (note != null) {
-      try {
-        final created = await NotesService.createNote(note);
-        if (!mounted) return;
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => NoteAddedPage(note: created)),
-        );
-        if (!mounted) return;
-        await _refreshNotes();
-      } catch (err) {
-        if (!mounted) return;
-        _showError(err.toString());
+    final note = result['note'] as Note;
+    final filePath = result['filePath'] as String?;
+    final fileName = result['fileName'] as String?;
+
+    try {
+      final created = await NotesService.createNote(note);
+      if (!mounted) return;
+
+      // Upload attachment if a file was picked
+      if (filePath != null && fileName != null) {
+        try {
+          await NotesService.uploadAttachment(created.id, filePath, fileName);
+        } catch (err) {
+          if (mounted)
+            _showError("Note saved but attachment upload failed: $err");
+        }
       }
+
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => NoteAddedPage(note: created)),
+      );
+      if (!mounted) return;
+      await _refreshNotes();
+    } catch (err) {
+      if (!mounted) return;
+      _showError(err.toString());
     }
   }
 
   Future<void> _editNote(Note note) async {
-    final updated = await Navigator.push<Note>(
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(builder: (_) => EditNotePage(note: note)),
     );
 
-    if (!mounted || updated == null) return;
+    if (!mounted || result == null) return;
+
+    final updated = result['note'] as Note;
+    final filePath = result['filePath'] as String?;
+    final fileName = result['fileName'] as String?;
+    final deleteExisting = result['deleteExisting'] as bool? ?? false;
 
     try {
       await NotesService.updateNote(updated);
+      if (!mounted) return;
+
+      // Delete existing attachment if marked
+      if (deleteExisting && note.hasAttachment) {
+        try {
+          await NotesService.deleteAttachment(note.id);
+        } catch (err) {
+          if (mounted)
+            _showError(
+              "Note updated but failed to remove old attachment: $err",
+            );
+        }
+      }
+
+      // Upload new attachment if picked
+      if (filePath != null && fileName != null) {
+        try {
+          // If replacing, delete old one first
+          if (!deleteExisting &&
+              note.hasAttachment &&
+              note.attachmentUrl.isNotEmpty) {
+            await NotesService.deleteAttachment(note.id);
+          }
+          await NotesService.uploadAttachment(note.id, filePath, fileName);
+        } catch (err) {
+          if (mounted)
+            _showError("Note updated but attachment upload failed: $err");
+        }
+      }
+
       if (!mounted) return;
       await _refreshNotes();
     } catch (err) {

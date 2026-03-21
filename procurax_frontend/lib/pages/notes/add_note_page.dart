@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 
 class AddNotePage extends StatefulWidget {
@@ -21,6 +22,27 @@ class _AddNotePageState extends State<AddNotePage> {
   final _content = TextEditingController();
   String tag = "Issue";
   bool attachment = false;
+  String? _pickedFilePath;
+  String? _pickedFileName;
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _pickedFilePath = result.files.single.path;
+        _pickedFileName = result.files.single.name;
+        attachment = true;
+      });
+    }
+  }
+
+  void _removeFile() {
+    setState(() {
+      _pickedFilePath = null;
+      _pickedFileName = null;
+      attachment = false;
+    });
+  }
 
   void _save() {
     if (_title.text.isEmpty || _content.text.isEmpty) return;
@@ -35,7 +57,12 @@ class _AddNotePageState extends State<AddNotePage> {
       hasAttachment: attachment,
     );
 
-    Navigator.pop(context, note);
+    // Return both the note and the picked file info
+    Navigator.pop(context, {
+      'note': note,
+      'filePath': _pickedFilePath,
+      'fileName': _pickedFileName,
+    });
   }
 
   @override
@@ -282,23 +309,85 @@ class _AddNotePageState extends State<AddNotePage> {
   }
 
   Widget _attachmentToggle() {
-    return Wrap(
-      spacing: 8,
-      children: [
-        FilterChip(
-          label: const Text("Include attachment"),
-          selected: attachment,
-          selectedColor: lightBlue,
-          checkmarkColor: primaryBlue,
-          labelStyle: const TextStyle(fontFamily: 'Poppins'),
-          avatar: Icon(
-            attachment ? Icons.attach_file : Icons.attach_file_outlined,
-            size: 18,
-            color: primaryBlue,
-          ),
-          onSelected: (_) => setState(() => attachment = !attachment),
+    if (_pickedFileName != null) {
+      // Show selected file with remove option
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: lightBlue,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: primaryBlue.withValues(alpha: 0.2)),
         ),
-      ],
+        child: Row(
+          children: [
+            const Icon(
+              Icons.insert_drive_file_outlined,
+              color: primaryBlue,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _pickedFileName!,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              onPressed: _removeFile,
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Colors.red,
+                size: 20,
+              ),
+              tooltip: "Remove attachment",
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show pick file button
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: _pickFile,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: primaryBlue.withValues(alpha: 0.2),
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.upload_file_rounded,
+              color: primaryBlue.withValues(alpha: 0.7),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Tap to attach a file",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: primaryBlue.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

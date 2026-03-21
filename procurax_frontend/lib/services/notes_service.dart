@@ -113,4 +113,56 @@ class NotesService {
       );
     }
   }
+
+  /// Upload a file attachment to a note via multipart POST.
+  static Future<Map<String, dynamic>> uploadAttachment(
+    String noteId,
+    String filePath,
+    String fileName,
+  ) async {
+    try {
+      final uri = Uri.parse("$_endpoint/$noteId/attachment");
+      final request = http.MultipartRequest("POST", uri);
+      request.headers["Authorization"] =
+          ApiService.authHeaders["Authorization"]!;
+      request.files.add(
+        await http.MultipartFile.fromPath("file", filePath, filename: fileName),
+      );
+
+      final streamed = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          "Failed to upload attachment (status ${response.statusCode})",
+        );
+      }
+
+      return json.decode(response.body) as Map<String, dynamic>;
+    } on TimeoutException {
+      throw Exception("Upload timed out. Check your connection.");
+    }
+  }
+
+  /// Delete an attachment from a note.
+  static Future<void> deleteAttachment(String noteId) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse("$_endpoint/$noteId/attachment"),
+            headers: ApiService.authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          "Failed to delete attachment (status ${response.statusCode})",
+        );
+      }
+    } on TimeoutException {
+      throw Exception("Request timed out.");
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
 
@@ -119,22 +120,76 @@ class NoteDetailPage extends StatelessWidget {
 
             if (note.hasAttachment) ...[
               AppSpacing.verticalSm,
-              Row(
-                children: [
-                  Icon(
-                    Icons.attach_file,
-                    size: 14,
-                    color: AppColors.neutral500,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Has attachment',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.primary,
+              if (note.attachmentUrl.isNotEmpty)
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () async {
+                    final uri = Uri.parse(note.attachmentUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.insert_drive_file_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            note.attachmentName.isNotEmpty
+                                ? note.attachmentName
+                                : 'Attachment',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.open_in_new_rounded,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                )
+              else
+                Row(
+                  children: [
+                    Icon(
+                      Icons.attach_file,
+                      size: 14,
+                      color: AppColors.neutral500,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Has attachment',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
             ],
 
             AppSpacing.verticalLg,

@@ -6,6 +6,8 @@ class Note {
   final DateTime createdAt;
   final DateTime lastEdited;
   final bool hasAttachment;
+  final String attachmentUrl;
+  final String attachmentName;
 
   const Note({
     required this.id,
@@ -15,6 +17,8 @@ class Note {
     required this.createdAt,
     required this.lastEdited,
     required this.hasAttachment,
+    this.attachmentUrl = "",
+    this.attachmentName = "",
   });
 
   Note copyWith({
@@ -25,6 +29,8 @@ class Note {
     DateTime? createdAt,
     DateTime? lastEdited,
     bool? hasAttachment,
+    String? attachmentUrl,
+    String? attachmentName,
   }) {
     return Note(
       id: id ?? this.id,
@@ -34,6 +40,8 @@ class Note {
       createdAt: createdAt ?? this.createdAt,
       lastEdited: lastEdited ?? this.lastEdited,
       hasAttachment: hasAttachment ?? this.hasAttachment,
+      attachmentUrl: attachmentUrl ?? this.attachmentUrl,
+      attachmentName: attachmentName ?? this.attachmentName,
     );
   }
 
@@ -50,6 +58,8 @@ class Note {
           DateTime.tryParse(json["lastEdited"]?.toString() ?? "") ??
           DateTime.now(),
       hasAttachment: json["hasAttachment"] == true,
+      attachmentUrl: json["attachmentUrl"]?.toString() ?? "",
+      attachmentName: json["attachmentName"]?.toString() ?? "",
     );
   }
 
