@@ -4,12 +4,23 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
 
-/// A full-screen detail view for a single Note.
+/// Read-only detail view for a single [Note].
+///
+/// Displays the tag chip, title, metadata (created / edited dates),
+/// and the note body. If the note has an attachment, a tappable card
+/// shows the filename and opens the Cloudinary URL in an external browser
+/// via [url_launcher].
+///
+/// Tapping the edit icon in the AppBar pops with the string `'edit'`
+/// so [NotesPage] can immediately push [EditNotePage].
 class NoteDetailPage extends StatelessWidget {
+  /// The note to display — passed in directly from the list.
   final Note note;
 
   const NoteDetailPage({super.key, required this.note});
 
+  /// Returns the accent colour for the tag badge based on the tag text.
+  /// Falls back to [AppColors.primary] for unknown tag values.
   Color _tagColor() {
     switch (note.tag.toLowerCase()) {
       case 'issue':
@@ -25,6 +36,7 @@ class NoteDetailPage extends StatelessWidget {
     }
   }
 
+  /// Returns the icon to display inside the tag badge.
   IconData _tagIcon() {
     switch (note.tag.toLowerCase()) {
       case 'issue':
@@ -118,12 +130,21 @@ class NoteDetailPage extends StatelessWidget {
               ],
             ),
 
+            // ── Attachment ──────────────────────────────────────────
+            // Only shown when the note has an attachment.
+            // If a URL exists (uploaded to Cloudinary) we render a
+            // tappable card that opens the file in the device's default
+            // external browser / document viewer.
+            // If hasAttachment is true but the URL is empty (legacy notes
+            // migrated before the attachment URL field was added) we fall
+            // back to a plain "Has attachment" row so nothing crashes.
             if (note.hasAttachment) ...[
               AppSpacing.verticalSm,
               if (note.attachmentUrl.isNotEmpty)
                 InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () async {
+                    // Parse the Cloudinary URL and open it externally.
                     final uri = Uri.parse(note.attachmentUrl);
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(

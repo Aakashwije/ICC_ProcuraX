@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 
+/// Screen that lets the user compose and save a new note.
+///
+/// When the user taps "Save Note" the page pops with a [Map] containing:
+/// - `'note'`     → the constructed [Note] object
+/// - `'filePath'` → local file path of the picked attachment (or null)
+/// - `'fileName'` → original filename of the attachment (or null)
+///
+/// The caller ([NotesPage]) is responsible for persisting the note via
+/// [NotesService.createNote] and then uploading the attachment if present.
 class AddNotePage extends StatefulWidget {
   const AddNotePage({super.key});
 
@@ -10,21 +19,38 @@ class AddNotePage extends StatefulWidget {
 }
 
 class _AddNotePageState extends State<AddNotePage> {
+  // ── Design tokens ───────────────────────────────────────────────────
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
+
+  /// Maps each tag name to its display colour.
   static const Map<String, Color> _tagColors = {
-    "Issue": Color(0xFFE11D48),
-    "Meeting": Color(0xFF2563EB),
-    "Reminder": Color(0xFF16A34A),
+    "Issue": Color(0xFFE11D48),    // red
+    "Meeting": Color(0xFF2563EB),  // blue
+    "Reminder": Color(0xFF16A34A), // green
   };
 
+  // ── Form controllers ────────────────────────────────────────────────
   final _title = TextEditingController();
   final _content = TextEditingController();
+
+  // ── State ────────────────────────────────────────────────────────────
+  /// Currently selected tag; defaults to "Issue".
   String tag = "Issue";
+
+  /// True when the user has picked a file to attach.
   bool attachment = false;
+
+  /// Full local path to the picked file (null if none picked).
   String? _pickedFilePath;
+
+  /// Original filename of the picked file (null if none picked).
   String? _pickedFileName;
 
+  /// Opens the system file picker and stores the selected file's
+  /// local path and name in state.
+  /// The [attachment] flag is also set to true so [_save] knows to
+  /// include it in the return value.
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles();
     if (result != null && result.files.single.path != null) {
@@ -36,6 +62,7 @@ class _AddNotePageState extends State<AddNotePage> {
     }
   }
 
+  /// Clears the picked file from state and resets the attachment flag.
   void _removeFile() {
     setState(() {
       _pickedFilePath = null;
@@ -44,6 +71,13 @@ class _AddNotePageState extends State<AddNotePage> {
     });
   }
 
+  /// Validates inputs, constructs a [Note] object, and pops the route.
+  ///
+  /// A temporary `id` is assigned from the current timestamp — the real
+  /// MongoDB ID is assigned by the backend and returned after [NotesService.createNote].
+  ///
+  /// Returns a [Map] so the caller can also receive the optional file
+  /// path/name without needing a separate return channel.
   void _save() {
     if (_title.text.isEmpty || _content.text.isEmpty) return;
 
@@ -198,6 +232,8 @@ class _AddNotePageState extends State<AddNotePage> {
     );
   }
 
+  /// Styled container with an icon, "Select tag" label, and a
+  /// [DropdownButton] whose items each show a colour dot next to the tag name.
   Widget _tagSelector() {
     return Container(
       alignment: Alignment.center,
@@ -277,6 +313,8 @@ class _AddNotePageState extends State<AddNotePage> {
     );
   }
 
+  /// Shows a small coloured pill below the tag selector that reflects
+  /// the currently chosen tag — gives instant visual feedback.
   Widget _selectedTagChip() {
     final color = _tagColors[tag] ?? primaryBlue;
     return Align(
@@ -308,6 +346,11 @@ class _AddNotePageState extends State<AddNotePage> {
     );
   }
 
+  /// Renders the attachment area with two possible states:
+  ///
+  /// 1. **File picked** — shows the filename with a red ✕ button to remove it.
+  /// 2. **No file** — shows a dashed-style "Tap to attach a file" prompt
+  ///    that opens the system file picker on tap.
   Widget _attachmentToggle() {
     if (_pickedFileName != null) {
       // Show selected file with remove option
