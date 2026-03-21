@@ -261,6 +261,65 @@ describe("notFoundHandler", () => {
 });
 
 /* ================================================================== */
+/*  AppError Factory Methods                                           */
+/* ================================================================== */
+describe("AppError", () => {
+  it("should create a forbidden error (403)", () => {
+    const err = AppError.forbidden("Access denied");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.statusCode).toBe(403);
+    expect(err.errorCode).toBe("FORBIDDEN");
+    expect(err.message).toBe("Access denied");
+  });
+
+  it("should create a notFound error (404)", () => {
+    const err = AppError.notFound("User");
+    expect(err.statusCode).toBe(404);
+    expect(err.errorCode).toBe("NOT_FOUND");
+    expect(err.message).toBe("User not found");
+  });
+
+  it("should create a tooManyRequests error (429)", () => {
+    const err = AppError.tooManyRequests();
+    expect(err.statusCode).toBe(429);
+    expect(err.errorCode).toBe("RATE_LIMIT_EXCEEDED");
+    expect(err.isOperational).toBe(true);
+  });
+
+  it("should create an internal error (500)", () => {
+    const err = AppError.internal("DB crashed");
+    expect(err.statusCode).toBe(500);
+    expect(err.errorCode).toBe("INTERNAL_ERROR");
+    expect(err.message).toBe("DB crashed");
+  });
+
+  it("should create a serviceUnavailable error (503)", () => {
+    const err = AppError.serviceUnavailable();
+    expect(err.statusCode).toBe(503);
+    expect(err.errorCode).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("should serialise to JSON via toJSON()", () => {
+    const err = AppError.badRequest("Missing field", { field: "email" });
+    const json = err.toJSON();
+    expect(json.success).toBe(false);
+    expect(json.error.code).toBe("BAD_REQUEST");
+    expect(json.error.message).toBe("Missing field");
+    expect(json.error.details).toEqual({ field: "email" });
+    expect(json.error.timestamp).toBeDefined();
+  });
+
+  it("should include stack trace in toJSON() in development mode", () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    const err = AppError.internal();
+    const json = err.toJSON();
+    expect(json.error.stack).toBeDefined();
+    process.env.NODE_ENV = originalEnv;
+  });
+});
+
+/* ================================================================== */
 /*  Cache Service                                                      */
 /* ================================================================== */
 describe("CacheService", () => {
