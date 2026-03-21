@@ -267,54 +267,61 @@ describe("CacheService", () => {
   let CacheService;
 
   beforeAll(async () => {
+    // Redis must be initialised before CacheService tries to use the client.
+    // Without REDIS_URL this gives us the in-memory fallback.
+    const redisMod = await import("../../core/services/redis.service.js");
+    await redisMod.default.connect();
+
     const mod = await import("../../core/services/cache.service.js");
     CacheService = mod.default;
   });
 
-  beforeEach(() => {
-    CacheService.clear();
+  beforeEach(async () => {
+    await CacheService.clear();
+    // Reset stats between tests
+    CacheService._stats = { hits: 0, misses: 0, sets: 0, evictions: 0 };
   });
 
-  it("should set and get a value", () => {
-    CacheService.set("key1", { data: "hello" });
-    expect(CacheService.get("key1")).toEqual({ data: "hello" });
+  it("should set and get a value", async () => {
+    await CacheService.set("key1", { data: "hello" });
+    expect(await CacheService.get("key1")).toEqual({ data: "hello" });
   });
 
-  it("should return null for missing keys", () => {
-    expect(CacheService.get("nonexistent")).toBeNull();
+  it("should return null for missing keys", async () => {
+    expect(await CacheService.get("nonexistent")).toBeNull();
   });
 
-  it("should delete a key", () => {
-    CacheService.set("key2", "value");
-    CacheService.delete("key2");
-    expect(CacheService.get("key2")).toBeNull();
+  it("should delete a key", async () => {
+    await CacheService.set("key2", "value");
+    await CacheService.delete("key2");
+    expect(await CacheService.get("key2")).toBeNull();
   });
 
-  it("should invalidate keys by prefix", () => {
-    CacheService.set("user:1:profile", "data1");
-    CacheService.set("user:1:tasks", "data2");
-    CacheService.set("user:2:profile", "data3");
+  it("should invalidate keys by prefix", async () => {
+    await CacheService.set("user:1:profile", "data1");
+    await CacheService.set("user:1:tasks", "data2");
+    await CacheService.set("user:2:profile", "data3");
 
-    CacheService.invalidatePrefix("user:1");
+    await CacheService.invalidatePrefix("user:1");
 
-    expect(CacheService.get("user:1:profile")).toBeNull();
-    expect(CacheService.get("user:1:tasks")).toBeNull();
-    expect(CacheService.get("user:2:profile")).toEqual("data3");
+    expect(await CacheService.get("user:1:profile")).toBeNull();
+    expect(await CacheService.get("user:1:tasks")).toBeNull();
+    expect(await CacheService.get("user:2:profile")).toEqual("data3");
   });
 
   it("should expire entries after TTL", async () => {
     // set() takes TTL in seconds — use a fractional second for test speed
-    CacheService.set("short", "value", 0.1); // 0.1 second TTL
-    expect(CacheService.get("short")).toBe("value");
+    await CacheService.set("short", "value", 0.1); // 0.1 second TTL
+    expect(await CacheService.get("short")).toBe("value");
 
     await new Promise((r) => setTimeout(r, 200));
-    expect(CacheService.get("short")).toBeNull();
+    expect(await CacheService.get("short")).toBeNull();
   });
 
-  it("should return cache stats", () => {
-    CacheService.set("a", 1);
-    CacheService.get("a"); // hit
-    CacheService.get("b"); // miss
+  it("should return cache stats", async () => {
+    await CacheService.set("a", 1);
+    await CacheService.get("a"); // hit
+    await CacheService.get("b"); // miss
 
     const stats = CacheService.getStats();
     expect(stats.hits).toBeGreaterThanOrEqual(1);
@@ -330,8 +337,17 @@ describe("JobQueue", () => {
   let jobQueue;
 
   beforeAll(async () => {
+    // Ensure Redis fallback is ready (may already be connected from CacheService tests)
+    const redisMod = await import("../../core/services/redis.service.js");
+    if (!redisMod.default._client) {
+      await redisMod.default.connect();
+    }
+
     const mod = await import("../../core/services/jobQueue.js");
     jobQueue = mod.default;
+
+    // Initialise the queue — selects Bull or in-process backend
+    await jobQueue.init();
   });
 
   it("should register a handler and process a job", async () => {
@@ -340,18 +356,18 @@ describe("JobQueue", () => {
 
     await jobQueue.enqueue("test_job", { key: "value" });
 
-    // Give queue time to process
-    await new Promise((r) => setTimeout(r, 200));
+    // Give queue time to process - in-process queue should process immediately
+    await new Promise((r) => setTimeout(r, 500));
 
     expect(handler).toHaveBeenCalledWith(
       expect.objectContaining({ key: "value" })
     );
   });
 
-  it("should return queue stats", () => {
-    const stats = jobQueue.getStats();
+  it("should return queue stats", async () => {
+    const stats = await jobQueue.getStats();
     expect(stats).toHaveProperty("processed");
-    expect(stats).toHaveProperty("failed");
+    expect(stats).toHaveProperty("failed");  
     expect(stats).toHaveProperty("enqueued");
   });
 });

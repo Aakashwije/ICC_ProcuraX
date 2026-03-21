@@ -18,7 +18,21 @@ import {
   authLimiter,
   logger,
   jobQueue,
+  redisService,
+  metrics,
+  performanceMonitor,
 } from "./core/index.js";
+
+import tracingMiddleware from "./core/middleware/tracing.middleware.js";
+import healthRoutes from "./core/routes/health.routes.js";
+import {
+  getConnectionOptions,
+  queryProfilerPlugin,
+  queryHelperPlugin,
+  attachConnectionHandlers,
+  closeConnection,
+  ensureIndexes,
+} from "./core/config/database.js";
 
 import NotificationService from "./notifications/notification.service.js";
 import { startScheduler } from "./notifications/scheduler.js";
@@ -82,15 +96,31 @@ const app = express();
 // 1. Request ID — assigns correlation ID to every request
 app.use(requestIdMiddleware);
 
-// 2. HTTP Logger — structured request/response logging
+// 2. Distributed tracing — W3C Trace Context headers
+app.use(tracingMiddleware);
+
+// 3. Metrics collection — Prometheus-compatible request tracking
+app.use(metrics.httpMiddleware());
+
+// 4. Performance monitoring — response time + error rate tracking
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+  res.on("finish", () => {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+    performanceMonitor.recordResponseTime(durationMs, res.statusCode);
+  });
+  next();
+});
+
+// 5. HTTP Logger — structured request/response logging
 app.use(httpLogger);
 
-// 3. Security & Parsing
+// 6. Security & Parsing
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// 4. Global Rate Limiter — protects against DDoS
+// 7. Global Rate Limiter — protects against DDoS
 app.use("/api", apiLimiter);
 app.use("/auth", authLimiter);
 
@@ -118,16 +148,35 @@ jobQueue.registerHandler("send_notification", async (payload) => {
 
 logger.info("Async job queue initialized with notification handler");
 
-// MongoDB Connection
+// ===== INFRASTRUCTURE BOOTSTRAP =====
+// 1. Connect Redis (cache, rate-limiting, Bull queues)
+await redisService.connect();
+
+// 2. Initialise job queue backend (Bull+Redis or in-process fallback)
+await jobQueue.init();
+
+// 3. Start performance monitor (periodic sampling + alerting)
+performanceMonitor.start(5_000);
+
+// 4. Register Mongoose plugins for query profiling & optimisation
+mongoose.plugin(queryProfilerPlugin);
+mongoose.plugin(queryHelperPlugin);
+
+// 5. MongoDB Connection with optimised pool & replica set support
 const mongoUri =
 	process.env.MONGODB_URI ||
 	process.env.MONGO_URI ||
 	"mongodb://127.0.0.1:27017/procurax";
 
+const dbOptions = getConnectionOptions();
+attachConnectionHandlers();
+
 mongoose
-	.connect(mongoUri)
-	.then(() => {
+	.connect(mongoUri, dbOptions)
+	.then(async () => {
 		logger.info("✅ MongoDB connected", { uri: mongoUri.replace(/\/\/.*@/, "//***@") });
+		// Verify indexes exist after connection
+		await ensureIndexes();
 	})
 	.catch((err) => {
 		logger.error("❌ MongoDB connection error", { error: err.message });
@@ -142,6 +191,25 @@ process.on("uncaughtException", (err) => {
 	logger.error("Uncaught exception", { error: err.message, stack: err.stack });
 	process.exit(1);
 });
+
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+	logger.info(`${signal} received — shutting down gracefully`);
+	try {
+		performanceMonitor.shutdown();
+		metrics.shutdown();
+		await jobQueue.shutdown();
+		await closeConnection();
+		await redisService.disconnect();
+		logger.info("All services shut down cleanly");
+	} catch (err) {
+		logger.error("Error during shutdown", { error: err.message });
+	}
+	process.exit(0);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // ===== VERSIONED API ROUTES (v1) =====
 // New architecture: validated, service-layer backed
@@ -199,21 +267,22 @@ app.use("/api/buildassist", chatbotRoutes);
 
 // =================================
 
-// Basic health route with system info
+// ===== HEALTH, METRICS & OBSERVABILITY ROUTES =====
+app.use("/health", healthRoutes);
+
+// Prometheus metrics endpoint (text format)
+app.get("/metrics", (req, res) => {
+  res.setHeader("Content-Type", "text/plain; version=0.0.4; charset=utf-8");
+  res.send(metrics.toPrometheus());
+});
+
+// Basic root route with system info
 app.get("/", (req, res) => res.json({
   status: "running",
   service: "ProcuraX Backend",
   version: "1.0.0",
   timestamp: new Date().toISOString(),
   uptime: process.uptime(),
-}));
-
-// Health check endpoint
-app.get("/health", (req, res) => res.json({
-  status: "healthy",
-  db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-  uptime: process.uptime(),
-  memory: process.memoryUsage(),
 }));
 
 // Firebase diagnostic endpoint (temporary - remove after debugging)
