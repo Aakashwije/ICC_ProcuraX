@@ -3,6 +3,7 @@ import 'package:procurax_frontend/routes/app_routes.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 import 'package:procurax_frontend/services/push_notification_service.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 class LogoutConfirmationDialog extends StatefulWidget {
   const LogoutConfirmationDialog({super.key});
@@ -59,9 +60,14 @@ class _LogoutConfirmationDialogState extends State<LogoutConfirmationDialog>
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoggingOut = false);
-      ScaffoldMessenger.of(
+      CustomAlertDialog.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Logout failed: $e')));
+        title: 'Logout Failed',
+        message: 'Logout failed: $e',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
+      );
     }
   }
 

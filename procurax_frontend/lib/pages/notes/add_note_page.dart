@@ -25,8 +25,8 @@ class _AddNotePageState extends State<AddNotePage> {
 
   /// Maps each tag name to its display colour.
   static const Map<String, Color> _tagColors = {
-    "Issue": Color(0xFFE11D48),    // red
-    "Meeting": Color(0xFF2563EB),  // blue
+    "Issue": Color(0xFFE11D48), // red
+    "Meeting": Color(0xFF2563EB), // blue
     "Reminder": Color(0xFF16A34A), // green
   };
 

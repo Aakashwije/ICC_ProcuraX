@@ -4,6 +4,7 @@ import '../../../theme.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../../../../widgets/app_drawer.dart';
 import '../../../../../../theme/app_theme.dart';
+import '../../../../../../widgets/custom_toast.dart';
 
 import '../models/meeting.dart';
 import '../widgets/tab_selector.dart';
@@ -129,7 +130,6 @@ class _MeetingsPageState extends State<MeetingsPage> {
   }
 
   Future<void> _editMeeting(Meeting meeting) async {
-    final messenger = ScaffoldMessenger.of(context);
     final updated = await Navigator.push<Meeting>(
       context,
       MaterialPageRoute(builder: (_) => EditMeetingPage(meeting: meeting)),
@@ -147,71 +147,27 @@ class _MeetingsPageState extends State<MeetingsPage> {
       await _loadMeetings();
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('Failed to update meeting: $e')),
+      CustomAlertDialog.show(
+        context,
+        title: 'Update Failed',
+        message: 'Failed to update meeting: $e',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
       );
     }
   }
 
   Future<void> _deleteMeeting(Meeting meeting) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-        contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              height: 34,
-              width: 34,
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.delete_outline, color: Colors.red),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Delete meeting',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
+    final confirm = await CustomAlertDialog.show(
+      context,
+      title: 'Delete Meeting',
+      message:
           'Are you sure you want to delete this meeting? This action cannot be undone.',
-          style: TextStyle(color: greyText, height: 1.4),
-        ),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context, false),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: greyText,
-              side: BorderSide(color: Colors.black.withValues(alpha: 0.12)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(Icons.delete, size: 18),
-            label: const Text('Delete'),
-          ),
-        ],
-      ),
+      type: ToastType.warning,
+      showCancel: true,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
     );
 
     if (!mounted || confirm != true) return;
@@ -220,17 +176,28 @@ class _MeetingsPageState extends State<MeetingsPage> {
       await MeetingsService.deleteMeeting(meeting.id ?? '');
       if (!mounted) return;
       await _loadMeetings();
-      messenger.showSnackBar(const SnackBar(content: Text('Meeting deleted')));
+      CustomAlertDialog.show(
+        context,
+        title: 'Deleted',
+        message: 'Meeting deleted successfully',
+        type: ToastType.success,
+        showCancel: false,
+        confirmText: 'OK',
+      );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('Failed to delete meeting: $e')),
+      CustomAlertDialog.show(
+        context,
+        title: 'Delete Failed',
+        message: 'Failed to delete meeting: $e',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
       );
     }
   }
 
   Future<void> _markMeetingDone(Meeting meeting) async {
-    final messenger = ScaffoldMessenger.of(context);
     final newDoneStatus = !meeting.isDone;
 
     try {
@@ -240,37 +207,25 @@ class _MeetingsPageState extends State<MeetingsPage> {
       );
       if (!mounted) return;
       await _loadMeetings();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                newDoneStatus ? Icons.check_circle : Icons.undo,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                newDoneStatus
-                    ? 'Meeting marked as done!'
-                    : 'Meeting marked as pending',
-              ),
-            ],
-          ),
-          backgroundColor: newDoneStatus ? Colors.green : Colors.orange,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      CustomAlertDialog.show(
+        context,
+        title: newDoneStatus ? 'Done' : 'Updated',
+        message: newDoneStatus
+            ? 'Meeting marked as done!'
+            : 'Meeting marked as pending',
+        type: ToastType.success,
+        showCancel: false,
+        confirmText: 'OK',
       );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Failed to update meeting: $e'),
-          backgroundColor: Colors.red,
-        ),
+      CustomAlertDialog.show(
+        context,
+        title: 'Error',
+        message: 'Failed to update meeting: $e',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
       );
     }
   }

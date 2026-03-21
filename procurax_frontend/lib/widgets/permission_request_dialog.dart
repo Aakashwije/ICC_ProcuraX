@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/services/permission_service.dart';
 import 'package:procurax_frontend/theme/app_theme.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 class PermissionRequestDialog extends StatefulWidget {
   final VoidCallback onPermissionsGranted;
@@ -36,8 +37,13 @@ class _PermissionRequestDialogState extends State<PermissionRequestDialog> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error requesting permissions: $e')),
+      CustomAlertDialog.show(
+        context,
+        title: 'Permission Error',
+        message: 'Error requesting permissions: $e',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
       );
     } finally {
       if (mounted) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:procurax_frontend/models/task_model.dart';
 import 'package:procurax_frontend/services/tasks_service.dart';
+import 'package:procurax_frontend/widgets/custom_toast.dart';
 
 class AddTaskPage extends StatefulWidget {
   const AddTaskPage({super.key});
@@ -57,9 +58,14 @@ class _AddTaskPageState extends State<AddTaskPage> {
       Navigator.pop(context, created);
     } catch (err) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      CustomAlertDialog.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save task: $err')));
+        title: 'Error',
+        message: 'Failed to save task: $err',
+        type: ToastType.error,
+        showCancel: false,
+        confirmText: 'OK',
+      );
     } finally {
       if (mounted) {
         setState(() => _saving = false);
