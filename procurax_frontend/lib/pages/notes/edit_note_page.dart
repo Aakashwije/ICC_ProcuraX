@@ -2,7 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:procurax_frontend/models/note_model.dart';
 
+/// Screen for editing an existing note.
+///
+/// Pre-fills all fields from [note]. When saved, pops with a [Map]:
+/// - `'note'`           → the updated [Note] (without the new attachment URL
+///                        — that comes back after the upload completes)
+/// - `'filePath'`       → local path to a newly picked file (or null)
+/// - `'fileName'`       → filename of the newly picked file (or null)
+/// - `'deleteExisting'` → true when the user explicitly removed the old
+///                        attachment so [NotesPage] can call [NotesService.deleteAttachment]
 class EditNotePage extends StatefulWidget {
+  /// The note to edit — all form fields are initialised from this.
   final Note note;
 
   const EditNotePage({super.key, required this.note});
@@ -12,20 +22,36 @@ class EditNotePage extends StatefulWidget {
 }
 
 class _EditNotePageState extends State<EditNotePage> {
+  // ── Design tokens ───────────────────────────────────────────────────
   static const Color primaryBlue = Color(0xFF1F4DF0);
   static const Color lightBlue = Color(0xFFEAF1FF);
+
+  /// Maps each tag name to its display colour.
   static const Map<String, Color> _tagColors = {
-    "Issue": Color(0xFFE11D48),
-    "Meeting": Color(0xFF2563EB),
-    "Reminder": Color(0xFF16A34A),
+    "Issue": Color(0xFFE11D48),    // red
+    "Meeting": Color(0xFF2563EB),  // blue
+    "Reminder": Color(0xFF16A34A), // green
   };
 
+  // ── Form controllers ────────────────────────────────────────────────
   late TextEditingController _title;
   late TextEditingController _content;
+
+  // ── Mutable state ────────────────────────────────────────────────────
+  /// Currently selected tag.
   late String _tag;
+
+  /// Whether the note has (or will have) an attachment after saving.
   late bool _attachment;
+
+  /// Local path of a newly picked file; null if user hasn't picked one.
   String? _pickedFilePath;
+
+  /// Filename of the newly picked file; null if user hasn't picked one.
   String? _pickedFileName;
+
+  /// Set to true when the user taps the delete button on an existing
+  /// attachment. Tells [NotesPage] to call [NotesService.deleteAttachment].
   bool _deleteExistingAttachment = false;
 
   @override
@@ -37,6 +63,8 @@ class _EditNotePageState extends State<EditNotePage> {
     _attachment = widget.note.hasAttachment;
   }
 
+  /// Opens the system file picker. If a new file is selected, the existing
+  /// attachment delete flag is cleared (can't delete-and-replace simultaneously).
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles();
     if (result != null && result.files.single.path != null) {
@@ -49,6 +77,9 @@ class _EditNotePageState extends State<EditNotePage> {
     }
   }
 
+  /// Removes the newly picked file from state.
+  /// Reverts the attachment flag to the original note state, unless the
+  /// user had already marked the existing attachment for deletion.
   void _removeNewFile() {
     setState(() {
       _pickedFilePath = null;
@@ -58,6 +89,9 @@ class _EditNotePageState extends State<EditNotePage> {
     });
   }
 
+  /// Flags the existing attachment for deletion on save.
+  /// The UI switches from showing the existing file to showing the
+  /// "Tap to attach a file" picker prompt.
   void _markDeleteExisting() {
     setState(() {
       _deleteExistingAttachment = true;
@@ -65,6 +99,11 @@ class _EditNotePageState extends State<EditNotePage> {
     });
   }
 
+  /// Constructs the updated [Note] and pops the route with the result map.
+  ///
+  /// Attachment URL/name are cleared in the local object when the user
+  /// chose to delete — the actual Cloudinary delete happens in [NotesPage]
+  /// after this page closes.
   void _saveChanges() {
     final updatedNote = Note(
       id: widget.note.id,
@@ -330,6 +369,13 @@ class _EditNotePageState extends State<EditNotePage> {
     );
   }
 
+  /// Renders the attachment area with three possible states:
+  ///
+  /// 1. **New file picked** — shows the new filename with a ✕ to discard it.
+  /// 2. **Existing attachment (not deleted)** — shows the current filename
+  ///    with a swap icon (replace) and a red delete icon (remove).
+  /// 3. **No attachment / deleted** — shows the "Tap to attach a file"
+  ///    prompt that opens the file picker on tap.
   Widget _attachmentToggle() {
     // If a NEW file has been picked, show it
     if (_pickedFileName != null) {
