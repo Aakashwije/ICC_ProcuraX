@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import '../../../../../config/environment.dart';
 
 /// API key for Google Maps / Places.
-const String googleMapsApiKey = Environment.androidGoogleMapsApiKey;
+/// Injected at build time via: --dart-define=MAPS_API_KEY=your_key
+const String googleMapsApiKey = String.fromEnvironment('MAPS_API_KEY');
 
 /// Service that handles location-related operations for meetings:
 /// - Distance calculation (Haversine formula)
