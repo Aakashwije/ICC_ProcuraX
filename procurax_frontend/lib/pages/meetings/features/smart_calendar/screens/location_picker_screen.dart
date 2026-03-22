@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 import '../services/meeting_location_service.dart';
@@ -58,6 +59,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   bool _isLoadingLocation = false;
   bool _isLoadingPlace = false;
   bool _isReverseGeocoding = false;
+  bool _locationPermissionGranted = false;
 
   // Default camera position (Colombo, Sri Lanka as fallback)
   static const LatLng _defaultPosition = LatLng(6.9271, 79.8612);
@@ -73,6 +75,37 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         widget.initialLongitude!,
       );
       _selectedAddress = widget.initialAddress;
+    }
+
+    // Check and request location permission after the screen builds
+    _requestLocationPermission();
+  }
+
+  /// Request location permission with a nice flow:
+  /// 1. Check current status
+  /// 2. If denied, request it
+  /// 3. Update the map to show "my location" blue dot if granted
+  Future<void> _requestLocationPermission() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('[LocationPicker] Location services disabled');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        if (mounted) {
+          setState(() => _locationPermissionGranted = true);
+        }
+      }
+    } catch (e) {
+      debugPrint('[LocationPicker] Permission error: $e');
     }
   }
 
@@ -300,7 +333,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             initialCameraPosition: initialCameraPosition,
             onMapCreated: (controller) => _mapController = controller,
             onTap: _onMapTap,
-            myLocationEnabled: true,
+            myLocationEnabled: _locationPermissionGranted,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
