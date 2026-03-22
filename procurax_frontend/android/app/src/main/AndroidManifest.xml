@@ -67,7 +67,7 @@
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_color" />
 
-        <!-- Google Maps API key -->
+        <!-- Google Maps API key - WARNING: This is the exposed key from GitGuardian -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAQERrrD-KcXVqZrnAWae57LJRbmMfVd9g" />

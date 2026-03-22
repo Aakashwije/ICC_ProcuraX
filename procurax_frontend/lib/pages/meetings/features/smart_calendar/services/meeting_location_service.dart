@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:procurax_frontend/config/environment.dart';
 
-/// API key for Google Maps / Places.
-const String googleMapsApiKey = 'AIzaSyAQERrrD-KcXVqZrnAWae57LJRbmMfVd9g';
+/// API key for Google Maps / Places (from environment configuration).
+final String googleMapsApiKey = Environment.androidGoogleMapsApiKey;
 
 /// Service that handles location-related operations for meetings:
 /// - Distance calculation (Haversine formula)
