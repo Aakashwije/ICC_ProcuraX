@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../theme.dart';
 import '../models/meeting.dart';
+import 'location_picker_screen.dart';
 import '../../../../../../widgets/custom_toast.dart';
 
 class EditMeetingPage extends StatefulWidget {
@@ -17,12 +18,14 @@ class EditMeetingPage extends StatefulWidget {
 class _EditMeetingPageState extends State<EditMeetingPage> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _locationController;
 
   DateTime? _startDateTime;
   DateTime? _endDateTime;
 
   bool _isSaving = false;
+
+  // Location picked via LocationPickerScreen
+  LocationPickerResult? _selectedLocation;
 
   @override
   void initState() {
@@ -31,16 +34,25 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
     _descriptionController = TextEditingController(
       text: widget.meeting.description,
     );
-    _locationController = TextEditingController(text: widget.meeting.location);
     _startDateTime = widget.meeting.startTime;
     _endDateTime = widget.meeting.endTime;
+    // Pre-fill existing location if coordinates are present
+    if (widget.meeting.hasCoordinates) {
+      _selectedLocation = LocationPickerResult(
+        address: widget.meeting.location,
+        latitude: widget.meeting.latitude!,
+        longitude: widget.meeting.longitude!,
+      );
+    } else if (widget.meeting.location.isNotEmpty) {
+      // Address-only (legacy) — still show it as selected text
+      _selectedLocation = null;
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
@@ -77,7 +89,9 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
       description: _descriptionController.text.trim(),
       startTime: _startDateTime!,
       endTime: _endDateTime!,
-      location: _locationController.text.trim(),
+      location: _selectedLocation?.address ?? widget.meeting.location,
+      latitude: _selectedLocation?.latitude ?? widget.meeting.latitude,
+      longitude: _selectedLocation?.longitude ?? widget.meeting.longitude,
     );
 
     if (!mounted) return;
@@ -187,11 +201,7 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
                     lines: 4,
                   ),
                   const SizedBox(height: 12),
-                  _field(
-                    'Location',
-                    _locationController,
-                    icon: Icons.place_outlined,
-                  ),
+                  _locationPickerTile(),
                   const SizedBox(height: 12),
                   _sectionLabel('Start'),
                   const SizedBox(height: 8),
@@ -324,6 +334,113 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
       ),
     );
   }
+
+  // ── Location picker ────────────────────────────────────────────────────────
+
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push<LocationPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initialAddress: _selectedLocation?.address ?? widget.meeting.location,
+          initialLatitude:
+              _selectedLocation?.latitude ?? widget.meeting.latitude,
+          initialLongitude:
+              _selectedLocation?.longitude ?? widget.meeting.longitude,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => _selectedLocation = result);
+    }
+  }
+
+  Widget _locationPickerTile() {
+    final hasLocation =
+        _selectedLocation != null || widget.meeting.location.isNotEmpty;
+    final displayAddress =
+        _selectedLocation?.address ?? widget.meeting.location;
+    return InkWell(
+      onTap: _openLocationPicker,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: hasLocation
+                ? const Color(0xFF4CAF50)
+                : Colors.black.withValues(alpha: 0.08),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              height: 36,
+              width: 36,
+              decoration: BoxDecoration(
+                color: hasLocation ? const Color(0xFFE8F5E9) : lightBlue,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                hasLocation
+                    ? Icons.place_rounded
+                    : Icons.add_location_alt_outlined,
+                color: hasLocation ? const Color(0xFF4CAF50) : primaryBlue,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasLocation ? displayAddress : 'Add Location',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: hasLocation ? Colors.black87 : Colors.black54,
+                      fontWeight: hasLocation
+                          ? FontWeight.w500
+                          : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                  if (_selectedLocation != null)
+                    Text(
+                      '${_selectedLocation!.latitude.toStringAsFixed(4)}, '
+                      '${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black38,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              hasLocation
+                  ? Icons.edit_location_alt_outlined
+                  : Icons.chevron_right_rounded,
+              color: hasLocation ? primaryBlue : greyText,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Other helpers ──────────────────────────────────────────────────────────
 
   Widget _sectionLabel(String text) {
     return Text(

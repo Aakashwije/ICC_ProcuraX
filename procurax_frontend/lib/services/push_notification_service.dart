@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -32,11 +33,13 @@ class PushNotificationService {
 
   // ── Android notification channel ──
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'procurax_notifications', // id
-    'ProcuraX Notifications', // name
-    description: 'Notifications from ProcuraX app',
+    'procurax_notifications',
+    'ProcuraX Notifications',
+    description: 'Procurement updates, approvals, and alerts from ProcuraX',
     importance: Importance.high,
     playSound: true,
+    enableVibration: true,
+    showBadge: true,
   );
 
   /// One-time setup — call in main() after FirebaseService.initialize()
@@ -146,10 +149,13 @@ class PushNotificationService {
 
     debugPrint('[FCM] Foreground message: ${notification.title}');
 
+    final title = notification.title ?? 'ProcuraX';
+    final body = notification.body ?? '';
+
     await _localNotifications.show(
       notification.hashCode,
-      notification.title ?? 'ProcuraX',
-      notification.body ?? '',
+      title,
+      body,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _channel.id,
@@ -157,12 +163,31 @@ class PushNotificationService {
           channelDescription: _channel.description,
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          // Custom white vector icon (required for Android 5+)
+          icon: '@drawable/ic_notification_bell',
+          // Brand colour shown behind the icon on Android
+          color: const Color(0xFF1565C0), // ProcuraX primary blue
+          // Expand the notification body for long messages
+          styleInformation: BigTextStyleInformation(
+            body,
+            htmlFormatBigText: false,
+            contentTitle: title,
+            htmlFormatContentTitle: false,
+            summaryText: 'ProcuraX',
+          ),
+          // Show the app name as sub-text
+          subText: 'ProcuraX',
+          playSound: true,
+          enableVibration: true,
+          // Show time in notification
+          showWhen: true,
+          when: DateTime.now().millisecondsSinceEpoch,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          interruptionLevel: InterruptionLevel.active,
         ),
       ),
       payload: jsonEncode(message.data),

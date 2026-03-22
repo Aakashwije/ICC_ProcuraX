@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 import '../../../theme.dart';
 import '../models/meeting.dart';
 import 'meeting_added_page.dart';
+import 'location_picker_screen.dart';
 import '../../../../../../services/meetings_service.dart';
 import '../../../../../../widgets/custom_toast.dart';
+import '../services/meeting_notification_service.dart';
 
 class AddMeetingPage extends StatefulWidget {
   const AddMeetingPage({super.key});
@@ -17,12 +19,14 @@ class AddMeetingPage extends StatefulWidget {
 class _AddMeetingPageState extends State<AddMeetingPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _locationController = TextEditingController();
 
   DateTime? _startDateTime;
   DateTime? _endDateTime;
 
   bool _isLoading = false;
+
+  // Location picked via LocationPickerScreen
+  LocationPickerResult? _selectedLocation;
 
   String _formatDate(DateTime dateTime) {
     return DateFormat('dd MMM yyyy').format(dateTime);
@@ -57,10 +61,15 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
         description: _descriptionController.text.trim(),
         startTime: _startDateTime!,
         endTime: _endDateTime!,
-        location: _locationController.text.trim(),
+        location: _selectedLocation?.address ?? '',
+        latitude: _selectedLocation?.latitude,
+        longitude: _selectedLocation?.longitude,
       );
 
       await MeetingsService.addMeeting(meeting);
+
+      // Schedule smart notifications for this meeting
+      MeetingNotificationService.scheduleMeetingNotifications(meeting);
 
       if (!mounted) return;
       final action = await Navigator.push<MeetingAddedAction>(
@@ -193,11 +202,7 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
                     lines: 4,
                   ),
                   const SizedBox(height: 12),
-                  _field(
-                    'Location',
-                    _locationController,
-                    icon: Icons.place_outlined,
-                  ),
+                  _locationPickerTile(),
                   const SizedBox(height: 12),
                   _sectionLabel('Start'),
                   const SizedBox(height: 8),
@@ -330,6 +335,108 @@ class _AddMeetingPageState extends State<AddMeetingPage> {
       ),
     );
   }
+
+  // ── Location picker ────────────────────────────────────────────────────────
+
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push<LocationPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initialAddress: _selectedLocation?.address,
+          initialLatitude: _selectedLocation?.latitude,
+          initialLongitude: _selectedLocation?.longitude,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => _selectedLocation = result);
+    }
+  }
+
+  Widget _locationPickerTile() {
+    final hasLocation = _selectedLocation != null;
+    return InkWell(
+      onTap: _openLocationPicker,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: hasLocation
+                ? const Color(0xFF4CAF50)
+                : Colors.black.withValues(alpha: 0.08),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              height: 36,
+              width: 36,
+              decoration: BoxDecoration(
+                color: hasLocation ? const Color(0xFFE8F5E9) : lightBlue,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                hasLocation
+                    ? Icons.place_rounded
+                    : Icons.add_location_alt_outlined,
+                color: hasLocation ? const Color(0xFF4CAF50) : primaryBlue,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasLocation ? _selectedLocation!.address : 'Add Location',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: hasLocation ? Colors.black87 : Colors.black54,
+                      fontWeight: hasLocation
+                          ? FontWeight.w500
+                          : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                  if (hasLocation)
+                    Text(
+                      '${_selectedLocation!.latitude.toStringAsFixed(4)}, '
+                      '${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black38,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              hasLocation
+                  ? Icons.edit_location_alt_outlined
+                  : Icons.chevron_right_rounded,
+              color: hasLocation ? primaryBlue : greyText,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Other helpers ──────────────────────────────────────────────────────────
 
   Widget _sectionLabel(String text) {
     return Text(

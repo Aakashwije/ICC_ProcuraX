@@ -14,6 +14,7 @@ import 'add_meeting_page.dart';
 import 'edit_meeting_page.dart';
 import 'meeting_added_page.dart';
 import '../../../../../../services/meetings_service.dart';
+import '../services/meeting_notification_service.dart';
 
 class MeetingsPage extends StatefulWidget {
   const MeetingsPage({super.key});
@@ -58,6 +59,8 @@ class _MeetingsPageState extends State<MeetingsPage> {
           ..clear()
           ..addAll(meetings);
       });
+      // Reschedule smart notifications for all upcoming meetings
+      MeetingNotificationService.rescheduleAll(meetings);
     } catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = e.toString());
@@ -139,6 +142,8 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
     try {
       await MeetingsService.updateMeeting(updated);
+      // Reschedule notifications for the updated meeting
+      MeetingNotificationService.scheduleMeetingNotifications(updated);
       if (!mounted) return;
       setState(() {
         _focusedDay = updated.startTime;
@@ -174,6 +179,10 @@ class _MeetingsPageState extends State<MeetingsPage> {
 
     try {
       await MeetingsService.deleteMeeting(meeting.id ?? '');
+      // Cancel notifications for deleted meeting
+      MeetingNotificationService.cancelMeetingNotifications(
+        meeting.id ?? meeting.title.hashCode.toString(),
+      );
       if (!mounted) return;
       await _loadMeetings();
       CustomAlertDialog.show(
