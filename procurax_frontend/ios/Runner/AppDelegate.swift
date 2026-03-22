@@ -10,6 +10,7 @@ import GoogleMaps
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     FirebaseApp.configure()
+    // WARNING: This is the exposed key from GitGuardian
     GMSServices.provideAPIKey("AIzaSyBJcxfZG8b1bzDFNrTkSJ46JAO1-84cyq8")
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
