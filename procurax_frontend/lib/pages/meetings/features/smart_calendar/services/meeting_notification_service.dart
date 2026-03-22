@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import '../models/meeting.dart';
@@ -108,43 +109,53 @@ class MeetingNotificationService {
     // ── 2. Smart travel alert (if coordinates available) ─────────────────
     if (meeting.hasCoordinates) {
       try {
-        final distanceInfo = await MeetingLocationService.getDistanceToLocation(
-          meetingLat: meeting.latitude!,
-          meetingLng: meeting.longitude!,
-        );
-
-        if (distanceInfo != null) {
-          final travelMinutes = distanceInfo.travelTimeMinutes;
-          final distanceKm = distanceInfo.distanceKm;
-
+        // Only check distance if location permission is ALREADY granted.
+        // Never request permission silently from a background service.
+        final permissionAlready = await _isLocationPermissionGranted();
+        if (!permissionAlready) {
           debugPrint(
-            '[MeetingNotifications] Distance to "${meeting.title}": '
-            '${distanceInfo.formattedDistance}, '
-            'est. travel: ${distanceInfo.formattedTravelTime}',
+            '[MeetingNotifications] Skipping travel alert — location permission not yet granted',
           );
+        } else {
+          final distanceInfo =
+              await MeetingLocationService.getDistanceToLocation(
+                meetingLat: meeting.latitude!,
+                meetingLng: meeting.longitude!,
+              );
 
-          // If travel time > 60 min, user can't reach in 1hr → send early alert
-          if (travelMinutes > 60) {
-            // Alert = travelTime + 15 min buffer before meeting
-            final bufferMinutes = travelMinutes + 15;
-            final travelAlertTime = startTime.subtract(
-              Duration(minutes: bufferMinutes),
+          if (distanceInfo != null) {
+            final travelMinutes = distanceInfo.travelTimeMinutes;
+            final distanceKm = distanceInfo.distanceKm;
+
+            debugPrint(
+              '[MeetingNotifications] Distance to "${meeting.title}": '
+              '${distanceInfo.formattedDistance}, '
+              'est. travel: ${distanceInfo.formattedTravelTime}',
             );
 
-            if (travelAlertTime.isAfter(now)) {
-              await _scheduleNotification(
-                id: _travelId(meetingId),
-                title: '🚗 Leave now for your meeting!',
-                body:
-                    '${meeting.title} is ${MeetingLocationService.formatDistance(distanceKm)} away '
-                    '(${MeetingLocationService.formatTravelTime(travelMinutes)}). '
-                    'Leave now to arrive on time.',
-                scheduledTime: travelAlertTime,
+            // If travel time > 60 min, user can't reach in 1hr → send early alert
+            if (travelMinutes > 60) {
+              // Alert = travelTime + 15 min buffer before meeting
+              final bufferMinutes = travelMinutes + 15;
+              final travelAlertTime = startTime.subtract(
+                Duration(minutes: bufferMinutes),
               );
-              debugPrint(
-                '[MeetingNotifications] Scheduled travel alert at '
-                '${travelAlertTime.toIso8601String()}',
-              );
+
+              if (travelAlertTime.isAfter(now)) {
+                await _scheduleNotification(
+                  id: _travelId(meetingId),
+                  title: '🚗 Leave now for your meeting!',
+                  body:
+                      '${meeting.title} is ${MeetingLocationService.formatDistance(distanceKm)} away '
+                      '(${MeetingLocationService.formatTravelTime(travelMinutes)}). '
+                      'Leave now to arrive on time.',
+                  scheduledTime: travelAlertTime,
+                );
+                debugPrint(
+                  '[MeetingNotifications] Scheduled travel alert at '
+                  '${travelAlertTime.toIso8601String()}',
+                );
+              }
             }
           }
         }
@@ -189,6 +200,18 @@ class MeetingNotificationService {
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────
+
+  /// Returns true only if location permission was ALREADY granted.
+  /// Does NOT request permission — safe to call from background tasks.
+  static Future<bool> _isLocationPermissionGranted() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      return permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always;
+    } catch (_) {
+      return false;
+    }
+  }
 
   static int _reminderId(String meetingId) =>
       '${meetingId}_reminder'.hashCode.abs() % 2147483647;
