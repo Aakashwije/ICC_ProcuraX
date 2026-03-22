@@ -54,6 +54,10 @@ dependencies:
   path_provider: ^2.1.1
   open_file: ^3.3.2
   lucide_icons: ^0.257.0
+  geolocator: ^13.0.4
+  geocoding: ^3.0.0
+  google_maps_flutter: ^2.12.1
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

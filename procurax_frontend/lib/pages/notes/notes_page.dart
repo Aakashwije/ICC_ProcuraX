@@ -90,8 +90,9 @@ class _NotesPageState extends State<NotesPage> {
         try {
           await NotesService.uploadAttachment(created.id, filePath, fileName);
         } catch (err) {
-          if (mounted)
+          if (mounted) {
             _showError("Note saved but attachment upload failed: $err");
+          }
         }
       }
 
@@ -130,10 +131,11 @@ class _NotesPageState extends State<NotesPage> {
         try {
           await NotesService.deleteAttachment(note.id);
         } catch (err) {
-          if (mounted)
+          if (mounted) {
             _showError(
               "Note updated but failed to remove old attachment: $err",
             );
+          }
         }
       }
 
@@ -148,8 +150,9 @@ class _NotesPageState extends State<NotesPage> {
           }
           await NotesService.uploadAttachment(note.id, filePath, fileName);
         } catch (err) {
-          if (mounted)
+          if (mounted) {
             _showError("Note updated but attachment upload failed: $err");
+          }
         }
       }
 

@@ -65,5 +65,11 @@
 	<!-- Photo Library Add Permission (iOS 11+) -->
 	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
 	<string>We need permission to save photos from our app to your photo library.</string>
+	
+	<!-- Location Permission -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to show your position on the map and calculate distance to meeting locations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We need your location to send smart meeting reminders when you're far from the meeting location.</string>
 </dict>
 </plist>

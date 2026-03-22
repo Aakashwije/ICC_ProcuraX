@@ -5,6 +5,7 @@ import 'routes/app_routes.dart';
 import 'services/api_service.dart';
 import 'services/firebase_service.dart';
 import 'services/push_notification_service.dart';
+import 'pages/meetings/features/smart_calendar/services/meeting_notification_service.dart';
 import 'theme/app_theme.dart';
 
 import 'pages/get_started/get_started_page.dart';
@@ -50,6 +51,9 @@ Future<void> main() async {
 
   // Initialize push notifications (FCM + local notifications)
   await PushNotificationService.initialize();
+
+  // Initialize smart meeting notifications (location-aware reminders)
+  await MeetingNotificationService.initialize();
 
   // Initialize API service
   await ApiService.initialize();

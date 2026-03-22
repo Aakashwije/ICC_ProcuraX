@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/meeting.dart';
 import '../../../theme.dart';
+import '../services/meeting_location_service.dart';
 
 class MeetingListItem extends StatefulWidget {
   final Meeting meeting;
@@ -25,6 +27,7 @@ class _MeetingListItemState extends State<MeetingListItem>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
+  DistanceInfo? _distanceInfo;
 
   @override
   void initState() {
@@ -36,12 +39,54 @@ class _MeetingListItemState extends State<MeetingListItem>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _loadDistance();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  /// Loads distance from current user position to meeting location.
+  Future<void> _loadDistance() async {
+    final meeting = widget.meeting;
+    if (!meeting.hasCoordinates || meeting.isDone) return;
+
+    final info = await MeetingLocationService.getDistanceToLocation(
+      meetingLat: meeting.latitude!,
+      meetingLng: meeting.longitude!,
+    );
+    if (info != null && mounted) {
+      setState(() => _distanceInfo = info);
+    }
+  }
+
+  /// Opens Google Maps with navigation to the meeting location.
+  /// Prefers GPS coordinates; falls back to address search.
+  Future<void> _openInMaps() async {
+    final meeting = widget.meeting;
+    if (meeting.location.trim().isEmpty) return;
+
+    Uri uri;
+    if (meeting.hasCoordinates) {
+      // Precise navigation using lat/lng
+      uri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1'
+        '&destination=${meeting.latitude},${meeting.longitude}'
+        '&travelmode=driving',
+      );
+    } else {
+      // Fallback: search by address text
+      final encoded = Uri.encodeComponent(meeting.location);
+      uri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$encoded',
+      );
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
@@ -170,24 +215,69 @@ class _MeetingListItemState extends State<MeetingListItem>
             ),
             if (widget.meeting.location.trim().isNotEmpty) ...[
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.place_outlined,
-                    size: 14,
-                    color: isDone ? Colors.grey[400] : Colors.grey,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      widget.meeting.location,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDone ? Colors.grey[400] : Colors.grey,
-                        decoration: isDone ? TextDecoration.lineThrough : null,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+              GestureDetector(
+                onTap: _openInMaps,
+                child: Row(
+                  children: [
+                    Icon(
+                      widget.meeting.hasCoordinates
+                          ? Icons.place_rounded
+                          : Icons.place_outlined,
+                      size: 14,
+                      color: isDone
+                          ? Colors.grey[400]
+                          : widget.meeting.hasCoordinates
+                          ? primaryBlue
+                          : Colors.grey,
                     ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        widget.meeting.location,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDone
+                              ? Colors.grey[400]
+                              : widget.meeting.hasCoordinates
+                              ? primaryBlue
+                              : Colors.grey,
+                          decoration: isDone
+                              ? TextDecoration.lineThrough
+                              : widget.meeting.hasCoordinates
+                              ? TextDecoration.underline
+                              : null,
+                          decorationColor: primaryBlue.withValues(alpha: 0.5),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (widget.meeting.hasCoordinates && !isDone)
+                      const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 12,
+                        color: primaryBlue,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            // Distance & travel time chips
+            if (_distanceInfo != null && !isDone) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _infoChip(
+                    icon: Icons.straighten_rounded,
+                    label: _distanceInfo!.formattedDistance,
+                    color: primaryBlue,
+                  ),
+                  _infoChip(
+                    icon: Icons.directions_car_rounded,
+                    label: _distanceInfo!.formattedTravelTime,
+                    color: _distanceInfo!.travelTimeMinutes > 60
+                        ? Colors.orange.shade700
+                        : const Color(0xFF4CAF50),
                   ),
                 ],
               ),
@@ -205,6 +295,35 @@ class _MeetingListItemState extends State<MeetingListItem>
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
