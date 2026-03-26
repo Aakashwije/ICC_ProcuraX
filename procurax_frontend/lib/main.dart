@@ -5,8 +5,6 @@ import 'routes/app_routes.dart';
 import 'services/api_service.dart';
 import 'services/firebase_service.dart';
 import 'services/push_notification_service.dart';
-import 'services/wso2_api_service.dart';
-import 'services/enhanced_procurement_service.dart';
 import 'pages/meetings/features/smart_calendar/services/meeting_notification_service.dart';
 import 'theme/app_theme.dart';
 
@@ -59,15 +57,6 @@ Future<void> main() async {
 
   // Initialize API service
   await ApiService.initialize();
-
-  // Initialize WSO2 API service (optional - app works without it)
-  try {
-    await WSO2ApiService.initialize();
-    await EnhancedProcurementService.initialize();
-    debugPrint('✅ WSO2 services initialized successfully');
-  } catch (e) {
-    debugPrint('⚠️ Skipping WSO2 initialization: $e');
-  }
 
   runApp(const MyApp());
 }
