@@ -5,9 +5,20 @@
     // The Flutter framework is only resolvable by Xcode's build system, not VS Code's Swift extension.
     "swift.diagnosticsCollection": "onlySourceKit",
     "swift.sourcekit-lsp.serverArguments": [],
+    
+    // Disable Swift package management for Flutter projects
+    "swift.package.disablePackageLoading": true,
+    "swift.package.disablePackageResolve": true,
 
     // Suppress false-positive Gradle sync error in android/build.gradle.kts.
     // Flutter's custom Gradle plugin (dev.flutter.flutter-plugin-loader) cannot be
     // resolved by the VS Code Kotlin DSL language server — only by the Flutter toolchain.
-    "kotlin.languageServer.enabled": false
+    "kotlin.languageServer.enabled": false,
+
+    // Ensure Dart/Flutter is the primary language for this project
+    "dart.flutterSdkPath": null,
+    "[dart]": {
+        "editor.formatOnSave": true,
+        "editor.selectionHighlight": false
+    }
 }
