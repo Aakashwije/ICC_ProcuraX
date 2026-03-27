@@ -300,4 +300,64 @@ async function markChatRead(req, res) {
 
 
 
-export { createChat, getUserChats, getChatById, markChatRead };
+export { createChat, getUserChats, getChatById, markChatRead, deleteChat };
+
+// Delete an entire chat and all its messages
+async function deleteChat(req, res) {
+  try {
+    let chatId = req.params.id;
+    chatId = chatId.trim();
+
+    const chatRef = db.collection('chats').doc(chatId);
+    const chatDoc = await chatRef.get();
+
+    if (!chatDoc.exists) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    // Delete all messages belonging to this chat in batches of 500
+    const BATCH_SIZE = 500;
+    let messagesDeleted = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const snapshot = await db
+        .collection('messages')
+        .where('chatId', '==', chatId)
+        .limit(BATCH_SIZE)
+        .get();
+
+      if (snapshot.empty) {
+        hasMore = false;
+        break;
+      }
+
+      const batch = db.batch();
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      messagesDeleted += snapshot.docs.length;
+
+      if (snapshot.docs.length < BATCH_SIZE) hasMore = false;
+    }
+
+    // Delete all related alerts
+    const alertsSnapshot = await db
+      .collection('alerts')
+      .where('chatId', '==', chatId)
+      .get();
+
+    if (!alertsSnapshot.empty) {
+      const alertBatch = db.batch();
+      alertsSnapshot.docs.forEach(doc => alertBatch.delete(doc.ref));
+      await alertBatch.commit();
+    }
+
+    // Finally delete the chat document itself
+    await chatRef.delete();
+
+    res.json({ ok: true, messagesDeleted });
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}

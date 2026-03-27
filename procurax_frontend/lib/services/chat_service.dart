@@ -233,7 +233,20 @@ class ChatService {
     return (data is List) ? data : [];
   }
 
-  //Delete chat
+  /// Deletes an entire chat conversation and all its messages.
+  Future<void> deleteChat(String chatId) async {
+    final response = await http
+        .delete(Uri.parse('$_baseUrl/api/chats/$chatId'), headers: _headers)
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to delete chat (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+
+  //Delete message
   Future<Map<String, dynamic>> deleteMessage({
     required String messageId,
     required String userId,

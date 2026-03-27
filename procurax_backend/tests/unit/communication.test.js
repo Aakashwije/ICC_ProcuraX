@@ -119,6 +119,7 @@ const alertsModule = await import(
 /* Pick the default export or named exports */
 const createChat = chatModule.createChat ?? chatModule.default?.createChat;
 const getUserChats = chatModule.getUserChats ?? chatModule.default?.getUserChats;
+const deleteChat = chatModule.deleteChat ?? chatModule.default?.deleteChat;
 
 const sendMessage = messageModule.sendMessage ?? messageModule.default?.sendMessage;
 const getMessagesByChat = messageModule.getMessagesByChat ?? messageModule.default?.getMessagesByChat;
@@ -152,6 +153,14 @@ describe('Communication Module', () => {
     mockWhere.mockReturnThis();
     mockOrderBy.mockReturnThis();
     mockLimit.mockReturnThis();
+    // Ensure batch always has a working default (tests that need custom
+    // behaviour can override with mockBatch.mockReturnValueOnce / mockReturnValue)
+    mockBatch.mockReturnValue({
+      set: jest.fn(),
+      delete: jest.fn(),
+      update: jest.fn(),
+      commit: jest.fn().mockResolvedValue(undefined),
+    });
   });
 
   /* ═══════════════════════════════════════════════════════════════════ */
@@ -262,7 +271,89 @@ describe('Communication Module', () => {
         expect(res.json).toHaveBeenCalled();
       });
     });
-  });
+
+    describe('deleteChat', () => {
+      it('returns 404 when chat does not exist', async () => {
+        mockGet.mockResolvedValueOnce({ exists: false });
+
+        const req = makeReq({ params: { id: 'nonexistent' } });
+        const res = makeRes();
+
+        await deleteChat(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({ error: 'Chat not found' })
+        );
+      });
+
+      it('deletes chat and all its messages successfully', async () => {
+        // Chat document exists
+        mockGet.mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ members: ['u1', 'u2'], isGroup: false }),
+        });
+
+        // Messages batch (first page — empty, no messages)
+        const mockMessageSnapshot = { empty: true, docs: [] };
+        mockGet.mockResolvedValueOnce(mockMessageSnapshot);
+
+        // Alerts snapshot (empty)
+        mockGet.mockResolvedValueOnce({ empty: true, docs: [] });
+
+        // Chat delete
+        mockDelete.mockResolvedValueOnce(undefined);
+
+        const req = makeReq({ params: { id: 'chat_abc' } });
+        const res = makeRes();
+
+        await deleteChat(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({ ok: true })
+        );
+      });
+
+      it('deletes chat messages in batches when many messages exist', async () => {
+        // Chat document exists
+        mockGet.mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ members: ['u1', 'u2'], isGroup: false }),
+        });
+
+        // First batch of messages (full batch of 500 — simulate with 2 docs)
+        const makeMsgDoc = (id) => ({ ref: { id }, id, data: () => ({}) });
+        const firstBatch = {
+          empty: false,
+          docs: [makeMsgDoc('m1'), makeMsgDoc('m2')],
+        };
+        // Second batch (empty — signals end)
+        const secondBatch = { empty: true, docs: [] };
+
+        mockGet
+          .mockResolvedValueOnce(firstBatch)  // first messages page
+          .mockResolvedValueOnce(secondBatch) // second messages page (done)
+          .mockResolvedValueOnce({ empty: true, docs: [] }); // alerts
+
+        mockDelete.mockResolvedValue(undefined);
+
+        const mockBatchInstance = {
+          delete: jest.fn(),
+          commit: jest.fn().mockResolvedValue(undefined),
+        };
+        mockBatch.mockReturnValue(mockBatchInstance);
+
+        const req = makeReq({ params: { id: 'chat_big' } });
+        const res = makeRes();
+
+        await deleteChat(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({ ok: true })
+        );
+      });
+    });
+  }); // end Chat Controller
 
   /* ═══════════════════════════════════════════════════════════════════ */
   /*  MESSAGE CONTROLLER                                                */
