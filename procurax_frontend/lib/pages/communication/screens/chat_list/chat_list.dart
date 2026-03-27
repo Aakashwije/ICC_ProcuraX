@@ -71,6 +71,17 @@ class _ChatListScreenState extends State<ChatListScreen>
   Future<void> fetchChats() async {
     try {
       final data = await _chatService.getUserChats(currentUserId);
+
+      // Sort by most recent message first
+      data.sort((a, b) {
+        final aTime = _parseChatTime(a['updatedAt'] ?? a['lastMessageAt']);
+        final bTime = _parseChatTime(b['updatedAt'] ?? b['lastMessageAt']);
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        return bTime.compareTo(aTime);
+      });
+
       final unread = _calculateUnreadMessages(data);
       setState(() {
         chats = data;
@@ -84,6 +95,23 @@ class _ChatListScreenState extends State<ChatListScreen>
       debugPrint('Failed to load chats: $e');
       setState(() => loading = false);
     }
+  }
+
+  DateTime? _parseChatTime(dynamic updatedAt) {
+    if (updatedAt == null) return null;
+    if (updatedAt is DateTime) return updatedAt;
+    if (updatedAt is Map) {
+      final seconds = updatedAt['_seconds'] ?? updatedAt['seconds'];
+      if (seconds is int) {
+        return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
+      }
+    }
+    if (updatedAt is String) {
+      final hasTz = RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(updatedAt);
+      final normalized = hasTz ? updatedAt : '${updatedAt}Z';
+      return DateTime.tryParse(normalized);
+    }
+    return null;
   }
 
   void _onSearchChanged(String value) {
@@ -387,10 +415,38 @@ class _ChatListScreenState extends State<ChatListScreen>
                                     Navigator.of(context).pop();
                                     if (userId.isEmpty) return;
                                     try {
-                                      await _chatService.createChat(
-                                        members: [currentUserId, userId],
-                                        isGroup: false,
-                                      );
+                                      final newChat = await _chatService
+                                          .createChat(
+                                            members: [currentUserId, userId],
+                                            isGroup: false,
+                                          );
+                                      // Optimistically insert the new chat at
+                                      // the top so it's visible immediately,
+                                      // then do a full refresh in the background.
+                                      if (mounted) {
+                                        setState(() {
+                                          // Remove any existing entry for this
+                                          // chat to avoid duplicates.
+                                          final newId =
+                                              (newChat['id'] ??
+                                                      newChat['chatId'] ??
+                                                      '')
+                                                  .toString();
+                                          chats.removeWhere(
+                                            (c) =>
+                                                (c['id'] ?? c['chatId'] ?? '')
+                                                    .toString() ==
+                                                newId,
+                                          );
+                                          // Insert at position 0 (top).
+                                          chats.insert(0, newChat);
+                                          filteredChats = _applySearch(
+                                            chats,
+                                            searchQuery,
+                                          );
+                                        });
+                                      }
+                                      // Full refresh to get server-side data.
                                       await fetchChats();
                                     } catch (e) {
                                       debugPrint('Failed to create chat: $e');
@@ -756,6 +812,7 @@ class MessagesPage extends StatelessWidget {
                       otherUserId: otherUserId,
                       onChatClosed: onChatClosed,
                       onChatRead: onChatClosed,
+                      onChatDeleted: onChatClosed,
                       name: otherUserName,
                       role: otherUserRole,
                       message: chat['lastMessage'] ?? '',
@@ -780,6 +837,7 @@ class ChatTile extends StatelessWidget {
   final String otherUserId;
   final VoidCallback onChatClosed;
   final VoidCallback? onChatRead;
+  final VoidCallback? onChatDeleted;
   final String name;
   final String role;
   final String message;
@@ -794,6 +852,7 @@ class ChatTile extends StatelessWidget {
     required this.otherUserId,
     required this.onChatClosed,
     this.onChatRead,
+    this.onChatDeleted,
     required this.name,
     required this.role,
     required this.message,
@@ -802,9 +861,51 @@ class ChatTile extends StatelessWidget {
     required this.unreadCount,
   });
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Conversation'),
+        content: Text(
+          'Delete your conversation with $name? '
+          'This will permanently remove all messages.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final chatService = ChatService();
+      await chatService.deleteChat(chatId);
+      onChatDeleted?.call();
+    } catch (e) {
+      debugPrint('Failed to delete chat: $e');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete conversation. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onLongPress: () => _confirmDelete(context),
       leading: Stack(
         children: [
           CircleAvatar(
