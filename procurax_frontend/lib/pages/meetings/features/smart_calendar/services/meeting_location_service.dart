@@ -1,11 +1,20 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 /// API key for Google Maps / Places.
-/// Injected at build time via: --dart-define=MAPS_API_KEY=your_key
-const String googleMapsApiKey = String.fromEnvironment('MAPS_API_KEY');
+///
+/// Priority:
+///  1. Build-time override:  --dart-define=MAPS_API_KEY=your_key
+///  2. Hardcoded fallback (same key used in AndroidManifest.xml / AppDelegate.swift)
+///
+/// This ensures Places Autocomplete works even when the dart-define is omitted.
+const String _envKey = String.fromEnvironment('MAPS_API_KEY');
+const String googleMapsApiKey = _envKey.length > 0
+    ? _envKey
+    : ''; // Set via: flutter run --dart-define=MAPS_API_KEY=your_key
 
 /// Service that handles location-related operations for meetings:
 /// - Distance calculation (Haversine formula)
@@ -23,12 +32,17 @@ class MeetingLocationService {
     double? longitude,
   }) async {
     if (query.trim().isEmpty) return [];
+    if (googleMapsApiKey.isEmpty) {
+      debugPrint('[Places] ⚠️ MAPS_API_KEY is empty — autocomplete disabled');
+      return [];
+    }
 
     try {
       final params = <String, String>{
         'input': query,
         'key': googleMapsApiKey,
         'language': 'en',
+        'components': 'country:lk', // bias towards Sri Lanka
       };
 
       if (latitude != null && longitude != null) {
@@ -43,10 +57,19 @@ class MeetingLocationService {
       );
 
       final response = await http.get(uri);
-      if (response.statusCode != 200) return [];
+      if (response.statusCode != 200) {
+        debugPrint('[Places] HTTP ${response.statusCode}: ${response.body}');
+        return [];
+      }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['status'] != 'OK') return [];
+      final status = json['status'] as String?;
+      if (status != 'OK') {
+        debugPrint(
+          '[Places] API status=$status  error=${json['error_message'] ?? 'none'}',
+        );
+        return [];
+      }
 
       final predictions = json['predictions'] as List<dynamic>;
       return predictions
@@ -66,12 +89,18 @@ class MeetingLocationService {
           .where((p) => p.placeId.isNotEmpty)
           .toList();
     } catch (e) {
+      debugPrint('[Places] Autocomplete error: $e');
       return [];
     }
   }
 
   /// Gets the details (lat/lng, formatted address) for a [placeId].
   static Future<PlaceDetail?> getPlaceDetails(String placeId) async {
+    if (googleMapsApiKey.isEmpty) {
+      debugPrint('[Places] ⚠️ MAPS_API_KEY is empty — place details disabled');
+      return null;
+    }
+
     try {
       final uri =
           Uri.https('maps.googleapis.com', '/maps/api/place/details/json', {
@@ -81,10 +110,21 @@ class MeetingLocationService {
           });
 
       final response = await http.get(uri);
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        debugPrint(
+          '[Places] Details HTTP ${response.statusCode}: ${response.body}',
+        );
+        return null;
+      }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['status'] != 'OK') return null;
+      final status = json['status'] as String?;
+      if (status != 'OK') {
+        debugPrint(
+          '[Places] Details status=$status  error=${json['error_message'] ?? 'none'}',
+        );
+        return null;
+      }
 
       final result = json['result'] as Map<String, dynamic>;
       final geometry = result['geometry'] as Map<String, dynamic>?;
@@ -97,6 +137,7 @@ class MeetingLocationService {
         longitude: (location?['lng'] as num?)?.toDouble(),
       );
     } catch (e) {
+      debugPrint('[Places] Details error: $e');
       return null;
     }
   }

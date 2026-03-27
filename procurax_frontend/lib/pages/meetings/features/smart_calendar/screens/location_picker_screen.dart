@@ -59,6 +59,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   bool _isLoadingLocation = false;
   bool _isLoadingPlace = false;
   bool _isReverseGeocoding = false;
+  bool _isSearching = false;
   bool _locationPermissionGranted = false;
 
   // Default camera position (Colombo, Sri Lanka as fallback)
@@ -126,11 +127,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       setState(() {
         _suggestions = [];
         _showSuggestions = false;
+        _isSearching = false;
       });
       return;
     }
 
-    _debounce = Timer(const Duration(milliseconds: 400), () async {
+    setState(() => _isSearching = true);
+
+    _debounce = Timer(const Duration(milliseconds: 350), () async {
       final predictions = await MeetingLocationService.getPlacePredictions(
         query,
         latitude: _selectedLatLng?.latitude,
@@ -139,6 +143,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
       if (!mounted) return;
       setState(() {
+        _isSearching = false;
         _suggestions = predictions
             .map(
               (p) => _PlaceSuggestion(
@@ -429,7 +434,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               style: const TextStyle(fontSize: 15),
             ),
           ),
-          if (_isLoadingPlace)
+          if (_isLoadingPlace || _isSearching)
             const Padding(
               padding: EdgeInsets.all(12),
               child: SizedBox(
@@ -445,6 +450,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 setState(() {
                   _suggestions = [];
                   _showSuggestions = false;
+                  _isSearching = false;
                 });
               },
               icon: const Icon(Icons.close, size: 20),

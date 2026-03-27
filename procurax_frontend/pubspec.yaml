@@ -45,10 +45,6 @@ dependencies:
   url_launcher: ^6.3.2
   provider: ^6.1.2
   shared_preferences: ^2.2.3
-  # WSO2 Integration Dependencies
-  dio: ^5.4.0  # Better HTTP client for enterprise APIs
-  oauth2: ^2.0.2  # OAuth2 authentication
-  jwt_decode: ^0.3.1  # JWT token handling
   firebase_core: ^3.0.0
   cloud_firestore: ^5.0.0
   firebase_auth: ^5.0.0

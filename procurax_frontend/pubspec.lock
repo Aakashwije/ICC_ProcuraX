@@ -145,22 +145,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
-  dio:
-    dependency: "direct main"
-    description:
-      name: dio
-      sha256: aff32c08f92787a557dd5c0145ac91536481831a01b4648136373cddb0e64f8c
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.9.2"
-  dio_web_adapter:
-    dependency: transitive
-    description:
-      name: dio_web_adapter
-      sha256: "2f9e64323a7c3c7ef69567d5c800424a11f8337b8b228bad02524c9fb3c1f340"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.2"
   fake_async:
     dependency: transitive
     description:
@@ -616,14 +600,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.11.0"
-  jwt_decode:
-    dependency: "direct main"
-    description:
-      name: jwt_decode
-      sha256: d2e9f68c052b2225130977429d30f187aa1981d789c76ad104a32243cfdebfbb
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -704,14 +680,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  oauth2:
-    dependency: "direct main"
-    description:
-      name: oauth2
-      sha256: "890a032ba1b44fa8dcfeba500e613df0ecbe16aeace13bb0fe1d25eb42cda5b8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.5"
   open_file:
     dependency: "direct main"
     description:
