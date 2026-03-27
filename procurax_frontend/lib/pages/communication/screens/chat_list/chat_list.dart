@@ -12,6 +12,19 @@ import '../alerts/alerts_screen.dart';
 import '../calls/calls_screen.dart';
 import 'package:procurax_frontend/services/api_service.dart';
 
+/// Converts a raw role string like "project_manager" to "Project Manager".
+String _formatRole(String role) {
+  if (role.trim().isEmpty) return 'Member';
+  return role
+      .replaceAll('_', ' ')
+      .split(' ')
+      .map((word) {
+        if (word.isEmpty) return word;
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+      })
+      .join(' ');
+}
+
 class ChatListScreen extends StatefulWidget {
   final bool showDrawer;
 
@@ -527,6 +540,79 @@ class _ChatListScreenState extends State<ChatListScreen>
     await fetchAlerts();
   }
 
+  /// Long-press delete: show confirmation, optimistically remove, call API.
+  Future<void> _deleteChat(String chatId, String otherUserName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete Conversation'),
+          ],
+        ),
+        content: Text(
+          'Delete your conversation with $otherUserName?\n'
+          'This will permanently remove all messages.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Optimistically remove from list immediately
+    final removedChat = chats.firstWhere(
+      (c) => (c['id'] ?? c['chatId'] ?? '').toString() == chatId,
+      orElse: () => null,
+    );
+    setState(() {
+      chats.removeWhere(
+        (c) => (c['id'] ?? c['chatId'] ?? '').toString() == chatId,
+      );
+      filteredChats = _applySearch(chats, searchQuery);
+      messageUnreadCount = _calculateUnreadMessages(chats);
+    });
+
+    try {
+      await _chatService.deleteChat(chatId);
+      if (!mounted) return;
+      CustomToast.success(
+        context,
+        'Conversation with $otherUserName deleted.',
+        title: 'Chat Deleted',
+      );
+    } catch (e) {
+      debugPrint('Failed to delete chat: $e');
+      // Restore the chat on failure
+      if (removedChat != null && mounted) {
+        setState(() {
+          chats.add(removedChat);
+          filteredChats = _applySearch(chats, searchQuery);
+          messageUnreadCount = _calculateUnreadMessages(chats);
+        });
+      }
+      if (!mounted) return;
+      CustomToast.error(
+        context,
+        'Unable to delete conversation. Please try again.',
+        title: 'Delete Failed',
+      );
+    }
+  }
+
   Future<void> fetchAlerts() async {
     try {
       final data = await _chatService.getUserAlerts(currentUserId);
@@ -593,6 +679,7 @@ class _ChatListScreenState extends State<ChatListScreen>
               onRefresh: fetchChats,
               currentUserId: currentUserId,
               onChatClosed: _refreshBadges,
+              onDeleteChat: _deleteChat,
               onlineMap: onlineMap,
               searchController: _searchController,
               onSearchChanged: _onSearchChanged,
@@ -625,6 +712,7 @@ class MessagesPage extends StatelessWidget {
   final VoidCallback onRefresh;
   final String currentUserId;
   final VoidCallback onChatClosed;
+  final void Function(String chatId, String otherUserName) onDeleteChat;
   final Map<String, bool> onlineMap;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
@@ -636,6 +724,7 @@ class MessagesPage extends StatelessWidget {
     required this.onRefresh,
     required this.currentUserId,
     required this.onChatClosed,
+    required this.onDeleteChat,
     required this.onlineMap,
     required this.searchController,
     required this.onSearchChanged,
@@ -812,7 +901,8 @@ class MessagesPage extends StatelessWidget {
                       otherUserId: otherUserId,
                       onChatClosed: onChatClosed,
                       onChatRead: onChatClosed,
-                      onChatDeleted: onChatClosed,
+                      onLongPressDelete: () =>
+                          onDeleteChat(chatId, otherUserName),
                       name: otherUserName,
                       role: otherUserRole,
                       message: chat['lastMessage'] ?? '',
@@ -837,7 +927,7 @@ class ChatTile extends StatelessWidget {
   final String otherUserId;
   final VoidCallback onChatClosed;
   final VoidCallback? onChatRead;
-  final VoidCallback? onChatDeleted;
+  final VoidCallback? onLongPressDelete;
   final String name;
   final String role;
   final String message;
@@ -852,7 +942,7 @@ class ChatTile extends StatelessWidget {
     required this.otherUserId,
     required this.onChatClosed,
     this.onChatRead,
-    this.onChatDeleted,
+    this.onLongPressDelete,
     required this.name,
     required this.role,
     required this.message,
@@ -861,51 +951,10 @@ class ChatTile extends StatelessWidget {
     required this.unreadCount,
   });
 
-  Future<void> _confirmDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Conversation'),
-        content: Text(
-          'Delete your conversation with $name? '
-          'This will permanently remove all messages.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    try {
-      final chatService = ChatService();
-      await chatService.deleteChat(chatId);
-      onChatDeleted?.call();
-    } catch (e) {
-      debugPrint('Failed to delete chat: $e');
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to delete conversation. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      onLongPress: () => _confirmDelete(context),
+      onLongPress: onLongPressDelete,
       leading: Stack(
         children: [
           CircleAvatar(
@@ -940,7 +989,10 @@ class ChatTile extends StatelessWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(role, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(
+            _formatRole(role),
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
           const SizedBox(height: 2),
           Text(
             message.isEmpty ? 'No messages yet' : message,

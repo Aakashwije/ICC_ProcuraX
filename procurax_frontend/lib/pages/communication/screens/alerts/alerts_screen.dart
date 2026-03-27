@@ -33,12 +33,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Future<void> _fetchAlerts() async {
     try {
       final data = await _chatService.getUserAlerts(widget.userId);
+      if (!mounted) return;
       setState(() {
         alerts = data;
         loading = false;
       });
     } catch (e) {
       debugPrint('Failed to load alerts: $e');
+      if (!mounted) return;
       setState(() => loading = false);
     }
   }
