@@ -84,7 +84,7 @@ async function sendMessage(req, res) {
     }
 
     //file message must have fileUrl
-    if (type === 'file' && !fileUrl) {
+    if ((type === 'file' || type === 'image') && !fileUrl) {
       return res.status(400).json({ error: 'fileUrl is required for file messages' });
     }
 
@@ -247,8 +247,8 @@ async function deleteMessage(req, res) {
     }
 
 
-    // Delete file from Storage if it's a file message
-if (msgData.type === 'file' && msgData.fileUrl && bucket) {
+    // Delete file from Storage if it's a file/image message
+if ((msgData.type === 'file' || msgData.type === 'image') && msgData.fileUrl && bucket) {
   try {
     const filePath = msgData.fileUrl.split(`${bucket.name}/`)[1]; // ← backticks, not quotes
     if (filePath) {

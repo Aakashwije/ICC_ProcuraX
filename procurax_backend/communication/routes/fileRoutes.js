@@ -10,9 +10,18 @@ const storage = multer.memoryStorage();
 // Validate file types
 function fileFilter(req, file, cb) {
   const allowedMimeTypes = [
-    // Allowed
+    // Images
     'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/gif',
+    'image/webp',
+    // Documents
     'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   ];
 
   // Allow only specific file types

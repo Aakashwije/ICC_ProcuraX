@@ -96,6 +96,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       });
 
       final unread = _calculateUnreadMessages(data);
+      if (!mounted) return;
       setState(() {
         chats = data;
         filteredChats = _applySearch(data, searchQuery);
@@ -106,6 +107,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       await fetchAlerts();
     } catch (e) {
       debugPrint('Failed to load chats: $e');
+      if (!mounted) return;
       setState(() => loading = false);
     }
   }
@@ -617,6 +619,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     try {
       final data = await _chatService.getUserAlerts(currentUserId);
       final unread = data.where((a) => a['isRead'] != true).length;
+      if (!mounted) return;
       setState(() {
         alertCount = unread;
       });
