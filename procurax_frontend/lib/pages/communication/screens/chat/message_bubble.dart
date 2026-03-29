@@ -64,6 +64,110 @@ class MessageBubble extends StatelessWidget {
                   fontStyle: FontStyle.italic,
                 ),
               )
+            else if (type == 'image')
+              isUploading
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isMe ? Colors.white70 : Colors.black45,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Uploading image...',
+                          style: TextStyle(
+                            color: isMe ? Colors.white70 : Colors.black54,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    )
+                  : GestureDetector(
+                      onTap: () => onOpenFile?.call(fileUrl),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              fileUrl ?? '',
+                              width: 240,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return SizedBox(
+                                  width: 240,
+                                  height: 160,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      value: progress.expectedTotalBytes != null
+                                          ? progress.cumulativeBytesLoaded /
+                                                progress.expectedTotalBytes!
+                                          : null,
+                                      color: isMe
+                                          ? Colors.white70
+                                          : AppColours.primary,
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stack) =>
+                                  Container(
+                                    width: 240,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: isMe
+                                          ? Colors.white.withValues(alpha: 0.15)
+                                          : Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image_outlined,
+                                          color: isMe
+                                              ? Colors.white70
+                                              : Colors.grey,
+                                          size: 28,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Tap to open',
+                                          style: TextStyle(
+                                            color: isMe
+                                                ? Colors.white70
+                                                : Colors.grey,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                            ),
+                          ),
+                          if (fileName != null && fileName!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              fileName!,
+                              style: TextStyle(
+                                color: isMe ? Colors.white70 : Colors.black54,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    )
             else if (type == 'file')
               isUploading
                   ? Row(
@@ -100,7 +204,9 @@ class MessageBubble extends StatelessWidget {
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              fileName?.isNotEmpty == true ? fileName! : message,
+                              fileName?.isNotEmpty == true
+                                  ? fileName!
+                                  : message,
                               style: TextStyle(
                                 color: textColor,
                                 decoration: TextDecoration.underline,

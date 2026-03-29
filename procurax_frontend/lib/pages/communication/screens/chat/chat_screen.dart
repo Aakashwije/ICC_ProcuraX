@@ -135,10 +135,18 @@ class _ChatScreenState extends State<ChatScreen> {
     if (value.isEmpty) return AppColours.primary;
     final int hash = value.hashCode;
     const List<Color> colors = [
-      Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2),
-      Color(0xFF1E88E5), Color(0xFF2196F3), Color(0xFF42A5F5),
-      Color(0xFF64B5F6), Color(0xFF90CAF9), Color(0xFF01579B),
-      Color(0xFF0277BD), Color(0xFF0288D1), Color(0xFF039BE5),
+      Color(0xFF0D47A1),
+      Color(0xFF1565C0),
+      Color(0xFF1976D2),
+      Color(0xFF1E88E5),
+      Color(0xFF2196F3),
+      Color(0xFF42A5F5),
+      Color(0xFF64B5F6),
+      Color(0xFF90CAF9),
+      Color(0xFF01579B),
+      Color(0xFF0277BD),
+      Color(0xFF0288D1),
+      Color(0xFF039BE5),
       Color(0xFF03A9F4),
     ];
     return colors[hash.abs() % colors.length];
@@ -152,13 +160,17 @@ class _ChatScreenState extends State<ChatScreen> {
     if (createdAt is Map) {
       final seconds = createdAt['_seconds'] ?? createdAt['seconds'];
       if (seconds is int) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
+        final dt = DateTime.fromMillisecondsSinceEpoch(
+          seconds * 1000,
+          isUtc: true,
+        ).toLocal();
         return TimeOfDay.fromDateTime(dt).format(context);
       }
     }
     if (createdAt is String) {
       final parsed = _parseDateString(createdAt);
-      if (parsed != null) return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
+      if (parsed != null)
+        return TimeOfDay.fromDateTime(parsed.toLocal()).format(context);
     }
     return '';
   }
@@ -177,7 +189,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (createdAt is Map) {
       final seconds = createdAt['_seconds'] ?? createdAt['seconds'];
       if (seconds is int) {
-        return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
+        return DateTime.fromMillisecondsSinceEpoch(
+          seconds * 1000,
+          isUtc: true,
+        ).toLocal();
       }
     }
     if (createdAt is String) {
@@ -196,8 +211,22 @@ class _ChatScreenState extends State<ChatScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(date.year, date.month, date.day);
     if (_isSameDay(target, today)) return 'Today';
-    if (_isSameDay(target, today.subtract(const Duration(days: 1)))) return 'Yesterday';
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (_isSameDay(target, today.subtract(const Duration(days: 1))))
+      return 'Yesterday';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[target.month - 1]} ${target.day}, ${target.year}';
   }
 
@@ -213,7 +242,11 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           child: Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -222,10 +255,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String _formatRole(String role) {
     if (role.trim().isEmpty) return 'Member';
-    return role.replaceAll('_', ' ').split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return role
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   Future<void> _showDeleteMessageSheet(Message message) async {
@@ -278,7 +315,9 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('Delete failed: $e');
       if (!mounted) return;
       setState(() {
-        messages..clear()..addAll(old);
+        messages
+          ..clear()
+          ..addAll(old);
       });
       CustomToast.error(
         context,
@@ -293,7 +332,9 @@ class _ChatScreenState extends State<ChatScreen> {
     for (int i = messages.length - 1; i >= 0; i--) {
       final message = messages[i];
       final date = message.createdAt;
-      final dateOnly = date != null ? DateTime(date.year, date.month, date.day) : null;
+      final dateOnly = date != null
+          ? DateTime(date.year, date.month, date.day)
+          : null;
 
       items.add(
         GestureDetector(
@@ -317,11 +358,16 @@ class _ChatScreenState extends State<ChatScreen> {
         if (i > 0) {
           final previousDate = messages[i - 1].createdAt;
           if (previousDate != null) {
-            previousDateOnly = DateTime(previousDate.year, previousDate.month, previousDate.day);
+            previousDateOnly = DateTime(
+              previousDate.year,
+              previousDate.month,
+              previousDate.day,
+            );
           }
         }
 
-        if (previousDateOnly == null || !_isSameDay(previousDateOnly, dateOnly)) {
+        if (previousDateOnly == null ||
+            !_isSameDay(previousDateOnly, dateOnly)) {
           items.add(_buildDateSeparator(_formatDateHeader(dateOnly)));
         }
       }
@@ -370,7 +416,6 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _presenceFetching = false;
 
   Future<void> _refreshOtherPresence() async {
-    
     if (_presenceFetching) return;
     _presenceFetching = true;
     try {
@@ -453,7 +498,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   prefixIcon: Padding(
                     padding: const EdgeInsets.only(left: 4, right: 4),
                     child: IconButton(
-                      icon: Icon(Icons.attach_file_rounded, color: Colors.grey.shade600),
+                      icon: Icon(
+                        Icons.attach_file_rounded,
+                        color: Colors.grey.shade600,
+                      ),
                       onPressed: _pickAndSendFile,
                     ),
                   ),
@@ -467,9 +515,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(color: AppColours.primary, width: 1.5),
+                    borderSide: BorderSide(
+                      color: AppColours.primary,
+                      width: 1.5,
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 16,
+                  ),
                   fillColor: Colors.grey.shade50,
                   filled: true,
                 ),
@@ -487,14 +541,26 @@ class _ChatScreenState extends State<ChatScreen> {
               width: 48,
               margin: const EdgeInsets.only(bottom: 2),
               decoration: BoxDecoration(
-                color: isUserTyping ? AppColours.primary : AppColours.primary.withValues(alpha: 0.4),
+                color: isUserTyping
+                    ? AppColours.primary
+                    : AppColours.primary.withValues(alpha: 0.4),
                 shape: BoxShape.circle,
                 boxShadow: isUserTyping
-                    ? [BoxShadow(color: AppColours.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    ? [
+                        BoxShadow(
+                          color: AppColours.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
                     : null,
               ),
               child: IconButton(
-                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                icon: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 onPressed: isUserTyping ? _sendMessage : null,
               ),
             ),
@@ -513,14 +579,16 @@ class _ChatScreenState extends State<ChatScreen> {
     final tempId = 'temp_${createdAt.microsecondsSinceEpoch}';
 
     setState(() {
-      messages.add(Message(
-        id: tempId,
-        senderId: widget.currentUserId,
-        text: text,
-        isMe: true,
-        time: time,
-        createdAt: createdAt,
-      ));
+      messages.add(
+        Message(
+          id: tempId,
+          senderId: widget.currentUserId,
+          text: text,
+          isMe: true,
+          time: time,
+          createdAt: createdAt,
+        ),
+      );
       _textController.clear();
       isUserTyping = false;
     });
@@ -572,7 +640,18 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'png'],
+        allowedExtensions: [
+          'pdf',
+          'png',
+          'jpg',
+          'jpeg',
+          'gif',
+          'webp',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+        ],
         withData: true,
       );
 
@@ -583,34 +662,48 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (bytes == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to read file data')),
+        CustomToast.error(context, 'Failed to read file data');
+        return;
+      }
+
+      // 10 MB file size limit
+      const maxSizeBytes = 10 * 1024 * 1024;
+      if (bytes.length > maxSizeBytes) {
+        if (!mounted) return;
+        CustomToast.error(
+          context,
+          'File is too large. Maximum size is 10 MB.',
+          title: 'File Too Large',
         );
         return;
       }
 
-      
-
       if (!mounted) return;
       final fileName = file.name;
-      final mimeType = lookupMimeType(fileName, headerBytes: bytes) ?? 'application/octet-stream';
+      final mimeType =
+          lookupMimeType(fileName, headerBytes: bytes) ??
+          'application/octet-stream';
+      final isImage = mimeType.startsWith('image/');
+      final msgType = isImage ? 'image' : 'file';
       final createdAt = DateTime.now();
       final time = TimeOfDay.fromDateTime(createdAt).format(context);
       final tempId = 'temp_${createdAt.microsecondsSinceEpoch}';
 
       // Show bubble with spinner BEFORE upload starts
       setState(() {
-        messages.add(Message(
-          id: tempId,
-          senderId: widget.currentUserId,
-          text: fileName,
-          type: 'file',
-          fileName: fileName,
-          isMe: true,
-          time: time,
-          createdAt: createdAt,
-          isUploading: true,
-        ));
+        messages.add(
+          Message(
+            id: tempId,
+            senderId: widget.currentUserId,
+            text: fileName,
+            type: msgType,
+            fileName: fileName,
+            isMe: true,
+            time: time,
+            createdAt: createdAt,
+            isUploading: true,
+          ),
+        );
       });
 
       _scrollToBottom(force: true);
@@ -635,7 +728,7 @@ class _ChatScreenState extends State<ChatScreen> {
               id: tempId,
               senderId: widget.currentUserId,
               text: originalName,
-              type: 'file',
+              type: msgType,
               fileUrl: fileUrl,
               fileName: originalName,
               isMe: true,
@@ -652,7 +745,7 @@ class _ChatScreenState extends State<ChatScreen> {
         chatId: widget.chatId,
         senderId: widget.currentUserId,
         content: originalName,
-        type: 'file',
+        type: msgType,
         fileUrl: fileUrl,
         fileName: originalName,
       );
@@ -685,9 +778,7 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         messages.removeWhere((m) => m.id.startsWith('temp_'));
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send file')),
-      );
+      CustomToast.error(context, 'Failed to send file. Please try again.');
     }
   }
 
@@ -701,9 +792,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (uri == null || !uri.hasAuthority) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to open file')),
-      );
+      CustomToast.error(context, 'Failed to open file');
     }
   }
 
@@ -722,13 +811,23 @@ class _ChatScreenState extends State<ChatScreen> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: _getColorForUser(widget.otherUserId),
-                  backgroundImage: widget.avatarUrl.isNotEmpty && widget.avatarUrl.startsWith('http')
+                  backgroundImage:
+                      widget.avatarUrl.isNotEmpty &&
+                          widget.avatarUrl.startsWith('http')
                       ? NetworkImage(widget.avatarUrl)
                       : null,
-                  child: widget.avatarUrl.isEmpty || !widget.avatarUrl.startsWith('http')
+                  child:
+                      widget.avatarUrl.isEmpty ||
+                          !widget.avatarUrl.startsWith('http')
                       ? Text(
-                          widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                          widget.userName.isNotEmpty
+                              ? widget.userName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         )
                       : null,
                 ),
@@ -755,7 +854,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     widget.userName,
-                    style: const TextStyle(color: AppColours.neutral, fontWeight: FontWeight.bold, fontSize: 18),
+                    style: const TextStyle(
+                      color: AppColours.neutral,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
@@ -771,8 +874,14 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.video_call, color: AppColours.neutral), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.call, color: AppColours.neutral), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.video_call, color: AppColours.neutral),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.call, color: AppColours.neutral),
+            onPressed: () {},
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColours.neutral),
             itemBuilder: (_) => const [
@@ -788,45 +897,50 @@ class _ChatScreenState extends State<ChatScreen> {
             child: loading
                 ? const Center(child: CircularProgressIndicator())
                 : loadError != null
-                    ? Center(child: Text(loadError!))
-                    : messages.isEmpty
-                        ? const Center(child: Text('No messages yet'))
-                        : Builder(
-                            builder: (context) {
-                              final items = _buildMessageItems();
-                              return Stack(
-                                children: [
-                                  NotificationListener<ScrollNotification>(
-                                    onNotification: (notification) {
-                                      final shouldShow = !_isNearBottom();
-                                      if (shouldShow != _showScrollToBottom) {
-                                        setState(() => _showScrollToBottom = shouldShow);
-                                      }
-                                      return false;
-                                    },
-                                    child: ListView.builder(
-                                      controller: _scrollController,
-                                      reverse: true,
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      itemCount: items.length,
-                                      itemBuilder: (context, index) => items[index],
-                                    ),
-                                  ),
-                                  if (_showScrollToBottom)
-                                    Positioned(
-                                      right: 16,
-                                      bottom: 16,
-                                      child: FloatingActionButton.small(
-                                        onPressed: () => _scrollToBottom(force: true),
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: AppColours.primary,
-                                        child: const Icon(Icons.arrow_downward, size: 18),
-                                      ),
-                                    ),
-                                ],
-                              );
+                ? Center(child: Text(loadError!))
+                : messages.isEmpty
+                ? const Center(child: Text('No messages yet'))
+                : Builder(
+                    builder: (context) {
+                      final items = _buildMessageItems();
+                      return Stack(
+                        children: [
+                          NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              final shouldShow = !_isNearBottom();
+                              if (shouldShow != _showScrollToBottom) {
+                                setState(
+                                  () => _showScrollToBottom = shouldShow,
+                                );
+                              }
+                              return false;
                             },
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              reverse: true,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: items.length,
+                              itemBuilder: (context, index) => items[index],
+                            ),
                           ),
+                          if (_showScrollToBottom)
+                            Positioned(
+                              right: 16,
+                              bottom: 16,
+                              child: FloatingActionButton.small(
+                                onPressed: () => _scrollToBottom(force: true),
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppColours.primary,
+                                child: const Icon(
+                                  Icons.arrow_downward,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
           ),
           if (isOtherTyping) const TypingIndicator(),
           Container(
@@ -834,7 +948,11 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFEDEDED),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, -3)),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, -3),
+                ),
               ],
             ),
             child: Column(
