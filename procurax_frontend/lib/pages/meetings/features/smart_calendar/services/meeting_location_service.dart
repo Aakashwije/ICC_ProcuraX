@@ -14,7 +14,7 @@ import 'package:http/http.dart' as http;
 const String _envKey = String.fromEnvironment('MAPS_API_KEY');
 const String googleMapsApiKey = _envKey.length > 0
     ? _envKey
-    : ''; // Set via: flutter run --dart-define=MAPS_API_KEY=your_key
+    : 'AIzaSyBPYDC94MYzQsYruzAI88YpS4XD3l3V5iQ'; // fallback for simulator/debug runs
 
 /// Service that handles location-related operations for meetings:
 /// - Distance calculation (Haversine formula)
