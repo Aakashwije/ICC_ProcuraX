@@ -136,54 +136,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // ===== SAVE PROFILE METHOD =====
-  Future<void> _saveProfile() async {
-    final isLoggedIn = await _isLoggedIn();
-    if (!isLoggedIn) {
-      _showErrorSnackBar('You must be logged in to save changes');
-      return;
-    }
-
-    if (firstNameController.text == firstName &&
-        lastNameController.text == lastName &&
-        emailController.text == email &&
-        phoneController.text == phone) {
-      _showSuccessSnackBar('No changes to save');
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final response = await ApiService.updateUserProfile({
-        'firstName': firstNameController.text,
-        'lastName': lastNameController.text,
-        'email': emailController.text,
-        'phone': phoneController.text,
-      });
-
-      if (response['success'] == true) {
-        setState(() {
-          firstName = firstNameController.text;
-          lastName = lastNameController.text;
-          email = emailController.text;
-          phone = phoneController.text;
-        });
-        _showSuccessSnackBar('Profile saved successfully');
-      }
-    } catch (e) {
-      _showErrorSnackBar('Failed to save profile: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
-  }
-
   // ===== CONTACT SUPPORT METHODS =====
   Future<void> _launchContactSupport() async {
     final String supportEmail = 'support@procurax.com';
